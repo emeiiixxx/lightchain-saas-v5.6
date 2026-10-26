@@ -11,7 +11,6 @@ export type { VideoLayoutState } from './video-layout-groups';
 type Position = { x: number; y: number };
 type LayoutGroup = { positions: Map<string, Position>; width: number; height: number };
 const GROUP_GAP = 240;
-const STAGE_GAP = 480;
 const GROUPS_PER_ROW = 5;
 
 export function videoLayoutVertices(images: VideoCanvasMedia[], videoWorkflows: VideoWorkflow[], materialWorkflows: MaterialWorkflow[] = [], upscaleWorkflows: VideoUpscaleWorkflow[] = []): VideoLayoutVertex[] {
@@ -80,10 +79,10 @@ export function arrangeVideoWorkflowMedia(images: VideoCanvasMedia[], workflows:
   const stages = orderedLayoutStages(orderedGroups, dependencies);
   const related = placeConnectedGroupStages(stages.map(groups => groups.map(id => ({
     layout: layoutConnectedGroup(members.get(id)!, state.order), vertices: members.get(id)!,
-  }))), state.order, { groupGap: GROUP_GAP, stageGap: STAGE_GAP, groupsPerRow: GROUPS_PER_ROW, centerStages: false });
+  }))), state.order, { groupGap: GROUP_GAP, groupsPerRow: GROUPS_PER_ROW, centerStages: false });
   const positions = new Map(related.positions);
   const standalone = vertices.filter(vertex => !state.owners[vertex.id]).sort((a, b) => state.order[a.id] - state.order[b.id]);
   const free = packGroups(standalone.map(vertex => ({ positions: new Map([[vertex.id, { x: 0, y: 0 }]]), width: vertex.width, height: vertex.height })), false);
-  for (const [id, position] of free.positions) positions.set(id, { x: position.x, y: position.y + (members.size ? related.height + STAGE_GAP : 0) });
+  for (const [id, position] of free.positions) positions.set(id, { x: position.x, y: position.y + (members.size ? related.height + GROUP_GAP : 0) });
   return positions;
 }

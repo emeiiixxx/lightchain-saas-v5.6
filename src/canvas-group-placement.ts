@@ -11,10 +11,9 @@ type Bounds = { x: number; y: number; width: number; height: number };
 export function placeConnectedGroupStages(
   stages: readonly (readonly ConnectedLayoutGroup[])[],
   order: Readonly<Record<string, number>>,
-  options: { groupGap?: number; stageGap?: number; groupsPerRow?: number; centerStages?: boolean } = {},
+  options: { groupGap?: number; groupsPerRow?: number; centerStages?: boolean } = {},
 ): ConnectedGroupLayout {
   const groupGap = options.groupGap ?? 240;
-  const stageGap = options.stageGap ?? 480;
   const groupsPerRow = options.groupsPerRow ?? 5;
   const positions: ConnectedGroupLayout['positions'] = new Map();
   const occupied = new Map<string, Bounds>();
@@ -100,7 +99,7 @@ export function placeConnectedGroupStages(
       rowFloor = rowBottom + groupGap;
       defaultRowY = Math.max(defaultRowY + row.height + groupGap, rowFloor);
     }
-    stageX = stageRight + stageGap;
+    stageX = stageRight + groupGap;
   }
   if (!positions.size) return { positions, width: 0, height: 0 };
   const bounds = [...occupied.values()];

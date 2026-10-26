@@ -2,7 +2,7 @@ import { compactBox, type HierarchyData } from '@antv/hierarchy';
 import { groupTaskBlocks } from './canvas-task-layout';
 import { rememberImagePreview } from './image-previews';
 import type { DrawingGuide } from './drawing-guide';
-import { mergeGroupStages, MERGE_GROUP_GAP } from './canvas-merge-layout';
+import { mergeGroupStages } from './canvas-merge-layout';
 import { layoutConnectedGroup, type FlowLayoutVertex } from './canvas-connected-layout';
 import { placeConnectedGroupStages, type ConnectedLayoutGroup } from './canvas-group-placement';
 export type Viewport = { x: number; y: number; zoom: number };
@@ -257,10 +257,10 @@ export function arrangeImages(items: CanvasImage[], startX = 0, _viewport = { wi
   const connectedGroups = new Map<Block, ConnectedLayoutGroup>(groups.map(group => [group, group.connected]));
   const relatedLayout = placeConnectedGroupStages(
     mergeGroupStages(items, groups).map(blocks => blocks.map(block => connectedGroups.get(block)!)),
-    order, { groupGap: GROUP_GAP, stageGap: MERGE_GROUP_GAP, groupsPerRow: GROUPS_PER_ROW },
+    order, { groupGap: GROUP_GAP, groupsPerRow: GROUPS_PER_ROW },
   );
   const placements: Placement[] = [...relatedLayout.positions].map(([id, point]) => ({ id, ...point }));
-  const bottomY = placements.length && bottom.nodes.length ? relatedLayout.height + GROUP_GAP * 2 : 0;
+  const bottomY = placements.length && bottom.nodes.length ? relatedLayout.height + GROUP_GAP : 0;
   placements.push(...moved(bottom,0,bottomY));
   const positions = new Map(placements.map(node=>[node.id,{x:node.x+startX,y:node.y}]));
   return items.map(item=>{

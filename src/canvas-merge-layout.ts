@@ -2,7 +2,6 @@ import { isMultiInputWorkflow, workflowSources, type CanvasImage } from './canva
 import { orderedLayoutStages } from './canvas-layout-stages';
 
 export type LayoutBlock = { width: number; height: number; nodes: { id: string; x: number; y: number }[] };
-export const MERGE_GROUP_GAP = 480;
 
 // Input blocks are ordered by their main images' upload sequence.
 // Cross-group edges constrain placement without changing source ownership.
