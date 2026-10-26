@@ -1,4 +1,4 @@
-import { isMultiInputWorkflow, workflowInputs, workflowSources, type CanvasImage } from './canvas';
+import { isMultiInputWorkflow, workflowSources, type CanvasImage } from './canvas';
 import type { LayoutBlock } from './canvas-merge-layout';
 import { canvasImageOriginOrders } from './canvas-origin-order';
 
@@ -11,8 +11,9 @@ export function standaloneTaskInputs(items: CanvasImage[]): Set<string> {
     if (item.generatedByEditorId) { connected.add(item.id); connected.add(item.generatedByEditorId); }
     if (item.fusion) {
       connected.add(item.id);
-      if (item.editorSourceId) connected.add(item.editorSourceId);
-      for (const reference of workflowInputs(item.fusion)) if (reference.sourceImageId) connected.add(reference.sourceImageId);
+      // Match the rendered connections. Editor-only reference thumbnails must
+      // not give a canvas image an owner, including legacy reference bindings.
+      for (const source of workflowSources(items, item)) connected.add(source.id);
     }
   }
   return new Set(items.filter(item => !item.nodeOnly && !connected.has(item.id)).map(item => item.id));
