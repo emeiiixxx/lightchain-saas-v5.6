@@ -4,6 +4,7 @@ import { videoWorkflowSize, videoWorkflowSourceIds, type VideoWorkflow } from '.
 import { materialWorkflowSize, materialWorkflowSourceIds, type MaterialWorkflow } from './material-workflow';
 import { videoUpscaleWorkflowSize, videoUpscaleWorkflowSourceIds, type VideoUpscaleWorkflow } from './video-upscale-workflow';
 import { reconcileVideoLayout, videoLayoutOrder, type VideoLayoutState, type VideoLayoutVertex } from './video-layout-groups';
+import { orderedLayoutStages } from './canvas-layout-stages';
 
 export type { VideoLayoutState } from './video-layout-groups';
 type Position = { x: number; y: number };
@@ -166,17 +167,15 @@ export function arrangeVideoWorkflowMedia(images: VideoCanvasMedia[], workflows:
       if (group && parent && group !== parent) dependencies.get(group)!.add(parent);
     }
   }
-  const pending = new Set([...members.keys()].sort((a, b) => state.groupOrder[a] - state.groupOrder[b] || a.localeCompare(b)));
+  const orderedGroups = [...members.keys()].sort((a, b) => state.groupOrder[a] - state.groupOrder[b] || a.localeCompare(b));
+  const stages = orderedLayoutStages(orderedGroups, dependencies);
   const positions = new Map<string, Position>();
   let stageX = 0, relatedHeight = 0;
-  while (pending.size) {
-    const ready = [...pending].filter(id => [...dependencies.get(id)!].every(parent => !pending.has(parent)));
-    if (!ready.length) ready.push(pending.values().next().value!);
-    const stage = packGroups(ready.map(id => layoutGroup(members.get(id)!, state)));
+  for (const groups of stages) {
+    const stage = packGroups(groups.map(id => layoutGroup(members.get(id)!, state)));
     for (const [id, position] of stage.positions) positions.set(id, { x: position.x + stageX, y: position.y });
     relatedHeight = Math.max(relatedHeight, stage.height);
     stageX += stage.width + STAGE_GAP;
-    ready.forEach(id => pending.delete(id));
   }
   const standalone = vertices.filter(vertex => !state.owners[vertex.id]).sort((a, b) => state.order[a.id] - state.order[b.id]);
   const free = packGroups(standalone.map(vertex => ({ positions: new Map([[vertex.id, { x: 0, y: 0 }]]), width: vertex.width, height: vertex.height })), false);

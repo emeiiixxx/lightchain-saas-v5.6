@@ -1,4 +1,5 @@
 import { isMultiInputWorkflow, workflowSources, type CanvasImage } from './canvas';
+import { orderedLayoutStages } from './canvas-layout-stages';
 
 export type LayoutBlock = { width: number; height: number; nodes: { id: string; x: number; y: number }[] };
 export const MERGE_GROUP_GAP = 480;
@@ -18,27 +19,8 @@ export function mergeGroupStages(items: CanvasImage[], blocks: LayoutBlock[]): L
       if (parent !== undefined && parent !== target) dependencies[target].add(parent);
     }
   }
-  const stages: LayoutBlock[][] = [];
-  const placed = new Map<number, number>();
-  const visiting = new Set<number>();
-  let lastStage = 0;
-  function place(index: number) {
-    // Break only the recursive layout edge in malformed legacy cycles.
-    if (placed.has(index) || visiting.has(index)) return;
-    visiting.add(index);
-    const parents = [...dependencies[index]].sort((a, b) => a - b);
-    parents.forEach(place);
-    visiting.delete(index);
-    // A later independent group continues after the previous group; it must
-    // never jump back to the first stage and split an older generation chain.
-    const stage = Math.max(lastStage, ...parents.flatMap(parent => {
-      const parentStage = placed.get(parent);
-      return parentStage === undefined ? [] : [parentStage + 1];
-    }));
-    (stages[stage] ??= []).push(blocks[index]);
-    placed.set(index, stage);
-    lastStage = stage;
-  }
-  blocks.forEach((_, index) => place(index));
-  return stages;
+  return orderedLayoutStages(
+    blocks.map((_, index) => index),
+    new Map(dependencies.map((parents, index) => [index, parents])),
+  ).map(stage => stage.map(index => blocks[index]));
 }
