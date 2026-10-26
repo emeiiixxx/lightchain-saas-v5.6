@@ -4,6 +4,12 @@ export type VideoLayoutState = {
   nextOrder: number;
   owners: Record<string, string>;
   groupOrder: Record<string, number>;
+  // Media provenance is frozen when each canvas instance first appears.
+  originOrder?: Record<string, number>;
+  // Version 1 groupOrder values use original upload order rather than the
+  // immediate input's arrival time. Optional fields support older snapshots.
+  originVersion?: 1;
+  groupCreatedOrder?: Record<string, number>;
 };
 
 export type VideoLayoutVertex = {
@@ -12,7 +18,13 @@ export type VideoLayoutVertex = {
   width: number;
   height: number;
   sources: string[];
+  // Primary provenance can differ from visible links, e.g. a video's main
+  // frame determines upload order while its optional end frame remains linked.
+  originSources?: string[];
 };
+
+const validOrder = (value: number | undefined): value is number =>
+  value !== undefined && Number.isFinite(value) && value >= 0;
 
 // Stable dependency order, including deterministic handling of feedback links.
 // Feedback affects layout only; no stored business connection is removed.
@@ -43,6 +55,52 @@ export function reconcileVideoLayout(vertices: VideoLayoutVertex[], saved?: Vide
     }
   }
 
+  const originOrder: Record<string, number> = {};
+  const resolvedOrigins = new Map<string, number | undefined>();
+  const resolving = new Set<string>();
+  function resolveOrigin(id: string): number | undefined {
+    if (resolvedOrigins.has(id)) return resolvedOrigins.get(id);
+    const vertex = byId.get(id);
+    if (!vertex || resolving.has(id)) return undefined;
+    const recorded = saved?.originOrder?.[id];
+    if (vertex.kind === 'media' && validOrder(recorded)) {
+      originOrder[id] = recorded;
+      resolvedOrigins.set(id, recorded);
+      return recorded;
+    }
+    resolving.add(id);
+    const sources = (vertex.originSources ?? vertex.sources).filter(source => source !== id && byId.has(source));
+    const inherited = sources.map(resolveOrigin).filter(validOrder);
+    // Input-free generation has no original upload to inherit. Its media uses
+    // its own arrival order, while workflows stay dynamic for future results.
+    const value = inherited.length ? Math.min(...inherited) : vertex.kind === 'media' ? order[id] : undefined;
+    resolving.delete(id);
+    resolvedOrigins.set(id, value);
+    if (vertex.kind === 'media' && value !== undefined) originOrder[id] = value;
+    return value;
+  }
+  vertices.filter(vertex => vertex.kind === 'media').forEach(vertex => resolveOrigin(vertex.id));
+  const sourceOrder = (id: string) => resolveOrigin(id) ?? order[id];
+
+  // Old groupOrder stores the arrival ordinal of the first input. Translate
+  // that exact input when still present; current extra inputs must not reset
+  // an existing group's history. A deleted legacy input cannot be reconstructed.
+  const legacyOrigins = new Map(vertices.filter(vertex => vertex.kind === 'media')
+    .map(vertex => [order[vertex.id], originOrder[vertex.id]]));
+  const recordedGroupOrder = (group: string): number | undefined => {
+    const recorded = saved?.groupOrder[group];
+    if (!validOrder(recorded)) return undefined;
+    return saved?.originVersion === 1 ? recorded : legacyOrigins.get(recorded) ?? recorded;
+  };
+  const recordedGroupCreation = (group: string): number | undefined => {
+    const recorded = saved?.groupCreatedOrder?.[group];
+    if (validOrder(recorded)) return recorded;
+    const creator = group.startsWith('video-group:') ? group.slice('video-group:'.length) : '';
+    if (validOrder(order[creator])) return order[creator];
+    const legacy = saved?.groupOrder[group];
+    return validOrder(legacy) ? legacy : undefined;
+  };
+
   // Retain live groups across reference additions and reordering. A completely
   // detached item becomes standalone; a deleted group's bare sources can be
   // adopted by their remaining consumer instead of keeping a phantom owner.
@@ -54,11 +112,13 @@ export function reconcileVideoLayout(vertices: VideoLayoutVertex[], saved?: Vide
   }
   const owners: Record<string, string> = {};
   const groupOrder: Record<string, number> = {};
+  const groupCreatedOrder: Record<string, number> = {};
   for (const vertex of vertices) {
     const group = saved?.owners[vertex.id];
     if (group && validGroups.has(group) && degree.get(vertex.id)) {
       owners[vertex.id] = group;
-      groupOrder[group] = saved?.groupOrder[group] ?? order[vertex.id];
+      groupOrder[group] ??= recordedGroupOrder(group) ?? sourceOrder(vertex.id);
+      groupCreatedOrder[group] ??= recordedGroupCreation(group) ?? order[vertex.id];
     }
   }
 
@@ -72,15 +132,19 @@ export function reconcileVideoLayout(vertices: VideoLayoutVertex[], saved?: Vide
       else if (!owners[vertex.id] && sources.length && sources.every(id => byId.get(id)?.kind === 'media')) {
         const group = `video-group:${sources[0]}`;
         owners[vertex.id] = group;
-        groupOrder[group] ??= Math.min(...sources.map(id => order[id]));
+        groupOrder[group] ??= Math.min(...sources.map(sourceOrder));
+        groupCreatedOrder[group] ??= order[vertex.id];
         for (const source of sources) if (!owners[source]) owners[source] = group;
       }
       continue;
     }
     const parents = new Set(sources.flatMap(id => owners[id] ? [owners[id]] : []));
     const group = owners[vertex.id] ?? (parents.size === 1 ? [...parents][0] : `video-group:${vertex.id}`);
+    const primarySources = (vertex.originSources ?? sources).filter(id => byId.has(id) && id !== vertex.id);
+    const orderingSources = primarySources.length ? primarySources : sources;
     owners[vertex.id] = group;
-    groupOrder[group] ??= sources.length ? Math.min(...sources.map(id => order[id])) : order[vertex.id];
+    groupOrder[group] ??= orderingSources.length ? Math.min(...orderingSources.map(sourceOrder)) : order[vertex.id];
+    groupCreatedOrder[group] ??= order[vertex.id];
     // Only previously ungrouped inputs move into this group.
     for (const source of sources) if (!owners[source]) owners[source] = group;
   }
@@ -90,5 +154,5 @@ export function reconcileVideoLayout(vertices: VideoLayoutVertex[], saved?: Vide
     const parent = vertex.sources.find(id => owners[id]);
     if (parent) owners[vertex.id] = owners[parent];
   }
-  return { order, nextOrder, owners, groupOrder };
+  return { order, nextOrder, owners, groupOrder, originOrder, originVersion: 1, groupCreatedOrder };
 }

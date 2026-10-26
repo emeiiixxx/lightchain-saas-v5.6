@@ -5,6 +5,7 @@ import { videoUpscaleWorkflowSize, videoUpscaleWorkflowSourceIds, type VideoUpsc
 import { reconcileVideoLayout, type VideoLayoutState, type VideoLayoutVertex } from './video-layout-groups';
 import { orderedLayoutStages } from './canvas-layout-stages';
 import { layoutConnectedGroup } from './canvas-connected-layout';
+import { placeConnectedGroupStages } from './canvas-group-placement';
 
 export type { VideoLayoutState } from './video-layout-groups';
 type Position = { x: number; y: number };
@@ -17,7 +18,10 @@ export function videoLayoutVertices(images: VideoCanvasMedia[], videoWorkflows: 
   const vertices: VideoLayoutVertex[] = [
     ...images.map(image => ({ id: image.id, width: image.width, height: image.height, kind: 'media' as const,
       sources: image.sourceImageId ? [image.sourceImageId] : image.generatedByEditorId ? [image.generatedByEditorId] : [] })),
-    ...videoWorkflows.map(node => ({ id: node.id, ...videoWorkflowSize(node), kind: 'workflow' as const, sources: videoWorkflowSourceIds(node) })),
+    ...videoWorkflows.map(node => ({ id: node.id, ...videoWorkflowSize(node), kind: 'workflow' as const,
+      sources: videoWorkflowSourceIds(node),
+      ...(node.mode === 'frames' ? { originSources: node.main?.sourceImageId ? [node.main.sourceImageId] : [] } : {}),
+    })),
     ...materialWorkflows.map(node => ({ id: node.id, ...materialWorkflowSize(node), kind: 'workflow' as const, sources: materialWorkflowSourceIds(node) })),
     ...upscaleWorkflows.map(node => ({ id: node.id, ...videoUpscaleWorkflowSize(), kind: 'workflow' as const, sources: videoUpscaleWorkflowSourceIds(node) })),
   ];
@@ -70,18 +74,16 @@ export function arrangeVideoWorkflowMedia(images: VideoCanvasMedia[], workflows:
       if (group && parent && group !== parent) dependencies.get(group)!.add(parent);
     }
   }
-  const orderedGroups = [...members.keys()].sort((a, b) => state.groupOrder[a] - state.groupOrder[b] || a.localeCompare(b));
+  const orderedGroups = [...members.keys()].sort((a, b) => state.groupOrder[a] - state.groupOrder[b]
+    || (state.groupCreatedOrder?.[a] ?? state.groupOrder[a]) - (state.groupCreatedOrder?.[b] ?? state.groupOrder[b])
+    || a.localeCompare(b));
   const stages = orderedLayoutStages(orderedGroups, dependencies);
-  const positions = new Map<string, Position>();
-  let stageX = 0, relatedHeight = 0;
-  for (const groups of stages) {
-    const stage = packGroups(groups.map(id => layoutConnectedGroup(members.get(id)!, state.order)));
-    for (const [id, position] of stage.positions) positions.set(id, { x: position.x + stageX, y: position.y });
-    relatedHeight = Math.max(relatedHeight, stage.height);
-    stageX += stage.width + STAGE_GAP;
-  }
+  const related = placeConnectedGroupStages(stages.map(groups => groups.map(id => ({
+    layout: layoutConnectedGroup(members.get(id)!, state.order), vertices: members.get(id)!,
+  }))), state.order, { groupGap: GROUP_GAP, stageGap: STAGE_GAP, groupsPerRow: GROUPS_PER_ROW, centerStages: false });
+  const positions = new Map(related.positions);
   const standalone = vertices.filter(vertex => !state.owners[vertex.id]).sort((a, b) => state.order[a.id] - state.order[b.id]);
   const free = packGroups(standalone.map(vertex => ({ positions: new Map([[vertex.id, { x: 0, y: 0 }]]), width: vertex.width, height: vertex.height })), false);
-  for (const [id, position] of free.positions) positions.set(id, { x: position.x, y: position.y + (members.size ? relatedHeight + STAGE_GAP : 0) });
+  for (const [id, position] of free.positions) positions.set(id, { x: position.x, y: position.y + (members.size ? related.height + STAGE_GAP : 0) });
   return positions;
 }

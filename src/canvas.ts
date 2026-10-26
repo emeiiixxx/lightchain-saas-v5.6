@@ -4,6 +4,7 @@ import { rememberImagePreview } from './image-previews';
 import type { DrawingGuide } from './drawing-guide';
 import { mergeGroupStages, MERGE_GROUP_GAP } from './canvas-merge-layout';
 import { layoutConnectedGroup, type FlowLayoutVertex } from './canvas-connected-layout';
+import { placeConnectedGroupStages, type ConnectedLayoutGroup } from './canvas-group-placement';
 export type Viewport = { x: number; y: number; zoom: number };
 export type FusionReference = { id: string; name: string; url: string; sourceImageId?: string };
 export const MAX_FUSION_REFERENCES = 9;
@@ -233,6 +234,7 @@ export function arrangeImages(items: CanvasImage[], startX = 0, _viewport = { wi
     return {
       width: layout.width, height: layout.height,
       nodes: [...layout.positions].map(([id, point]) => ({ id, ...point })),
+      connected: { layout, vertices: members },
     };
   });
   function pack(blocks: Block[], columns: number, gap = GROUP_GAP, centerGroups = true): Block {
@@ -252,16 +254,13 @@ export function arrangeImages(items: CanvasImage[], startX = 0, _viewport = { wi
   }
   // Keep complete groups together and wrap after five, regardless of viewport.
   const bottom = pack(independent, GROUPS_PER_ROW, options.independentGap ?? GROUP_GAP, false);
-  const groupLayouts = mergeGroupStages(items, groups).map(blocks => pack(blocks, GROUPS_PER_ROW));
-  const topHeight = Math.max(0, ...groupLayouts.map(block => block.height));
-  const placements: Placement[] = [];
-  let topWidth = 0;
-  for (const block of groupLayouts) {
-    const x = topWidth ? topWidth + MERGE_GROUP_GAP : 0;
-    placements.push(...moved(block,x,(topHeight-block.height)/2));
-    topWidth = x + block.width;
-  }
-  const bottomY = placements.length && bottom.nodes.length ? topHeight + GROUP_GAP * 2 : 0;
+  const connectedGroups = new Map<Block, ConnectedLayoutGroup>(groups.map(group => [group, group.connected]));
+  const relatedLayout = placeConnectedGroupStages(
+    mergeGroupStages(items, groups).map(blocks => blocks.map(block => connectedGroups.get(block)!)),
+    order, { groupGap: GROUP_GAP, stageGap: MERGE_GROUP_GAP, groupsPerRow: GROUPS_PER_ROW },
+  );
+  const placements: Placement[] = [...relatedLayout.positions].map(([id, point]) => ({ id, ...point }));
+  const bottomY = placements.length && bottom.nodes.length ? relatedLayout.height + GROUP_GAP * 2 : 0;
   placements.push(...moved(bottom,0,bottomY));
   const positions = new Map(placements.map(node=>[node.id,{x:node.x+startX,y:node.y}]));
   return items.map(item=>{
