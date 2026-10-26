@@ -2,8 +2,7 @@ import { compactBox, type HierarchyData } from '@antv/hierarchy';
 import { groupTaskBlocks } from './canvas-task-layout';
 import { rememberImagePreview } from './image-previews';
 import type { DrawingGuide } from './drawing-guide';
-import { mergeGroupStages, MERGE_GROUP_GAP, MERGE_OUTPUT_GAP } from './canvas-merge-layout';
-export { MERGE_OUTPUT_GAP } from './canvas-merge-layout';
+import { mergeGroupStages, MERGE_GROUP_GAP } from './canvas-merge-layout';
 export type Viewport = { x: number; y: number; zoom: number };
 export type FusionReference = { id: string; name: string; url: string; sourceImageId?: string };
 export const MAX_FUSION_REFERENCES = 9;
@@ -185,8 +184,7 @@ export function arrangeImages(items: CanvasImage[], startX = 0, _viewport = { wi
       const data = tree.get(id)!;
       // Reserve the widest node at each depth BEFORE contour compaction.
       // Shifting columns afterwards would invalidate the computed separation.
-      // Reserve the wider output gap before contour layout without changing node widths.
-      data.width = widths[depth] + (mergeRoots.has(id) ? MERGE_OUTPUT_GAP - FUSION_GAP : 0);
+      data.width = widths[depth];
       data.children = vertices.get(id)!.children.map(child => tree.get(child)!);
     }
     const layout = compactBox(tree.get(root.id)!, {

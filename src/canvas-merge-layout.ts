@@ -1,7 +1,6 @@
 import { isMultiInputWorkflow, workflowSources, type CanvasImage } from './canvas';
 
 export type LayoutBlock = { width: number; height: number; nodes: { id: string; x: number; y: number }[] };
-export const MERGE_OUTPUT_GAP = 160;
 export const MERGE_GROUP_GAP = 480;
 
 // Input blocks are ordered by their main images' upload sequence.

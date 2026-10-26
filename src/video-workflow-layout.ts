@@ -48,56 +48,84 @@ function layoutGroup(vertices: VideoLayoutVertex[], state: VideoLayoutState): La
   for (const vertex of vertices) (columns[ranks.get(vertex.id)!] ??= []).push(vertex);
   for (const column of columns) column.sort((a, b) =>
     (inputOrder.get(a.id) ?? Infinity) - (inputOrder.get(b.id) ?? Infinity) || state.order[a.id] - state.order[b.id]);
-  const sizes = columns.map(column => ({
-    width: Math.max(0, ...column.map(item => item.width)),
-    height: column.reduce((sum, item) => sum + item.height, 0) + Math.max(0, column.length - 1) * STACK_GAP,
-  }));
-  // Reuse the fusion canvas contour layout for ordinary branching workflows.
-  // Multi-input joins use centered columns below, with each source shown once.
+  const widths = columns.map(column => Math.max(0, ...column.map(item => item.width)));
+  const columnX: number[] = [];
+  columns.forEach((_, index) => {
+    columnX[index] = index ? columnX[index - 1] + widths[index - 1] + EDITOR_GAP : 0;
+  });
   const parents = new Map(vertices.map(vertex => [vertex.id, vertex.sources.filter(id =>
     ranks.has(id) && ranks.get(id)! < ranks.get(vertex.id)!)]));
-  const roots = vertices.filter(vertex => !parents.get(vertex.id)!.length);
-  if (roots.length === 1 && [...parents.values()].every(ids => ids.length <= 1)) {
-    const tree = new Map<string, HierarchyData>();
-    for (const vertex of vertices) tree.set(vertex.id, {
-      id: vertex.id, height: vertex.height,
-      width: sizes[ranks.get(vertex.id)!].width,
-      children: [],
-    });
-    for (const column of columns) for (const vertex of column) {
-      const parent = parents.get(vertex.id)![0];
-      if (parent) tree.get(parent)!.children!.push(tree.get(vertex.id)!);
-    }
-    const layout = compactBox(tree.get(roots[0].id)!, {
+  // Cut only at joins. Each remaining tree keeps its complete downstream
+  // branches, so a single chain shares one center line even after a join.
+  const roots = columns.flat().filter(vertex => parents.get(vertex.id)!.length !== 1);
+  const tree = new Map<string, HierarchyData>();
+  const byId = new Map(vertices.map(vertex => [vertex.id, vertex]));
+  for (const vertex of vertices) tree.set(vertex.id, {
+    id: vertex.id, height: vertex.height, width: widths[ranks.get(vertex.id)!], children: [],
+  });
+  for (const column of columns) for (const vertex of column) {
+    const sources = parents.get(vertex.id)!;
+    if (sources.length === 1) tree.get(sources[0])!.children!.push(tree.get(vertex.id)!);
+  }
+  type Contour = { top: number; bottom: number };
+  const occupied = new Map<number, Contour[]>();
+  const positions = new Map<string, Position>();
+  for (const root of roots) {
+    const layout = compactBox(tree.get(root.id)!, {
       direction: 'LR', fixedRoot: false,
       getId: data => data.id!, getWidth: data => data.width!, getHeight: data => data.height!,
       getHGap: () => EDITOR_GAP / 2, getVGap: () => STACK_GAP / 2,
     });
-    const byId = new Map(vertices.map(vertex => [vertex.id, vertex]));
+    const rootCenter = layout.y + layout.vgap + root.height / 2;
     const points = new Map<string, Position>();
-    let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
+    const contours = new Map<number, Contour>();
     layout.eachNode(node => {
       const vertex = byId.get(node.id)!;
-      const x = node.x + node.hgap, y = node.y + node.vgap;
-      points.set(vertex.id, { x, y });
-      left = Math.min(left, x); top = Math.min(top, y);
-      right = Math.max(right, x + vertex.width); bottom = Math.max(bottom, y + vertex.height);
+      const rank = ranks.get(vertex.id)!;
+      const y = node.y + node.vgap - rootCenter;
+      points.set(vertex.id, {
+        x: columnX[rank] + (roots.length > 1 && vertex.kind === 'media' ? widths[rank] - vertex.width : 0), y,
+      });
+      const contour = contours.get(rank);
+      contours.set(rank, {
+        top: Math.min(contour?.top ?? Infinity, y),
+        bottom: Math.max(contour?.bottom ?? -Infinity, y + vertex.height),
+      });
     });
-    return { positions: new Map([...points].map(([id, point]) => [id, { x: point.x - left, y: point.y - top }])), width: right - left, height: bottom - top };
-  }
-  const height = Math.max(0, ...sizes.map(size => size.height));
-  const positions = new Map<string, Position>();
-  let x = 0;
-  columns.forEach((column, index) => {
-    const size = sizes[index];
-    let y = (height - size.height) / 2;
-    for (const item of column) {
-      positions.set(item.id, { x: x + (item.kind === 'media' ? size.width - item.width : 0), y });
-      y += item.height + STACK_GAP;
+
+    // Center a join on the full extent of its actual inputs. A shared source
+    // stays in place; collisions move the whole new tree, never its nodes alone.
+    const inputs = parents.get(root.id)!.filter(id => positions.has(id));
+    let center = inputs.length ? (
+      Math.min(...inputs.map(id => positions.get(id)!.y))
+      + Math.max(...inputs.map(id => positions.get(id)!.y + byId.get(id)!.height))
+    ) / 2 : 0;
+    const blocked: Contour[] = [];
+    for (const [rank, contour] of contours) {
+      for (const previous of occupied.get(rank) ?? []) blocked.push({
+        top: previous.top - STACK_GAP - contour.bottom,
+        bottom: previous.bottom + STACK_GAP - contour.top,
+      });
     }
-    x += size.width + (index < columns.length - 1 ? EDITOR_GAP : 0);
-  });
-  return { positions, width: x, height };
+    // Sorted forbidden offsets also account for long trees spanning later
+    // columns, without changing the 80px horizontal layer spacing.
+    blocked.sort((a, b) => a.top - b.top);
+    for (const interval of blocked) if (center > interval.top && center < interval.bottom) center = interval.bottom;
+    for (const [id, point] of points) positions.set(id, { x: point.x, y: point.y + center });
+    for (const [rank, contour] of contours) {
+      const spans = occupied.get(rank) ?? [];
+      spans.push({ top: contour.top + center, bottom: contour.bottom + center });
+      occupied.set(rank, spans);
+    }
+  }
+  const left = Math.min(...[...positions.values()].map(point => point.x));
+  const top = Math.min(...[...positions.values()].map(point => point.y));
+  const right = Math.max(...vertices.map(vertex => positions.get(vertex.id)!.x + vertex.width));
+  const bottom = Math.max(...vertices.map(vertex => positions.get(vertex.id)!.y + vertex.height));
+  return {
+    positions: new Map([...positions].map(([id, point]) => [id, { x: point.x - left, y: point.y - top }])),
+    width: right - left, height: bottom - top,
+  };
 }
 
 function packGroups(groups: LayoutGroup[], centerGroups = true): LayoutGroup {
