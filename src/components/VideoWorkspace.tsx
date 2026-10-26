@@ -475,9 +475,9 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       source ? source.y + (source.height - size.height) / 2 : point?.y ?? (canvasSize.height / 2 - viewport.y) / viewport.zoom - size.height / 2,
       source, mode,
     );
-    // An explicit context-menu point is the user's chosen position; only
-    // toolbar/initial-page creation uses automatic collision avoidance.
-    while (!point && scene.some(item => node.x < item.x + item.width + 40 && node.x + size.width + 40 > item.x && node.y < item.y + item.height + 40 && node.y + size.height + 40 > item.y)) node.y += size.height + 40;
+    // Toolbar nodes keep their source's center even when they overlap.
+    // Only an empty node without an explicit position avoids existing content.
+    while (!source && !point && scene.some(item => node.x < item.x + item.width + 40 && node.x + size.width + 40 > item.x && node.y < item.y + item.height + 40 && node.y + size.height + 40 > item.y)) node.y += size.height + 40;
     commit({ ...previous, workflows: [...previous.workflows, node], selected: [node.id] });
     if (canvas.current && !point) animateView(fitImages([...(source ? [source] : []), videoWorkflowBox(node)], canvas.current.clientWidth, canvas.current.clientHeight));
     canvas.current?.focus({ preventScroll: true });
@@ -501,8 +501,6 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const size = action === 'professional' ? videoWorkflowSize(node as VideoWorkflow) : materialWorkflowSize(node as MaterialWorkflow);
     node.x = bounds.x + bounds.width + 80;
     node.y = bounds.y + (bounds.height - size.height) / 2;
-    const scene = sceneItems(previous);
-    while (scene.some(item => node.x < item.x + item.width + 40 && node.x + size.width + 40 > item.x && node.y < item.y + item.height + 40 && node.y + size.height + 40 > item.y)) node.y += size.height + 40;
     // One editor and all source bindings form one undoable action; reuse canvas media.
     if (action === 'professional') {
       commit({ ...previous, workflows: [...previous.workflows, node as VideoWorkflow], selected: [node.id] });
@@ -536,7 +534,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       source ? source.y + (source.height - size.height) / 2 : point?.y ?? (canvasSize.height / 2 - viewport.y) / viewport.zoom - size.height / 2,
       kind, source,
     );
-    while (!point && scene.some(item => node.x < item.x + item.width + 40 && node.x + size.width + 40 > item.x && node.y < item.y + item.height + 40 && node.y + size.height + 40 > item.y)) node.y += size.height + 40;
+    while (!source && !point && scene.some(item => node.x < item.x + item.width + 40 && node.x + size.width + 40 > item.x && node.y < item.y + item.height + 40 && node.y + size.height + 40 > item.y)) node.y += size.height + 40;
     commit({ ...previous, materialWorkflows: [...(previous.materialWorkflows ?? []), node], selected: [node.id] });
     if (canvas.current && !point) animateView(fitImages([...(source ? [source] : []), materialWorkflowBox(node)], canvas.current.clientWidth, canvas.current.clientHeight));
     canvas.current?.focus({ preventScroll: true });
@@ -548,8 +546,6 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const node = createVideoUpscaleWorkflow(source), size = videoUpscaleWorkflowSize();
     node.x = source.x + source.width + 80;
     node.y = source.y + (source.height - size.height) / 2;
-    const scene = sceneItems(previous);
-    while (scene.some(item => node.x < item.x + item.width + 40 && node.x + size.width + 40 > item.x && node.y < item.y + item.height + 40 && node.y + size.height + 40 > item.y)) node.y += size.height + 40;
     commit({ ...previous, upscaleWorkflows: [...(previous.upscaleWorkflows ?? []), node], selected: [node.id] });
     if (canvas.current) animateView(fitImages([source, videoUpscaleWorkflowBox(node)], canvas.current.clientWidth, canvas.current.clientHeight));
     canvas.current?.focus({ preventScroll: true });

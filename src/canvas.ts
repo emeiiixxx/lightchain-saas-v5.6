@@ -307,9 +307,7 @@ export function createFusionEditor(items: CanvasImage[], sourceId: string, id: s
   if (!source) return null;
   const x = source.x + source.width + FUSION_GAP;
   const width = workflowWidth(defaultFusion(kind)), height = workflowHeight(defaultFusion(kind));
-  let y = source.y + (source.height - height) / 2;
-  const occupied = canvasNodes(items);
-  while (occupied.some(n => x < n.x + n.width + 16 && x + width + 16 > n.x && y < n.y + n.height + 16 && y + height + 16 > n.y)) y += height + FUSION_GAP;
+  const y = source.y + (source.height - height) / 2;
   return {id, name: source.name, url: '', x, y, width, height,
     nodeOnly: true, editorSourceId: source.id, fusion: {...defaultFusion(kind), position: {x,y}}};
 }
@@ -319,13 +317,8 @@ export function createMergeEditor(items: CanvasImage[], selected: string[], id: 
   if (sources.length < 2 || sources.length > (batchFlat ? 20 : MAX_FUSION_REFERENCES)) return null;
   const bounds = boundsOf(sources)!;
   const fusion = { ...defaultFusion(batchFlat ? 'flat' : 'merge'), batchFlat, references: sources.map(source => ({ id: source.id, name: source.name, url: source.url, sourceImageId: source.id })) };
-  const height = workflowHeight(fusion), x = bounds.x + bounds.width + MERGE_GROUP_GAP;
-  let y = bounds.y + (bounds.height - height) / 2;
-  const occupied = canvasNodes(items);
-  let collisions;
-  while ((collisions = occupied.filter(item => x < item.x + item.width + 16 && x + FUSION_WIDTH + 16 > item.x && y < item.y + item.height + 16 && y + height + 16 > item.y)).length) {
-    y = Math.max(...collisions.map(item => item.y + item.height)) + FUSION_GAP;
-  }
+  const height = workflowHeight(fusion), x = bounds.x + bounds.width + FUSION_GAP;
+  const y = bounds.y + (bounds.height - height) / 2;
   return { id, name: batchFlat ? '转3D平铺' : '合拼生图', url: '', x, y, width: FUSION_WIDTH, height, nodeOnly: true,
     fusion: { ...fusion, position: { x, y }, references: sources.map(source => ({ id: source.id, name: source.name, url: source.url, sourceImageId: source.id })) } };
 }
@@ -341,13 +334,8 @@ export function createBatchEditor(items: CanvasImage[], selected: string[], id: 
     id: source.id, name: source.name, url: source.url, sourceImageId: source.id,
   })), references: [] };
   const width = workflowWidth(fusion), height = workflowHeight(fusion);
-  const x = bounds.x + bounds.width + MERGE_GROUP_GAP;
-  let y = bounds.y + (bounds.height - height) / 2;
-  const occupied = canvasNodes(items);
-  let collisions;
-  while ((collisions = occupied.filter(item => x < item.x + item.width + 16 && x + width + 16 > item.x && y < item.y + item.height + 16 && y + height + 16 > item.y)).length) {
-    y = Math.max(...collisions.map(item => item.y + item.height)) + FUSION_GAP;
-  }
+  const x = bounds.x + bounds.width + FUSION_GAP;
+  const y = bounds.y + (bounds.height - height) / 2;
   return { id, name: '批量编辑', url: '', x, y, width, height, nodeOnly: true,
     fusion: { ...fusion, position: { x, y } } };
 }
