@@ -3,6 +3,7 @@ import { groupTaskBlocks } from './canvas-task-layout';
 import { rememberImagePreview } from './image-previews';
 import type { DrawingGuide } from './drawing-guide';
 import { mergeGroupStages, MERGE_GROUP_GAP } from './canvas-merge-layout';
+import { layoutConnectedGroup, type FlowLayoutVertex } from './canvas-connected-layout';
 export type Viewport = { x: number; y: number; zoom: number };
 export type FusionReference = { id: string; name: string; url: string; sourceImageId?: string };
 export const MAX_FUSION_REFERENCES = 9;
@@ -133,13 +134,19 @@ export function arrangeImages(items: CanvasImage[], startX = 0, _viewport = { wi
     if (item.fusion) vertices.set(`${item.id}:fusion`, {id:`${item.id}:fusion`, width:workflowWidth(item.fusion), height:workflowHeight(item.fusion), editor:true, children:[]});
   }
   const parents = new Map<string, string>();
+  const inputSources = new Map<string, string[]>();
   const mergeRoots = new Set(items.filter(item => isMultiInputWorkflow(item.fusion)).map(item => `${item.id}:fusion`));
   const connect = (parent: string | undefined, child: string) => {
     if (!parent || !vertices.has(parent) || !vertices.has(child) || parent === child) return;
     parents.set(child, parent);
   };
   for (const item of items) {
-    if (!item.nodeOnly) connect(item.sourceImageId ?? (item.generatedByEditorId ? `${item.generatedByEditorId}:fusion` : undefined), item.id);
+    if (!item.nodeOnly) {
+      const source = item.sourceImageId ?? (item.generatedByEditorId ? `${item.generatedByEditorId}:fusion` : undefined);
+      connect(source, item.id);
+      inputSources.set(item.id, source ? [source] : []);
+    }
+    if (item.fusion) inputSources.set(`${item.id}:fusion`, workflowSources(items, item).map(source => source.id));
     // Merge inputs remain visible cross-group links, but do not own the merge.
     if (item.fusion && !isMultiInputWorkflow(item.fusion)) connect(workflowSources(items, item)[0]?.id, `${item.id}:fusion`);
   }
@@ -211,7 +218,23 @@ export function arrangeImages(items: CanvasImage[], startX = 0, _viewport = { wi
     const connected = nodes.length > 1 || nodes.some(node => crossGroupMembers.has(node.id));
     (!connected ? independent : mergeRoots.has(root.id) ? mergeBlocks : related).push(block);
   }
-  const groups = groupTaskBlocks(items, related, mergeBlocks);
+  const order = Object.fromEntries([...vertices.keys()].map((id, index) => [id, index]));
+  // Ownership and chronological order come from grouping. Its temporary boxes
+  // must not turn parallel inputs into consecutive workflow steps.
+  const groups = groupTaskBlocks(items, related, mergeBlocks).map(block => {
+    const members: FlowLayoutVertex[] = block.nodes.map(node => {
+      const vertex = vertices.get(node.id)!;
+      return {
+        id: vertex.id, width: vertex.width, height: vertex.height,
+        kind: vertex.editor ? 'workflow' : 'media', sources: inputSources.get(vertex.id) ?? [],
+      };
+    });
+    const layout = layoutConnectedGroup(members, order);
+    return {
+      width: layout.width, height: layout.height,
+      nodes: [...layout.positions].map(([id, point]) => ({ id, ...point })),
+    };
+  });
   function pack(blocks: Block[], columns: number, gap = GROUP_GAP, centerGroups = true): Block {
     const nodes: Placement[] = [];
     let width = 0, y = 0;
