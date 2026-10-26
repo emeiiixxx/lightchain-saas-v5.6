@@ -84,16 +84,17 @@ export function layoutConnectedGroup(input: FlowLayoutVertex[], order: Record<st
     reservations.set(anchor, reservation);
     anchors.set(vertex.id, { id: anchor, side });
   }
-  const reservedHeight = new Map<string, number>();
+  const reservedSpace = new Map<string, { before: number; after: number }>();
   for (const [id, reservation] of reservations) {
     for (const slots of [reservation.before, reservation.after]) slots.sort((a, b) =>
       compareConsumers(a.consumer, b.consumer) || a.index - b.index);
     // Fixed external inputs cannot be stretched or moved to make room.
     if (!byId.has(id)) continue;
     const space = (slots: InputSlot[]) => slots.reduce((sum, slot) => sum + byId.get(slot.id)!.height + STACK_GAP, 0);
-    // Symmetric layout padding leaves room for fresh inputs while the actual
-    // material and every single-child continuation retain the same center.
-    reservedHeight.set(id, byId.get(id)!.height + 2 * Math.max(space(reservation.before), space(reservation.after)));
+    // Reserve only the side where fresh inputs will actually be placed.
+    // Mirroring this space onto the other side creates an empty gap between
+    // neighbouring results, even when nothing occupies that gap.
+    reservedSpace.set(id, { before: space(reservation.before), after: space(reservation.after) });
   }
   // Inputs follow the first consuming step's list. Creation order breaks ties
   // between consumers in the same column, without reordering output branches.
@@ -155,8 +156,11 @@ export function layoutConnectedGroup(input: FlowLayoutVertex[], order: Record<st
       ? (Math.min(...childBounds.map(child => child.top)) + Math.max(...childBounds.map(child => child.bottom))) / 2
       : 0;
     points.set(id, center - vertex.height / 2);
-    const height = reservedHeight.get(id) ?? vertex.height;
-    contours.set(ranks.get(id)!, { top: center - height / 2, bottom: center + height / 2 });
+    const space = reservedSpace.get(id);
+    contours.set(ranks.get(id)!, {
+      top: center - vertex.height / 2 - (space?.before ?? 0),
+      bottom: center + vertex.height / 2 + (space?.after ?? 0),
+    });
     return {
       points: new Map([...points].map(([childId, y]) => [childId, y - center])),
       contours: new Map([...contours].map(([rank, contour]) => [rank, { top: contour.top - center, bottom: contour.bottom - center }])),
@@ -237,11 +241,10 @@ export function layoutConnectedGroup(input: FlowLayoutVertex[], order: Record<st
           const horizontalGap = related ? 0 : gap;
           if (left >= previous.x + previous.width + horizontalGap || right + horizontalGap <= previous.x) continue;
           const isLooseInput = root.kind === 'media' && !allParents.get(root.id)!.length && points.size === 1;
-          const padding = positions.has(id) && !isLooseInput
-            ? Math.max(0, ((reservedHeight.get(id) ?? previous.height) - previous.height) / 2) : 0;
+          const space = positions.has(id) && !isLooseInput ? reservedSpace.get(id) : undefined;
           blocked.push({
-            top: previous.y - padding - gap - contour.bottom,
-            bottom: previous.y + previous.height + padding + gap - contour.top,
+            top: previous.y - (space?.before ?? 0) - gap - contour.bottom,
+            bottom: previous.y + previous.height + (space?.after ?? 0) + gap - contour.top,
           });
         }
       }
