@@ -1,0 +1,139 @@
+/* Figma 35:6234 / WorkflowNode 35:6422, 5.1 Beta primitives and slots. */
+/* Release the opacity animation after entry so zoom can rasterize node content
+   at the current scale. Keep node stacking independent of animation fill. */
+.fusion-position { animation: ui-enter var(--motion-duration) var(--motion-easing) backwards; isolation: isolate; position: absolute; width: 280px; pointer-events: auto; transition-property: left, top, opacity; }
+.fusion-node { width: 280px; padding: 12px; display: flex; flex-direction: column; gap: 12px; border: 1px solid var(--border-weak); border-radius: 16px; background: var(--surface-default); box-shadow: 0 12px 28px -4px var(--overlay-weak); color: var(--text-primary); }
+.fusion-header { display: flex; flex-direction: column; gap: 4px; }
+.fusion-header h2 { font-size: 14px; font-weight: 500; line-height: 20px; margin: 0; }
+.fusion-tip { height: 28px; display: flex; align-items: center; gap: 4px; padding: 0 8px 0 4px; border-radius: 999px; background: linear-gradient(12.4838deg, rgba(0,161,255,.4) 16.533%,rgba(200,97,255,.4) 83.467%); font-size: 12px; line-height: 16px; }
+.fusion-tip img { width: 20px; height: 20px; flex-shrink: 0; }
+.fusion-tip span { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.fusion-content { display: flex; flex-direction: column; gap: 12px; }
+.fusion-main { height: 56px; padding: 8px; display: flex; align-items: center; gap: 8px; border-radius: 16px; background: var(--state-default); font-size: 12px; line-height: 16px; }
+.fusion-main > .progressive-image { width: 40px; height: 40px; border: 1px solid var(--border-weak); border-radius: 8px; object-fit: cover; }
+.fusion-main > span:not(.progressive-image):not(.fusion-main-preview) { flex: 1; }
+.fusion-main .fusion-mask { width: 32px; min-width: 32px; height: 32px; padding: 0; border-radius: 12px; }
+.fusion-field { display: flex; flex-direction: column; gap: 8px; }
+.fusion-label { display: flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 400; line-height: 20px; }
+.fusion-required, .fusion-error { color: var(--status-danger); }
+.fusion-references { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: 64px; align-items: center; gap: 8px; min-height: 64px; }
+.fusion-references > * { min-width: 0; width: 100%; aspect-ratio: 1; }
+.fusion-reference-count { margin-left: auto; font-size: 12px; color: var(--text-tertiary); }
+.fusion-reference-wrap { position: relative; min-width: 0; aspect-ratio: 1; }
+.fusion-reference { display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 1; border: 1px solid var(--border-weak); background: var(--state-default); color: var(--text-secondary); border-radius: 12px; overflow: hidden; }
+.fusion-reference:is(button):hover { background: var(--state-hover); color: var(--text-primary); }
+.fusion-reference img { width: 100%; height: 100%; object-fit: cover; }
+.fusion-reference-wrap .fusion-reference-remove { position: absolute; top: 2px; right: 2px; width: 20px; min-width: 20px; height: 20px; padding: 0; border-radius: 999px; opacity: 0; }
+.fusion-reference-wrap:hover .fusion-reference-remove, .fusion-reference-wrap:focus-within .fusion-reference-remove { opacity: 1; }
+.fusion-textarea { display: flex; flex-direction: column; gap: 8px; height: 160px; padding: 8px; border: 1px solid var(--border-weak); border-radius: 12px; background: var(--control-fill-default); }
+.fusion-textarea:hover { border-color: var(--border-strong); }
+.fusion-textarea:focus-within { border-color: var(--border-brand); background: var(--control-fill-focus); }
+.fusion-textarea.has-error { border-color: var(--status-danger); }
+.fusion-textarea textarea { font: inherit; font-size: 14px; line-height: 20px; color: var(--text-primary); background: transparent; resize: none; border: 0; outline: 0; width: 100%; }
+.fusion-textarea textarea { flex: 1; min-height: 64px; padding: 0; }
+.fusion-textarea textarea::placeholder { color: var(--text-placeholder); }
+.fusion-textarea-footer, .fusion-prompt-actions { display: flex; align-items: center; }
+.fusion-textarea-footer { gap: 8px; height: 24px; }
+.fusion-prompt-actions { gap: 4px; }
+.fusion-prompt-actions .fusion-xs-icon { width: 24px; height: 24px; min-width: 24px; padding: 0; border-radius: 6px; }
+.fusion-counter { flex: 1; text-align: right; font-size: 12px; line-height: 16px; color: var(--text-tertiary); white-space: nowrap; }
+.fusion-textarea-footer .fusion-clear { height: 24px; min-width: 24px; padding: 0 8px; border-radius: 4px; }
+.fusion-error { margin: 0; font-size: 12px; line-height: 16px; }
+.fusion-settings { display: flex; gap: 8px; }
+.fusion-setting { position: relative; flex: 1; min-width: 0; }
+/* WorkflowNode Action: full-width Border/weak divider, 12px button inset. */
+.fusion-node-action { display: flex; flex-shrink: 0; margin: 0 -12px -12px; padding: 12px; border-top: 1px solid var(--border-weak); }
+.fusion-generate { width: 100%; }
+/* Figma Button/GenerateTask S: default 88:32168, hover 88:32171. */
+.generate-task-button { position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 16px; gap: 4px; border: 0; border-radius: var(--radius-base); background: var(--brand-primary); color: var(--text-on-brand-black); font-size: 12px; line-height: 16px; font-weight: 500; }
+.generate-task-button::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(90deg, #71f4d3 0%, #52dde0 50%, #ccb2ff 100%); opacity: 0; z-index: -1; pointer-events: none; }
+.generate-task-button:hover:not(:disabled)::before { opacity: 1; }
+.generate-task-button:disabled { background: var(--brand-primary-disabled); color: var(--text-on-brand-disabled); }
+.generate-task-cost { font-size: 14px; line-height: 20px; }
+.is-dragging .fusion-position { transition-duration: 0ms; }
+
+
+/* Independent graph nodes. Interactive form controls never start a drag. */
+.fusion-position { border-radius: 16px; }
+.fusion-position:focus-visible { outline: none; }
+.fusion-position::after { content: ''; position: absolute; inset: 0; border: calc(2px * var(--canvas-inverse-scale, 1)) solid var(--border-brand); border-radius: inherit; opacity: 0; pointer-events: none; }
+.fusion-position[data-selected='true']::after { opacity: 1; }
+.fusion-position[data-selected='true'] .fusion-node { border-color: transparent; }
+.fusion-node, .fusion-header { cursor: grab; }
+.fusion-node textarea, .fusion-node input { cursor: text; }
+.is-dragging .fusion-node, .is-dragging .fusion-header { cursor: grabbing; }
+/* Empty workflow, Figma 107:5118. */
+.fusion-add-main { width: 100%; height: 56px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0 8px; border: 0; border-radius: 16px; background: var(--state-default); color: var(--text-primary); font-size: 12px; }
+.fusion-add-main:hover { background: var(--state-hover); }
+.fusion-node.is-empty .fusion-reference-count { display: none; }
+.fusion-node.is-empty .fusion-references { grid-template-columns: repeat(4, 1fr); }
+.fusion-node.is-empty .fusion-reference-wrap:only-child { width: 64px; }
+.fusion-node.is-empty .fusion-textarea { background: var(--control-fill-default); }
+
+/* Lingerie workflow: Figma 136:17371 / 136:17414, one 64px model slot. */
+.fusion-node.lingerie-node .fusion-references { grid-template-columns: 64px; }
+
+/* Figma 177:6100 / 177:7186 / 177:6191: one shell in all states, including the shared action divider. */
+.merge-node { position: relative; border: 0; }
+.merge-node::before { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
+.fusion-position[data-selected='true'] .merge-node::before { opacity: 0; }
+.merge-node .fusion-content > .fusion-field:first-child { margin-bottom: 4px; }
+.merge-node .fusion-label { gap: 8px; }
+.merge-node .fusion-required { margin-left: -4px; }
+.merge-count-divider { width: 1px; height: 12px; background: var(--border-weak); }
+.merge-reference-count { color: var(--text-tertiary); font-size: 12px; line-height: 16px; white-space: nowrap; }
+.merge-reference-count > span { color: var(--text-brand); }
+.merge-node .fusion-references { grid-template-columns: repeat(4, 56px); grid-auto-rows: 56px; gap: 8px; min-height: 56px; }
+.merge-node .fusion-references > * { width: 56px; height: 56px; flex: 0 0 56px; }
+.merge-node .fusion-reference-wrap .fusion-reference { position: relative; overflow: hidden; border-radius: 8px; background: var(--control-fill-hover); }
+.merge-node .fusion-reference > .progressive-image,
+.merge-node .fusion-reference img { border-radius: 0; }
+.merge-node .fusion-reference-wrap .fusion-reference-remove { width: 16px; min-width: 16px; height: 16px; border-radius: 999px; top: 4px; right: 4px; }
+.merge-node .fusion-reference-wrap:hover .fusion-reference::after { content: ''; position: absolute; inset: 0; border-radius: 8px; background: var(--overlay-weak); pointer-events: none; }
+.merge-node .fusion-textarea:hover { background: var(--control-fill-hover); border-color: var(--border-weak); }
+.merge-node .fusion-textarea:focus-within { background: var(--control-fill-focus); border-color: var(--brand-primary); }
+.merge-node .fusion-textarea.has-error { border-color: var(--status-danger); }
+
+/* Figma 136:18488 / 136:18657: inside stroke and Beta ChoiceChip. */
+.flat-lay-node { position: relative; border: 0; }
+.flat-lay-node::before { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
+.fusion-position[data-selected='true'] .flat-lay-node::before { opacity: 0; }
+.flat-lay-faces { display: flex; gap: 8px; }
+.flat-lay-face { display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 var(--spacing-xl); border: 1px solid var(--border-weak); border-radius: var(--radius-base); background: var(--state-default); color: var(--text-secondary); font-size: 14px; font-weight: 500; line-height: 22px; }
+.flat-lay-face:hover { background: var(--state-hover); color: var(--text-primary); }
+.flat-lay-face[aria-pressed='true'] { border-color: var(--border-brand); background: var(--alpha-brand-20); color: var(--text-primary); }
+
+/* Figma 136:17846 / 136:17987: inside stroke; shared action divider included in workflowHeight. */
+.directed-node { position: relative; border: 0; }
+.directed-node::before { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
+.fusion-position[data-selected='true'] .directed-node::before { opacity: 0; }
+.directed-point { display: flex; flex-direction: column; gap: 4px; padding: 8px; border-radius: 16px; background: var(--state-default); font-size: 12px; line-height: 16px; }
+.directed-point-header { display: flex; align-items: center; justify-content: space-between; height: 32px; }
+.directed-point-title { display: flex; align-items: center; gap: 4px; min-width: 0; padding: 0 8px; }
+.directed-point-title > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.directed-point .directed-point-action { width: 32px; height: 32px; min-width: 32px; padding: 0; border-radius: 6px; }
+.directed-point-preview { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 72px; padding: 8px; }
+.directed-point-images { display: flex; gap: 8px; flex-shrink: 0; }
+.directed-point-images > .progressive-image, .directed-point-empty { width: 56px; height: 56px; border-radius: 8px; overflow: hidden; background: var(--background-default); }
+.directed-point-empty { display: flex; align-items: center; justify-content: center; color: var(--text-tertiary); }
+.directed-mask { display: flex; align-items: center; justify-content: flex-end; gap: 4px; padding: 0; min-width: 0; height: 32px; border: 0; border-radius: 6px; background: transparent; color: var(--text-tertiary); font-size: 12px; line-height: 16px; }
+.directed-mask > span:not(.icon) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.directed-mask > .icon { flex-shrink: 0; }
+.directed-mask:hover { color: var(--text-primary); }
+
+/* User-requested demo brush marks: overlay thumbnails without modifying assets. */
+
+/* Figma 177:7383 / 177:7583: up to 20 inputs, four 56px tiles per row. */
+.batch-flat-node .fusion-content { gap: 16px; }
+.batch-flat-node .fusion-label { gap: 8px; }
+.batch-flat-images { display: grid; grid-template-columns: repeat(4, 56px); gap: 8px; min-height: 56px; max-height: 208px; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; scrollbar-width: thin; }
+.batch-flat-images > * { width: 56px; height: 56px; min-width: 0; }
+.batch-flat-images .fusion-reference-wrap .fusion-reference { position: relative; border-radius: 8px; background: var(--control-fill-hover); }
+.batch-flat-images .fusion-reference > .progressive-image,
+.batch-flat-images .fusion-reference img { border-radius: 0; }
+.batch-flat-images .fusion-reference-remove { width: 16px; min-width: 16px; height: 16px; top: 4px; right: 4px; border-radius: 999px; }
+
+/* The saved guide belongs to this editor and overlays only its thumbnail. */
+.fusion-main > .fusion-main-preview { position: relative; display: block; flex: 0 0 40px; width: 40px; min-width: 40px; max-width: 40px; height: 40px; aspect-ratio: 1; overflow: hidden; border: 1px solid var(--border-weak); border-radius: 8px; }
+.fusion-main-preview > .progressive-image { display: block; width: 100%; height: 100%; }
+.fusion-main-preview > .fusion-guide-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .7; pointer-events: none; }

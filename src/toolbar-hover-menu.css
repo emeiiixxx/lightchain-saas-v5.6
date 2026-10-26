@@ -1,0 +1,19 @@
+.toolbar-hover-control { display: inline-flex; flex: 0 0 auto; height: 32px; }
+.toolbar-hover-trigger.lc-button { height: 32px; gap: 4px; padding: 0 8px; border: 0; }
+.media-toolbar--video-image .toolbar-hover-trigger.lc-button:is(:hover, [aria-expanded='true']) { background: var(--state-hover); color: var(--text-brand); }
+.toolbar-hover-menu {
+  position: fixed; inset: auto; z-index: 40; margin: 0;
+  width: max-content; min-width: 160px; max-width: calc(100vw - 16px);
+  flex-direction: column; gap: 8px; padding: 4px;
+  border: 0; border-radius: 12px; overflow: visible;
+  background: var(--surface-floating); color: var(--text-secondary);
+  box-shadow: 0 12px 28px -4px var(--overlay-weak); pointer-events: auto;
+}
+.toolbar-hover-menu:popover-open { display: flex; }
+.toolbar-hover-menu::after { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
+/* A transparent hit bridge keeps the same menu open across its 8px gap. */
+.toolbar-hover-menu::before { content: ''; position: absolute; left: 0; right: 0; height: 8px; }
+.toolbar-hover-menu[data-side='bottom']::before { bottom: 100%; }
+.toolbar-hover-menu[data-side='top']::before { top: 100%; }
+.toolbar-hover-menu > .lc-button { width: 100%; height: 32px; min-height: 32px; justify-content: flex-start; gap: 8px; padding: 0 8px; border: 0; border-radius: 8px; font-size: 14px; line-height: 20px; font-weight: 400; }
+.toolbar-hover-menu > .lc-button:is(:hover, :focus-visible) { background: var(--state-hover); color: var(--text-primary); }

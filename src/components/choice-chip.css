@@ -1,0 +1,7 @@
+.lc-choice-chip { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 4px; height: 32px; padding: 0 12px; border: 0; border-radius: var(--radius-base); box-shadow: inset 0 0 0 1px var(--border-weak); background: var(--state-default); color: var(--text-secondary); font: inherit; font-size: 14px; font-weight: 500; line-height: 24px; white-space: nowrap; cursor: pointer; transition: background-color 200ms ease-out, box-shadow 200ms ease-out, color 200ms ease-out; }
+.lc-choice-chip:hover:not(:disabled) { background: var(--state-hover); }
+.lc-choice-chip[aria-pressed='true'] { box-shadow: inset 0 0 0 1px var(--border-brand); background: var(--alpha-brand-20); color: var(--text-primary); }
+.lc-choice-chip[aria-pressed='true']:hover:not(:disabled) { background: var(--alpha-brand-20); }
+.lc-choice-chip:focus-visible { outline: 2px solid var(--border-brand); outline-offset: 2px; }
+.lc-choice-chip:disabled { color: var(--text-disabled); cursor: not-allowed; }
+@media (prefers-reduced-motion: reduce) { .lc-choice-chip { transition: none; } }

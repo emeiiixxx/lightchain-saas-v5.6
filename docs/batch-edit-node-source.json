@@ -1,0 +1,62 @@
+{
+  "version": "5.5.0",
+  "design": {
+    "fileKey": "TG0pTkt8sYaCspV3ZWHdd4",
+    "nodes": {
+      "withoutReferences": "696:7197",
+      "withReferences": "696:6657"
+    },
+    "library": "Lightchain SaaS v5.1 libraries Beta",
+    "importScope": "User requested these two v5.4 designs for the v5.5 batch editor."
+  },
+  "geometry": {
+    "width": 592,
+    "height": 404,
+    "headerHeight": 52,
+    "bodyHeight": 352,
+    "bodyRadius": 24,
+    "mainListWidth": 168,
+    "mainRowHeight": 56,
+    "mainThumbnail": 40,
+    "referenceThumbnail": 48,
+    "padding": 12,
+    "gap": 8
+  },
+  "userConfirmedBehavior": {
+    "mainImageLimit": 20,
+    "mainListOverflow": "vertical scrolling",
+    "referenceLimit": 9,
+    "promptLimit": 2000,
+    "defaultRatio": "auto",
+    "defaultResolution": "2K",
+    "entry": "Select 2 to 20 canvas images, then choose batch edit.",
+    "resultCount": "One local demo result per main image."
+  },
+  "components": [
+    "Upload/ImageTile 244:8303",
+    "Label 2:7260",
+    "TextArea 2:8741",
+    "CharacterCounter 77:5927",
+    "IconButton 701:7557",
+    "Button 571:12139",
+    "Select 570:4912",
+    "Button/GenerateTask 301:7563"
+  ],
+  "themeTokens": [
+    "Surface/default", "Surface/secondary", "State/default", "State/hover",
+    "Control/fill/default", "Control/fill/hover", "Control/fill/focus",
+    "Text/primary", "Text/secondary", "Text/tertiary", "Text/placeholder",
+    "Text/brand", "Text/on-brand-black", "Border/weak", "Border/brand",
+    "Brand/primary", "Overlay/weak", "Shadow/L"
+  ],
+  "icons": [
+    { "path": "public/assets/batch-edit/tip.svg", "source": "696:7201", "asset": "9bdc29bb-1942-4035-b5c6-8359c2ea6321", "displaySize": 20 },
+    { "path": "public/assets/batch-edit/add.svg", "source": "I696:7207;1579:4104", "component": "240:5214", "asset": "a212fe1f-73e7-46cc-9309-a23842d4f05d", "displaySize": 20 },
+    { "path": "public/assets/batch-edit/add-image.svg", "source": "I696:7018;1579:4104", "component": "240:5210", "asset": "4db7a051-1cd3-41cb-97c4-7baf8d03e03e", "displaySize": 20 },
+    { "path": "public/assets/batch-edit/close.svg", "source": "I701:9339;139:1671", "asset": "8d12126d-b353-436c-a4b6-42cbf1e091ea", "displaySize": 10.6666666667 }
+  ],
+  "sharedControls": "PromptTools, SettingSelect and GenerateTaskButton reuse existing Beta SVGs and theme tokens.",
+  "data": "fusion.kind=batch; mainImages are primary canvas inputs identified by sourceImageId; references are separate shared reference assets.",
+  "demoBoundary": "Uses existing fixed local results. No AI requests, billing or generation history writes.",
+  "validation": "Figma context and variable definitions read for implementation. No build, tests or browser inspection run, as requested."
+}

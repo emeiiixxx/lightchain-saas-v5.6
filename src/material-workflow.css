@@ -1,0 +1,42 @@
+/* Figma material nodes 141:24357 / 141:24359 / 141:25185 / 141:25509 /
+   141:25380 / 141:25857. Geometry follows each node's content, including Back. */
+.fusion-node.material-workflow-node { position: relative; width: 320px; padding: 0; gap: 0; border: 0; }
+.material-workflow-node::before { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
+.fusion-position[data-selected='true'] .material-workflow-node::before { opacity: 0; }
+.material-workflow-header { height: 80px; flex: 0 0 80px; padding: 12px; gap: 8px; }
+.material-workflow-header h2 { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.material-workflow-header .fusion-tip { flex: 0 0 28px; background: linear-gradient(10.839779284859844deg, rgba(0, 161, 255, .4) 16.533%, rgba(200, 97, 255, .4) 83.467%); }
+.material-workflow-content { flex: 1 0 auto; margin: 0; padding: 12px; gap: 16px; }
+.material-workflow-content > * { flex-shrink: 0; }
+.material-reference-field { height: 92px; }
+.material-reference-heading { display: flex; align-items: center; gap: 4px; height: 20px; flex: 0 0 20px; }
+.material-reference-heading > .fusion-label { flex: 0 0 auto; }
+.material-workflow-node .material-reference-info { width: 16px; min-width: 16px; height: 16px; min-height: 16px; padding: 0; border: 0; border-radius: 4px; color: var(--text-tertiary); }
+.material-reference-count { min-width: 0; color: var(--text-tertiary); font-size: 12px; line-height: 16px; white-space: nowrap; }
+.material-reference-count > span { color: var(--text-brand); }
+.material-reference-row > .fusion-reference:hover, .material-back-reference > .fusion-reference:hover { background: var(--state-hover); }
+.material-reference-row > .fusion-reference:focus-visible, .material-back-reference > .fusion-reference:focus-visible { outline: 2px solid var(--border-brand); outline-offset: -2px; }
+.material-view-field { min-height: 96px; }
+.material-choice-group { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px; }
+.material-view-choices { min-height: 68px; }
+.material-back-field { height: 92px; }
+.material-back-reference { display: flex; height: 64px; }
+.material-back-reference > * { flex: 0 0 64px; width: 64px; height: 64px; }
+.material-grid-field, .material-generation-field { height: 60px; }
+.material-workflow-prompt { height: 188px; }
+.material-prompt-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 20px; }
+.material-prompt-heading > .fusion-label { min-width: 0; }
+.material-workflow-prompt .fusion-textarea { flex: 0 0 160px; border: 0; box-shadow: inset 0 0 0 1px var(--border-weak); }
+.material-workflow-prompt .fusion-textarea:hover { box-shadow: inset 0 0 0 1px var(--border-strong); }
+.material-workflow-prompt .fusion-textarea:focus-within { box-shadow: inset 0 0 0 1px var(--border-brand); }
+.material-workflow-prompt .fusion-textarea.has-error { box-shadow: inset 0 0 0 1px var(--status-danger); }
+.material-workflow-prompt .fusion-textarea-footer > .fusion-counter { margin-left: auto; }
+.material-generation-field .lc-setting-select-value { font-size: 12px; line-height: 16px; }
+.fusion-node-action.material-workflow-action { height: 57px; flex: 0 0 57px; margin: 0; padding: 12px; }
+.material-workflow-action > .generate-task-button { flex: 1; min-width: 0; width: 100%; padding: 0 20px; font-size: 14px; line-height: 20px; white-space: nowrap; }
+.material-workflow-node:lang(en) .material-prompt-heading .fusion-label { font-size: 13px; }
+.material-workflow-node:lang(en) .video-prompt-expansion { padding-inline: 0; }
+.material-workflow-node:lang(en) .material-view-choices > .lc-choice-chip { padding-inline: 10px; }
+@media (prefers-reduced-motion: reduce) {
+  .material-reference-row > .fusion-reference, .material-back-reference > .fusion-reference { transition: none; }
+}

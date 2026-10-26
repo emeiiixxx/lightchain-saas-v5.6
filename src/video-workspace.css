@@ -1,0 +1,55 @@
+/* Figma v5.5 64:2057. Shared controls retain the v5.1 Beta tokens. */
+.video-workspace[hidden] { display: none; }
+.video-workspace-mark { position: relative; display: block; flex: 0 0 20px; width: 20px; height: 20px; }
+.video-workspace-mark > img { position: absolute; inset: 0; width: 20px; height: 20px; border-radius: 5px; object-fit: cover; }
+.video-empty-scroll { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; padding: 24px 24px 72px; overflow: auto; touch-action: pan-y; }
+.video-empty { display: flex; flex-direction: column; align-items: center; gap: 32px; width: 816px; max-width: 100%; flex: 0 0 auto; }
+.video-empty-headline { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; text-align: center; }
+.video-empty-headline h1 { margin: 0; color: var(--text-secondary); font-size: 24px; font-weight: 700; line-height: 32px; }
+.video-empty-headline p { margin: 0; color: var(--text-tertiary); font-size: 16px; font-weight: 500; line-height: 24px; text-wrap: balance; }
+.video-entry-tools { display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; width: 100%; }
+.video-entry-tool { position: relative; flex: 0 0 auto; width: auto; height: 48px; gap: 8px; border: 0; }
+/* Keep the Outline stroke inside the content-sized Figma button. */
+.video-entry-tool::after { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
+.video-entry-tool > .video-icon { flex-shrink: 0; }
+.video-entry-tool .video-entry-badge { top: -8px; left: 109px; right: auto; }
+.video-entry-tool:lang(en), .video-entry-tool:lang(ja) { padding-inline: 8px; font-size: 14px; }
+.video-entry-tool:lang(ja) > span:not(.icon):not(.entry-tool-badge) { font-size: 12px; }
+.video-upload { width: 640px; max-width: 100%; height: 360px; flex: 0 0 auto; border-radius: var(--radius-xl); -webkit-backdrop-filter: blur(var(--background-blur-s)); backdrop-filter: blur(var(--background-blur-s)); }
+.video-upload .asset-upload-hint { color: var(--text-placeholder); text-wrap: balance; }
+/* Figma 76:5683: share the selection toolbar shell, with its inside stroke. */
+.media-toolbar--video { position: relative; height: 40px; border: 0; flex-wrap: nowrap; }
+.media-toolbar--video::after { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
+.media-toolbar--video > .lc-button { flex-shrink: 0; border: 0; }
+.media-toolbar--video > .divider { flex-shrink: 0; }
+.media-toolbar--video-asset { background: var(--surface-floating); }
+.media-toolbar--video-image { background: var(--surface-floating); }
+.media-toolbar--video-multi { background: var(--surface-floating); }
+.video-multi-toolbar-group { display: flex; flex: 0 0 auto; align-items: center; gap: 4px; }
+.video-multi-toolbar-group > .lc-button { height: 32px; min-width: 32px; padding: 0 8px; border: 0; gap: 4px; font-size: 12px; line-height: 20px; font-weight: 500; white-space: nowrap; }
+.video-multi-toolbar-group > .divider { flex: 0 0 1px; height: 32px; }
+.video-multi-toolbar-group .icon { flex-shrink: 0; }
+.video-image-toolbar-group, .video-asset-toolbar-group { display: flex; flex: 0 0 auto; align-items: center; gap: 4px; }
+.video-image-toolbar-group > .lc-button, .video-asset-toolbar-group > .lc-button { padding: 0 8px; border: 0; }
+.video-image-toolbar-group > .canvas-icon-button, .video-asset-toolbar-group > .canvas-icon-button { padding: 0; }
+.video-image-toolbar-group > .divider, .video-asset-toolbar-group > .divider { flex: 0 0 1px; height: 32px; }
+.video-asset-toolbar-group .video-icon { flex-shrink: 0; }
+.canvas-image .video-canvas-play { border-radius: var(--radius-max); }
+.asset-video-marker { position: absolute; left: 8px; bottom: 8px; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 4px; border-radius: 6px; background: var(--surface-media-overlay); color: #fff; pointer-events: none; font-size: 12px; line-height: 16px; }
+.video-workspace .canvas-side-toolbar { width: 56px; border: 0; }
+.video-workspace .canvas-side-toolbar::after { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
+.video-workspace .canvas-nav-toolbar { height: 48px; border: 0; }
+.video-workspace .canvas-nav-toolbar::after { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
+.video-canvas-help { margin: 0; font-size: 14px; line-height: 24px; }
+@media (max-width: 850px), (max-height: 760px) {
+  .video-empty-scroll { align-items: safe center; padding-top: 120px; padding-bottom: 32px; }
+}
+@media (max-width: 680px) {
+  .video-empty-scroll { padding-inline: 16px; }
+  .video-empty { gap: 24px; }
+  .video-empty-headline h1 { font-size: 22px; line-height: 30px; }
+  .video-empty-headline p { font-size: 14px; line-height: 22px; }
+  .video-entry-tools { gap: 12px; }
+  .video-entry-tool .video-entry-badge { left: auto; right: -4px; }
+  .video-upload { height: 280px; }
+}

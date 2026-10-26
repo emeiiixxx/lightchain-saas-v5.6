@@ -1,0 +1,126 @@
+/* Figma 113:8633 / 113:8634: 333×380 video menus, original Beta controls and tokens. */
+.video-generation-settings-ratio-icon {
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+}
+.video-generation-settings {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  width: 324px;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 96px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--surface-default);
+  color: var(--text-secondary);
+  border: 0;
+  border-radius: var(--radius-xl);
+  box-shadow: inset 0 0 0 1px var(--border-weak), var(--shadow-l);
+}
+.video-generation-settings::backdrop { pointer-events: none; }
+.video-generation-settings:not(.material-generation-settings) { width: 333px; }
+.video-generation-settings:not(.material-generation-settings) .video-parameter-segments--ratios { min-width: 309px; }
+.video-resolution-heading { display: flex; align-items: center; gap: var(--spacing-xs); }
+.video-resolution-help {
+  display: inline-flex;
+  flex: 0 0 16px;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-tertiary);
+}
+.video-resolution-help:hover { color: var(--text-primary); }
+.video-generation-settings section {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  gap: 8px;
+  min-width: 0;
+}
+.video-generation-settings h3 {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+}
+.video-parameter-segments-scroll {
+  overflow-x: auto;
+  overscroll-behavior: contain;
+  padding: 0;
+  border-radius: var(--radius-base);
+}
+.video-parameter-segments {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: repeat(var(--segments), minmax(0, 1fr));
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs);
+  background: var(--surface-secondary);
+  border-radius: var(--radius-base);
+}
+/* 24px text segments; ratio items use a 16px icon, 2px gap and 16px label. */
+.video-parameter-segments button {
+  min-width: 0;
+  height: 24px;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs);
+  border: 0;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+}
+.video-parameter-segments button:hover {
+  color: var(--text-primary);
+  background: var(--state-hover);
+}
+.video-parameter-segments button[aria-checked='true'] {
+  color: var(--text-primary);
+  background: var(--state-selected-tab-sliding);
+}
+.video-parameter-segments button:focus-visible { outline-offset: -2px; }
+.video-generation-mode-setting .video-parameter-segments button[aria-checked='true'] {
+  color: var(--text-brand);
+  background: var(--state-selected);
+}
+/* Latest video-menu bindings; material settings retain their own Figma colors. */
+.video-generation-settings:not(.material-generation-settings) .video-parameter-segments {
+  background: var(--control-fill-hover);
+}
+.video-generation-settings:not(.material-generation-settings) .video-parameter-segments button[aria-checked='true'] {
+  background: var(--state-selected);
+}
+.video-parameter-segments-scroll:has(.video-parameter-segments--ratios) { border-radius: var(--radius-l); }
+.video-parameter-segments--ratios { display: flex; min-width: 300px; border-radius: var(--radius-l); }
+.video-parameter-segments--ratios button {
+  flex: 1 0 auto;
+  flex-direction: column;
+  height: 42px;
+  min-height: 42px;
+  padding: 4px 8px;
+  gap: 2px;
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.video-parameter-segments--ratios button[aria-checked='true'] { border-radius: var(--radius-base); }
+.video-parameter-segments--ratios .icon { flex-shrink: 0; }
+

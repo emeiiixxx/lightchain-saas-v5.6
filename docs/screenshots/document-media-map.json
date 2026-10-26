@@ -1,0 +1,146 @@
+{
+  "synced_at": "2026-09-16",
+  "source": "https://lightchain.feishu.cn/wiki/WpiswINzhiJLCxkrmZncdhRenxb",
+  "images": [
+    {
+      "feature": "P0 1. 画布小地图",
+      "file": "minimap-detail-feishu.png",
+      "caption": "P0 1. 画布小地图配图",
+      "feishu_block_id": "RZNpdAxV4oDWwPxVxBhcK7RQnBg",
+      "feishu_file_token": "GGnXbz93YoFlCAxT5yycK4Svnng"
+    },
+    {
+      "feature": "P0 1. 画布小地图",
+      "file": "01-minimap.png",
+      "caption": "画布小地图：真实节点分布与可视范围",
+      "feishu_block_id": "doxcnZdKR49RUkYZBmNQgLOdfFT",
+      "feishu_file_token": "MipLbbwnFoq5F0xHnREcj3tPnMc"
+    },
+    {
+      "feature": "P0 2. 整理画布",
+      "file": "arrange-before-feishu.png",
+      "caption": "整理前",
+      "feishu_block_id": "YI68dSMITo04RkxVp4Qc3wslndc",
+      "feishu_file_token": "E43RbKqZ9oY0rexj0ftc8YVzn9d"
+    },
+    {
+      "feature": "P0 2. 整理画布",
+      "file": "arrange-after-feishu.png",
+      "caption": "整理后：同源编辑器同列，结果与后续步骤按层向右",
+      "feishu_block_id": "CGX2d5T0NoKd7KxjiW6c7GkpndD",
+      "feishu_file_token": "Q5gCbswhRoV0FbxI5OtceLSinmh"
+    },
+    {
+      "feature": "P0 3. 输入框放大优化",
+      "file": "06-expanded-prompt.png",
+      "caption": "放大提示词输入区：实时同步节点内容",
+      "feishu_block_id": "doxcnUy6Udbr7Ich8jBNkcjVNEd",
+      "feishu_file_token": "UX61bLfhSonjJCx32nEcEzt5nBe"
+    },
+    {
+      "feature": "P0 4. 蚂蚁线",
+      "file": "03-ants-selected.png",
+      "caption": "选中主图：关联连线显示高亮蚂蚁线",
+      "feishu_block_id": "doxcna4zdT3tQRyBtxCVNphLTKe",
+      "feishu_file_token": "INUmbcLlvohlnLxQxb2c4ndtnwe"
+    },
+    {
+      "file": "initial-canvas-feishu.png",
+      "feature": "P0 5. 画布初始化样式优化",
+      "caption": "5. 画布初始化样式优化配图",
+      "feishu_block_id": "BfsKdObKQo42BdxDNSxcQQ9fnEe",
+      "feishu_file_token": "B7LtbC23Xo2ieaxjD4NcVpxtnOL"
+    },
+    {
+      "feature": "P1 1. 缩放画布及速度优化",
+      "file": "09-zoom-100.png",
+      "caption": "固定倍率切换前",
+      "feishu_block_id": "doxcnsUWchOl8YKfI3Bma0G2IBd",
+      "feishu_file_token": "QJHCbi1e2okJAJxxOKBc2I8BnPc"
+    },
+    {
+      "feature": "P1 1. 缩放画布及速度优化",
+      "file": "09-zoom-50.png",
+      "caption": "固定倍率切换后；静态截图不表示动效速度",
+      "feishu_block_id": "doxcn2YuUmTNHYAOpipX4R51KC7",
+      "feishu_file_token": "KMQKbbMydoCPQfxhyXbcexCMnYf"
+    },
+    {
+      "feature": "P1 2. 新增 3%／5% 缩放比例",
+      "file": "05-zoom-5.png",
+      "caption": "新增 5% 档位：查看更大画布范围",
+      "feishu_block_id": "doxcnqzmy0kpXPjKovN2Vz5JJxb",
+      "feishu_file_token": "EBF7bZpi9olXsKxoUWic449en8e"
+    },
+    {
+      "feature": "P1 2. 新增 3%／5% 缩放比例",
+      "file": "05-zoom-3.png",
+      "caption": "新增 3% 档位：最低缩放比例的实际显示",
+      "feishu_block_id": "doxcnlSjXcquNNDhfPGEuDR8lRg",
+      "feishu_file_token": "W3o6bQN4jocSurxVvEpcVeB6nec"
+    },
+    {
+      "file": "grid-snap-demo-feishu.png",
+      "feature": "P1 3. 网格吸附开关",
+      "caption": "3. 网格吸附开关配图",
+      "feishu_block_id": "JCE0dipIwoO5rsxW6nPcdDpEnmd",
+      "feishu_file_token": "Ikcob4pXpoi5UTxtjaHccPfbnug"
+    },
+    {
+      "file": "grid-snap-states-feishu.png",
+      "feature": "P1 3. 网格吸附开关",
+      "caption": "3. 网格吸附开关配图",
+      "feishu_block_id": "Y93vd02bQotXX3x8NLwcj4TtnCb",
+      "feishu_file_token": "NO9dbN54tob26jx7TiIcxiLdnBh"
+    },
+    {
+      "file": "model-library-buttons-feishu.png",
+      "feature": "P1 5. 模特企划库底部按钮高度不一致修复",
+      "caption": "5. 模特企划库底部按钮高度不一致修复配图",
+      "feishu_block_id": "K2pCd8Gi8o4AzXx8J9ocCrTAnhd",
+      "feishu_file_token": "X787bWqOAozgrkxXmalcabKsnnd"
+    },
+    {
+      "feature": "P2 1. 选中边框&元素加减选操作优化",
+      "file": "selection-single-zoom-feishu.png",
+      "caption": "单图选中：单选元素边框，画布缩小后展示样式示意",
+      "feishu_block_id": "M5yZdDylOo3ULAxQEbEc5C7ondh",
+      "feishu_file_token": "CC45bWdavozRCuxIK03c6pM2nmc"
+    },
+    {
+      "feature": "P2 1. 选中边框&元素加减选操作优化",
+      "file": "selection-multiple-zoom-feishu.png",
+      "caption": "混合选区：多选选中边框，画布缩小后展示样式示意",
+      "feishu_block_id": "RqDgdnX9nojISPxqPhxcR2fvn7b",
+      "feishu_file_token": "JU0wbyQANo3iQtxyrNIcgeRcn9c"
+    },
+    {
+      "feature": "P2 2. 保存提示词弹窗样式优化",
+      "file": "07-save-prompt.png",
+      "caption": "保存提示词：命名气泡与字数计数",
+      "feishu_block_id": "doxcnsDjhMb7JZvXiCf9N7nAQZe",
+      "feishu_file_token": "Kw6vbowbWoSR3rxMvy7cYxB8nWe"
+    },
+    {
+      "file": "prompt-library-detail-feishu.png",
+      "feature": "P2 3. 提示词库（待定）",
+      "caption": "提示词库：详情、关联图片与插入／覆盖操作",
+      "feishu_block_id": "OVCudoRp9o1R3jx1uvkcx8BOnag",
+      "feishu_file_token": "Oy9BbQnK8oD4ddxnVLLcv7zznWf"
+    },
+    {
+      "file": "prompt-library-new-feishu.png",
+      "feature": "P2 3. 提示词库（待定）",
+      "caption": "新增提示词：临时卡片与表单实时同步",
+      "feishu_block_id": "EIJNd06XHoWaB9xgu83cv3wMnlf",
+      "feishu_file_token": "QLZNbxTPtoRj3ixYSYTckrHQnof"
+    },
+    {
+      "file": "prompt-library-edit-feishu.png",
+      "feature": "P2 3. 提示词库（待定）",
+      "caption": "编辑提示词",
+      "feishu_block_id": "Q0HpdaBd3oD3LUxq9BhcXDeRnhg",
+      "feishu_file_token": "Xw2ubcLtGoj32uxKHVfcj1qunqf"
+    }
+  ]
+}

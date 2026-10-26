@@ -1,0 +1,29 @@
+/* Figma empty node 175:33378 / inner Canvas WorkflowNode 175:33379. */
+.fusion-node.video-upscale-workflow-node { position: relative; width: 320px; height: 505px; padding: 0; gap: 0; border: 0; }
+.video-upscale-workflow-node::before { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
+.fusion-position[data-selected='true'] .video-upscale-workflow-node::before { opacity: 0; }
+.video-upscale-workflow-header { height: 80px; flex: 0 0 80px; padding: 12px; gap: 8px; }
+.video-upscale-workflow-header h2 { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.video-upscale-workflow-header .fusion-tip { flex: 0 0 28px; background: linear-gradient(10.839779284859844deg, rgba(0,161,255,.4) 16.533%, rgba(200,97,255,.4) 83.467%); }
+.video-upscale-workflow-content { height: 368px; flex: 0 0 368px; margin: 0; padding: 12px; gap: 16px; }
+.video-upscale-workflow-content > * { flex-shrink: 0; }
+.video-upscale-source-field { height: 268px; }
+.video-upscale-source { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 240px; flex: 0 0 240px; padding: 0 8px; border-radius: 16px; overflow: hidden; background: var(--background-default); }
+.video-upscale-preview { position: relative; display: block; width: 100%; height: 100%; padding: 0; border: 0; background: transparent; cursor: pointer; }
+.video-upscale-preview > .progressive-image { display: block; width: 100%; height: 100%; }
+.video-upscale-play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: var(--overlay-weak); color: var(--text-on-brand-black); opacity: 0; pointer-events: none; transition: opacity 200ms ease-out; }
+.video-upscale-play > .icon { color: #fff; }
+.video-upscale-preview:is(:hover, :focus-visible) .video-upscale-play { opacity: 1; }
+.video-upscale-preview:focus-visible, .video-upscale-empty:focus-visible { outline: 2px solid var(--border-brand); outline-offset: -2px; border-radius: 12px; }
+.video-upscale-source .video-upscale-remove { position: absolute; top: 8px; right: 8px; width: 24px; min-width: 24px; height: 24px; min-height: 24px; padding: 0; border-radius: 999px; -webkit-backdrop-filter: blur(var(--background-blur-s)); backdrop-filter: blur(var(--background-blur-s)); opacity: 0; pointer-events: none; transition: opacity 200ms ease-out, background-color 200ms ease-out; }
+.video-upscale-source:is(:hover, :focus-within) .video-upscale-remove { opacity: 1; pointer-events: auto; }
+.video-upscale-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 100%; padding: 0; border: 0; background: transparent; color: var(--text-tertiary); font: inherit; font-size: 12px; line-height: 16px; cursor: pointer; transition: color 200ms ease-out; }
+.video-upscale-upload-icon { color: var(--text-secondary); }
+.video-upscale-empty:hover { color: var(--text-primary); }
+.video-upscale-resolution-field { height: 60px; }
+.video-upscale-resolutions { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px; }
+.fusion-node-action.video-upscale-workflow-action { height: 57px; flex: 0 0 57px; margin: 0; padding: 12px; }
+.video-upscale-workflow-action > .generate-task-button { flex: 1; min-width: 0; width: 100%; padding: 0 20px; font-size: 14px; line-height: 20px; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) {
+  .video-upscale-play, .video-upscale-source .video-upscale-remove, .video-upscale-empty { transition: none; }
+}

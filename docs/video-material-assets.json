@@ -1,0 +1,74 @@
+{
+  "fileKey": "1dBgOC793NRsKgbNIaLZMK",
+  "rootNodeId": "97:6649",
+  "sourceDate": "2026-10-22",
+  "downloadMethod": "curl -fL",
+  "assets": [
+    {
+      "slot": "remake",
+      "path": "public/assets/video-material-20261022/remake.svg",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/62725a00-8296-4360-a8e4-92e14f0afd28.svg",
+      "sourceNodeId": "I97:6650;1675:2981;112:7066;1782:23796",
+      "wrapperSizePx": 20,
+      "originalWidth": "20",
+      "originalHeight": "20",
+      "bytes": 2217,
+      "modifications": "none"
+    },
+    {
+      "slot": "modify",
+      "path": "public/assets/video-material-20261022/modify.svg",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/730c9922-5942-4b24-8911-4c0f9bd9471c.svg",
+      "sourceNodeId": "I97:6650;1675:2981;97:6682;1782:23796",
+      "wrapperSizePx": 20,
+      "originalWidth": "20",
+      "originalHeight": "20",
+      "bytes": 1585,
+      "modifications": "none"
+    },
+    {
+      "slot": "hd",
+      "path": "public/assets/video-material-20261022/hd.svg",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/d988a033-4362-4f3b-b80b-41dd6dd6a567.svg",
+      "sourceNodeId": "I97:6650;1675:2981;112:7074;1782:23796",
+      "wrapperSizePx": 20,
+      "originalWidth": "20",
+      "originalHeight": "20",
+      "bytes": 1370,
+      "modifications": "none"
+    },
+    {
+      "slot": "save",
+      "path": "public/assets/video-material-20261022/save.svg",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/3b762cdb-1cfa-473c-85c4-226d153ea8f7.svg",
+      "sourceNodeId": "I97:6650;1675:2985;97:6675;180:1971",
+      "wrapperSizePx": 20,
+      "originalWidth": "20",
+      "originalHeight": "20",
+      "bytes": 2006,
+      "modifications": "none"
+    },
+    {
+      "slot": "download",
+      "path": "public/assets/video-material-20261022/download.svg",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/02af6c11-4777-49b5-98d8-c4ef2fe9c466.svg",
+      "sourceNodeId": "I97:6650;1675:2985;97:6676;180:1971",
+      "wrapperSizePx": 20,
+      "originalWidth": "20",
+      "originalHeight": "20",
+      "bytes": 1125,
+      "modifications": "none"
+    },
+    {
+      "slot": "play",
+      "path": "public/assets/video-material-20261022/play.svg",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/836b4fa5-66e0-42f2-b2a3-24d53d6b5c89.svg",
+      "sourceNodeId": "I97:6653;139:1674",
+      "wrapperSizePx": 20,
+      "originalWidth": "20",
+      "originalHeight": "20",
+      "bytes": 443,
+      "modifications": "none"
+    }
+  ]
+}

@@ -1,0 +1,1471 @@
+{
+  "fileKey": "1dBgOC793NRsKgbNIaLZMK",
+  "route": "#/video-workspace",
+  "nodes": {
+    "initial": "64:2057",
+    "initialContent": "64:2059",
+    "initialEntries": "64:2061",
+    "singleImageCanvas": "76:5683",
+    "uploadedVideoCanvas": "97:6649",
+    "singleImageToolbar": "113:8878",
+    "singleImageToolbarInstance": "113:8879",
+    "imageMaterialGenerationMenu": "113:9464",
+    "imageVideoGenerationMenu": "113:9502",
+    "singleImage": "76:5776",
+    "fashionVideoFirstLastFrame": "84:6110",
+    "fashionVideoMultipleReferences": "121:17924",
+    "canvasSideToolbar": "76:5745",
+    "templateWithoutUploads": "64:4219",
+    "templateWithUploads": "76:5003",
+    "landscapeTemplate": "76:5477",
+    "emptyTemplate": "64:4644",
+    "uploadStates": "76:5455",
+    "videoGenerationSettings": "113:8302",
+    "videoGenerationFastSettings": "113:8633",
+    "videoGenerationProfessionalSettings": "113:8634",
+    "fashionVideoFirstLastFrameFilled": "119:11242",
+    "fashionVideoMultipleReferencesFilled": "121:18150",
+    "templateDetails": "76:5477",
+    "templateSubjectHover": "141:24346",
+    "templateModelHover": "141:24242",
+    "completedPage": "64:1901",
+    "blankCanvasMenu": "151:26421",
+    "videoAssetToolbar": "151:26425",
+    "videoUpscale": "141:26153",
+    "videoUpscaleEditor": "141:26204",
+    "templateReferenceRail": "171:30350"
+  },
+  "assets": {
+    "directory": "public/assets/video-workspace",
+    "imageToolbar": {
+      "updated": "2026-10-23",
+      "directory": "public/assets/video-image-toolbar-20261023",
+      "fileCount": 16,
+      "sourceNodes": [
+        "113:8878",
+        "113:9464",
+        "113:9502"
+      ],
+      "source": "Original SVGs from the current toolbar and standalone menus; standalone menu nodes override older embedded menu instances.",
+      "displaySize": 20,
+      "upscaleDisplaySize": 16
+    },
+    "initialIcons": "64:2057",
+    "initialEntryIcons": {
+      "updated": "2026-10-23",
+      "directory": "public/assets/video-entry-20261023",
+      "slotSize": 24,
+      "rootSize": 24,
+      "templates": {
+        "slot": "I64:2062;1782:24376",
+        "file": "templates.svg"
+      },
+      "quickImage": {
+        "slot": "I64:2063;1782:24376",
+        "file": "quick-image.svg"
+      },
+      "storyboardImage": {
+        "slot": "I64:2064;1782:24376",
+        "file": "storyboard-image.svg"
+      },
+      "fashionVideo": {
+        "slot": "I64:2204;1782:24376",
+        "file": "fashion-video.svg"
+      },
+      "proFashionVideo": {
+        "slot": "I64:2065;1782:24376",
+        "file": "pro-fashion-video.svg"
+      },
+      "upload": {
+        "slot": "I64:2068;781:7536",
+        "file": "upload.svg",
+        "size": 32
+      }
+    },
+    "uploadedVideoIcons": {
+      "nodeId": "97:6649",
+      "updated": "2026-10-22",
+      "directory": "public/assets/video-material-20261022",
+      "sourceManifest": "docs/video-material-assets.json",
+      "files": {
+        "remake": "remake.svg",
+        "modify": "modify.svg",
+        "hd": "hd.svg",
+        "saveAsset": "save.svg",
+        "download": "download.svg",
+        "play": "play.svg"
+      },
+      "size": 20
+    },
+    "upscaleIcon": {
+      "nodeId": "80:77",
+      "path": "public/assets/video-workspace/upscale.svg",
+      "displaySize": 16
+    },
+    "fashionVideoIcon": {
+      "nodeId": "64:4169",
+      "path": "public/assets/video-workspace/fashion-short-video.svg",
+      "displaySize": 20
+    },
+    "storyboardIcon": {
+      "nodeId": "64:4168",
+      "path": "public/assets/video-workspace/storyboard-to-video.svg",
+      "displaySize": 20
+    },
+    "workflowIcons": {
+      "directory": "public/assets/video-workflow",
+      "info": "64:2228",
+      "expandText": "3:868",
+      "auto": "84:6078",
+      "displaySize": 16,
+      "add": {
+        "nodeId": "64:2241",
+        "slot": "I84:6150;2575:3889;84:6126;1579:4104",
+        "file": "add.svg",
+        "displaySize": 20
+      }
+    },
+    "portraitPoster": {
+      "nodeId": "76:5023",
+      "width": 386,
+      "height": 686
+    },
+    "landscapePoster": {
+      "nodeId": "76:5591",
+      "width": 645,
+      "height": 359
+    },
+    "emptyIllustration": {
+      "nodeId": "6:317",
+      "width": 384,
+      "height": 384,
+      "displaySize": 128
+    },
+    "finalWorkflowNodes": {
+      "manifest": "docs/video-node-final-assets.json",
+      "originalSvgCount": 42,
+      "source": "Final short-video empty/filled and long-video empty/filled designs."
+    },
+    "templateReferences": {
+      "updated": "2026-10-23",
+      "directory": "public/assets/video-template-20261023",
+      "files": {
+        "subject-thumbnail.png": {
+          "nodeId": "141:24190",
+          "displaySize": [
+            90,
+            120
+          ]
+        },
+        "model-thumbnail.png": {
+          "nodeId": "141:24193",
+          "displaySize": [
+            90,
+            120
+          ]
+        },
+        "subject-back.png": {
+          "nodeId": "I141:24350;1157:8572",
+          "displaySize": [
+            245.06886,
+            320
+          ]
+        },
+        "model-preview.png": {
+          "nodeId": "I141:24324;1157:8572",
+          "displayFrame": [
+            183.801651,
+            240
+          ],
+          "imageSize": [
+            196,
+            261.3
+          ],
+          "runtimeSizing": "Fixed 256px outer popover height, including 4px padding and 1px border on each side. Image frame height is 246px; width follows intrinsic aspect ratio for all orientations. Clamp width at the right viewport edge and use contain without cropping; do not shrink the outer height."
+        },
+        "subject-front.jpg": {
+          "nodeId": "I141:24347;1157:8572",
+          "intrinsicSize": [
+            932,
+            1400
+          ],
+          "mimeType": "image/jpeg",
+          "displaySizing": "Fixed 256px outer popover height, including 4px padding and 1px border on each side. Image frame height is 246px; width follows intrinsic aspect ratio for all orientations. Clamp width at the right viewport edge and use contain without cropping; do not shrink the outer height."
+        },
+        "subject-previous.svg": {
+          "nodeId": "I141:25142;334:2319",
+          "displaySize": [
+            16,
+            16
+          ]
+        },
+        "subject-next.svg": {
+          "nodeId": "I141:25138;334:2313",
+          "displaySize": [
+            16,
+            16
+          ]
+        },
+        "brand-subject.png": {
+          "nodeId": "141:24219",
+          "intrinsicSize": [
+            1536,
+            2752
+          ],
+          "template": "brand",
+          "usage": "Original subject thumbnail and full hover image"
+        },
+        "brand-model.png": {
+          "nodeId": "141:24222",
+          "intrinsicSize": [
+            384,
+            652
+          ],
+          "template": "brand",
+          "usage": "Original model thumbnail and full hover image"
+        },
+        "thumbnail-next.svg": {
+          "nodeId": "I171:30376;176:1929",
+          "component": "121:15558",
+          "displaySize": [
+            16,
+            16
+          ],
+          "usage": "Right arrow in the 20px Tonal thumbnail rail button"
+        }
+      },
+      "source": "Original Figma image exports; static template references are separate from user replacement uploads."
+    },
+    "blankCanvasMenu": {
+      "nodeId": "151:26421",
+      "directory": "public/assets/video-context-20261023",
+      "size": 20,
+      "files": {
+        "quick.svg": "https://www.figma.com/api/mcp/asset/9c247dda-c0b2-41c7-8301-66cb48a88e9b.svg",
+        "storyboard-image.svg": "https://www.figma.com/api/mcp/asset/3736221c-ba7b-4d80-b374-dbe960e8decf.svg",
+        "multi-view.svg": "https://www.figma.com/api/mcp/asset/78ece6e8-6bc1-4f16-8381-a42411bd351d.svg",
+        "fashion-video.svg": "https://www.figma.com/api/mcp/asset/4b095811-1631-474a-a71b-f1beea8933e2.svg",
+        "pro-fashion-video.svg": "https://www.figma.com/api/mcp/asset/23b3d235-eaa9-4b3a-9248-8e26aca34aff.svg",
+        "storyboard-video.svg": "https://www.figma.com/api/mcp/asset/e23ecc5d-479e-4d38-9bcc-969118d966fb.svg",
+        "upload.svg": "https://www.figma.com/api/mcp/asset/4c027aa8-7046-471a-bd61-9a9a1b496f64.svg",
+        "paste.svg": "https://www.figma.com/api/mcp/asset/3062cb88-69e2-489f-bb8f-b7c8f110f6fc.svg"
+      }
+    }
+  },
+  "media": {
+    "player": "native HTML video controls with contain sizing",
+    "portraitSource": {
+      "asset": "public/assets/video-workspace/ecommerce.mp4",
+      "userFile": "视频工作台-2026-10-21 21-31-38.mp4",
+      "width": 1176,
+      "height": 1756,
+      "durationSeconds": 10.04,
+      "bytes": 5670483,
+      "poster": "public/assets/video-workspace/ecommerce-poster-20261021-213138.png",
+      "posterSource": "First frame extracted from the replacement user video; original MP4 copied without transcoding.",
+      "cacheVersion": "20261021-213138",
+      "updated": "2026-10-23"
+    },
+    "landscapeSource": {
+      "asset": "public/assets/video-workspace/brand-story.mp4",
+      "userFile": "视频工作台-2026-10-21 13-38-58.mp4",
+      "width": 1928,
+      "height": 1072,
+      "durationSeconds": 15.25,
+      "bytes": 11079896
+    },
+    "mapping": "User-supplied original MP4 files matched by orientation; copied without transcoding.",
+    "fallback": "Commerce uses the replacement video first frame; brand story retains its original Figma media-layer poster. Both retain the loading-error notice."
+  },
+  "initialEntries": {
+    "nodeId": "64:2061",
+    "updated": "2026-10-23",
+    "sectionNodeId": "64:2059",
+    "headline": "从一个视频想法开始",
+    "intro": "从下方选择一个功能查看示例或点击添加素材，开启您的创作",
+    "labels": [
+      "视频模版",
+      "快捷生图",
+      "分镜图",
+      "服装短视频",
+      "专业服装视频"
+    ],
+    "entryNodeIds": [
+      "64:2062",
+      "64:2063",
+      "64:2064",
+      "64:2204",
+      "64:2065"
+    ],
+    "button": {
+      "variant": "Outline L",
+      "width": "max-content",
+      "horizontalPadding": 24,
+      "chineseDesignWidths": [
+        144,
+        144,
+        128,
+        160,
+        176
+      ],
+      "stroke": "1px inset, excluded from layout",
+      "height": 48,
+      "radius": 12,
+      "iconSize": 24,
+      "contentGap": 8
+    },
+    "gap": 16,
+    "chineseDesignWidth": 816,
+    "sectionGap": 32,
+    "headlineGap": 4,
+    "upload": {
+      "nodeId": "64:2068",
+      "width": 640,
+      "height": 360,
+      "radius": 16,
+      "maxWidth": "100%",
+      "align": "center",
+      "iconSize": 32
+    },
+    "responsive": "Retain wrapping and scrolling on small viewports; buttons follow content width and the upload area stays within its container. Existing padding rules at 850px width or 760px height remain; at 680px width the upload height remains 280px.",
+    "badge": {
+      "label": "NEW",
+      "nodeId": "64:2066",
+      "left": 109,
+      "top": -8,
+      "height": 20
+    },
+    "interaction": "Templates opens the existing modal; fashion short video creates an empty frames node, and professional fashion video creates an empty references/long-video node, using the same creation functions as the image toolbar. Quick image and storyboard image show explicit service-not-connected feedback. Upload behavior is unchanged."
+  },
+  "singleImageCanvas": {
+    "designSize": {
+      "width": 1920,
+      "height": 1080
+    },
+    "imageExample": {
+      "x": 780,
+      "y": 312,
+      "width": 360,
+      "height": 560,
+      "radius": 16
+    },
+    "imageContent": "Dynamic uploaded image, preserving its original aspect ratio. The 360 x 560 design example is not a fixed canvas material size.",
+    "toolbar": {
+      "nodeId": "113:8878",
+      "instanceId": "113:8879",
+      "updated": "2026-10-23",
+      "width": "max-content",
+      "textButtonWidth": "auto",
+      "textButtonPaddingInline": 8,
+      "height": 40,
+      "gapToImage": 16,
+      "radius": 12,
+      "groupGap": 4,
+      "groups": [
+        [
+          "materialGeneration",
+          "videoGeneration",
+          "separator"
+        ],
+        [
+          "cutout",
+          "upscale",
+          "separator"
+        ],
+        [
+          "saveAsset",
+          "download",
+          "sendImage"
+        ]
+      ],
+      "buttonHeight": 32,
+      "chineseButtonWidths": {
+        "materialGeneration": 112,
+        "videoGeneration": 112,
+        "cutout": 64,
+        "upscale": 84,
+        "iconOnly": 32
+      },
+      "localization": "Chinese, English and Japanese; text controls and toolbar size to their contents.",
+      "scope": "Video-workspace image selection only. Preserve fusion-canvas and uploaded-video toolbars."
+    },
+    "hoverMenus": {
+      "materialGeneration": {
+        "nodeId": "113:9464",
+        "labelsZh": [
+          "快捷生图",
+          "多视角",
+          "分镜图",
+          "宫格图切分"
+        ],
+        "actions": [
+          "quickEdit",
+          "multiView",
+          "storyboardImage",
+          "gridSplit"
+        ],
+        "behavior": "Create the matching quick-image, multiple-views, storyboard-image or grid-crop editor and inherit the selected canvas image. Uploads and references are editable; generation services are not connected.",
+        "height": 160
+      },
+      "videoGeneration": {
+        "nodeId": "113:9502",
+        "labelsZh": [
+          "服装短视频",
+          "专业服装视频",
+          "分镜成片",
+          "视频复刻"
+        ],
+        "actions": [
+          "fashionVideo",
+          "multiReference",
+          "storyboard",
+          "videoRemake"
+        ],
+        "behavior": "Create the short-video or professional-fashion-video editor with matching title and preserve existing generation rules. Both inherit the selected image and automatic business line in one undo transaction. Storyboard video and video remake are not connected.",
+        "height": 160
+      },
+      "panel": {
+        "width": 160,
+        "height": "Content-sized: material generation and video generation each have four rows, 160px.",
+        "padding": 4,
+        "gap": 8,
+        "rowHeight": 32,
+        "radius": 12,
+        "itemRadius": 8,
+        "iconSize": 20,
+        "fontSize": 14,
+        "lineHeight": 20,
+        "tokens": "Use semantic floating surface, border and shadow tokens; active trigger uses Text/brand and State/hover."
+      },
+      "reuse": "Reuse v5.4 useHoverDismiss and ElementSendMenu's combined hover area, adapting the current DownloadFormatMenu top-layer positioning and keyboard behavior with usePresence.",
+      "interaction": "Open on trigger hover; keep open across the combined trigger/menu hit area with a 120ms pointer-intent dismissal delay and 200ms ease-out visual motion. Also support click and keyboard. Menus are mutually exclusive; Escape, outside interaction or changing the selected image closes them. Follow the toolbar as the canvas moves and avoid viewport edges. Support dark/light themes and Chinese/English/Japanese.",
+      "otherActions": "Storyboard video and video remake are the third and fourth video-generation menu items. Reuse real cutout editing and click-open PNG/JPG/AVIF downloads. Storyboard video, video remake, upscale, save to assets and send remain not connected.",
+      "sourceRule": "Use standalone nodes 113:9464 and 113:9502 for styling, with the latest user instructions moving storyboard video and video remake into the image toolbar's video-generation menu."
+    },
+    "initialAlignment": "Center image and toolbar together inside the canvas below the 48px topbar; keep toolbar at UI scale.",
+    "sideToolbar": {
+      "width": 56,
+      "height": 104,
+      "padding": 8,
+      "gap": 8,
+      "buttonSize": 40
+    },
+    "downloadMenu": {
+      "source": "v5.4 src/components/DownloadFormatMenu.tsx, src/workbench.css, src/full-image-viewer.css, src/download-image.ts",
+      "formats": [
+        "PNG",
+        "JPG",
+        "AVIF"
+      ],
+      "labels": "Format names only, without a Download prefix.",
+      "width": 144,
+      "padding": 4,
+      "gap": 4,
+      "rowHeight": 32,
+      "radius": 12,
+      "export": "Original pixel dimensions; white background for JPG; validate actual encoded MIME and report unsupported formats."
+    },
+    "assetAction": {
+      "toolbarInstance": "113:8879",
+      "assetDirectory": "public/assets/video-image-toolbar",
+      "meaning": "Save to assets; retain the original asset-center artwork and the not-connected action feedback."
+    }
+  },
+  "uploadedVideoCanvas": {
+    "nodeId": "97:6649",
+    "exampleSize": {
+      "width": 360,
+      "height": 560
+    },
+    "content": "Uploaded video's actual first frame, retaining natural aspect ratio; decoded locally, never auto-playing on the canvas.",
+    "toolbar": {
+      "height": 40,
+      "width": "max-content",
+      "gapToVideo": 16,
+      "actions": [
+        "remakeVideo",
+        "modifyVideo",
+        "hdVideo",
+        "divider",
+        "saveAsset",
+        "download"
+      ],
+      "designWidthZh": 381,
+      "padding": 4,
+      "groupGap": 4,
+      "itemGap": 4,
+      "radius": 12,
+      "actionWidthsZh": [
+        88,
+        88,
+        112,
+        1,
+        32,
+        32
+      ],
+      "iconSize": 20,
+      "fontSize": 12,
+      "lineHeight": 20,
+      "hdGeometry": "Video upscale label hugs its content; 112px in Chinese at the current font and padding, no fixed width.",
+      "nodeId": "151:26425"
+    },
+    "playButton": {
+      "size": 32,
+      "inset": 8,
+      "radius": 999,
+      "iconSize": 20
+    },
+    "upload": "Opt-in mixed image/video AssetPicker batch up to 20 files; direct canvas drop also supported. Videos stay out of image-only pickers.",
+    "download": "Original local video URL, filename and format; no image conversion or format menu.",
+    "canvas": "Shared Flow selection, movement, zoom, delete, arrange, fit and undo/redo. Retain video URLs across history and release on workspace unmount.",
+    "preview": "Reuse FullVideoViewer / FullScreenViewer with native controls, full-viewport overlay, Escape and close button; pause on close or workspace switch.",
+    "updated": "2026-10-23",
+    "unconnectedActions": [
+      "remakeVideo",
+      "modifyVideo",
+      "saveAsset"
+    ],
+    "sourceManifest": "docs/video-material-assets.json",
+    "upscaleAction": "Creates the 320x505 video upscale editor, inheriting the selected video and an automatic business association in one undo action."
+  },
+  "fashionVideoWorkflow": {
+    "modes": [
+      "frames",
+      "references"
+    ],
+    "sourceGap": 80,
+    "referenceTileSize": 64,
+    "promptLimit": 5000,
+    "generationSettings": {
+      "summaryOrder": [
+        "generationMode",
+        "ratio",
+        "resolution",
+        "duration"
+      ],
+      "summaryIcon": "Both short and professional fashion video use the original 16px Icon/Editor edit-parameters SVG.",
+      "source": "Live Figma 113:8633 / 113:8634 on 2026-10-23: 333×380 panels, 自适应 ratio label, 样片模式 label for 480p, and professional-only resolution info icon with right-side Tooltip 173:31728 (user override; fast mode has no info icon). Reuse original Beta controls and semantic theme tokens.",
+      "component": "src/components/VideoGenerationSettings.tsx",
+      "assetDirectory": "public/assets/video-settings",
+      "wideRatioIcon": {
+        "ratio": "21:9",
+        "slot": "I113:8302;891:4593;113:8552;2879:9636;113:8549",
+        "file": "parameter-21-9.svg",
+        "source": "Original SVG exported from the visible 21:9 option in Figma 113:8302."
+      },
+      "panelWidth": 333,
+      "ratios": [
+        "auto",
+        "21:9",
+        "9:16",
+        "16:9",
+        "1:1",
+        "3:4",
+        "4:3"
+      ],
+      "resolutionsByMode": {
+        "fast": [
+          "768p",
+          "2K"
+        ],
+        "professional": [
+          "480p",
+          "720p",
+          "1080p"
+        ]
+      },
+      "defaultResolutionByMode": {
+        "fast": "768p",
+        "professional": "480p"
+      },
+      "modeChange": "Normalize against the target mode. Unsupported resolution falls back to 480p for professional or 768p for fast. Fast mode forces audio to auto and clamps durations to 5–15 seconds. Professional supports 5–30 seconds. Commit mode and normalized settings in one undo action. Preserve valid existing values, ratio, prompt and media.",
+      "interaction": "Mode, ratio, resolution and audio apply without closing. Both editors use one trigger summarizing mode | ratio | resolution | duration. Audio remains outside the summary. Preserve per-node state, undo, keyboard, outside-click/Escape dismissal, dark/light themes and 200ms exit motion.",
+      "durationOptions": {
+        "userOverride": "2026-10-26: Replace the duration slider with directly visible single-choice options in both modes.",
+        "implementation": "ParameterSegments in src/components/VideoGenerationSettings.tsx; reuse resolution/audio segmented controls and theme tokens.",
+        "unit": "seconds",
+        "optionsByMode": {
+          "fast": [5, 10, 15],
+          "professional": [5, 10, 15, 20, 25, 30]
+        },
+        "layout": "One row of equal-width options; all three locales use the s suffix (5s, 10s, etc.) and the existing selected state.",
+        "input": { "enabled": false },
+        "slider": { "enabled": false },
+        "interaction": "Select immediately without closing the menu; one undo record per change. Support arrow keys, Home and End.",
+        "normalization": "Round existing off-step durations to the nearest five seconds within the mode range.",
+        "modeChange": "Switching to fast clamps durations above 15 seconds to 15; commit mode, duration and resolution/audio normalization together as one undo transaction."
+      },
+      "nodeId": "113:8302",
+      "nodeIdByGenerationMode": {
+        "fast": "113:8633",
+        "professional": "113:8634"
+      },
+      "panelHeight": 380,
+      "panel": {
+        "geometrySource": "Latest Figma 113:8633 / 113:8634: both panels are 333×380px, with 309px content width and five groups.",
+        "background": "Surface/default",
+        "padding": 12,
+        "radius": 16,
+        "border": "1px Border/weak overlay; does not consume layout space.",
+        "groups": [
+          "generationMode",
+          "ratio",
+          "resolution",
+          "duration",
+          "audio"
+        ],
+        "groupGap": 16,
+        "labelFontSize": 12,
+        "labelLineHeight": 16,
+        "labelColor": "Text/tertiary",
+        "labelToControlGap": 8,
+        "overflow": "Scroll inside the panel when available viewport space is insufficient.",
+        "colorTokens": {
+          "source": "Latest color-token update in Figma 113:8633 and 113:8634, 2026-10-23.",
+          "segmentBackground": "Control/fill/hover",
+          "selectedBackground": "State/selected",
+          "defaultText": "Text/tertiary",
+          "selectedText": "Text/primary",
+          "selectedModeText": "Text/brand",
+          "scope": "Apply to generation mode, aspect ratio, resolution and audio in both video menus. Resolve existing semantic tokens in Dark and Light; material-generation menu colors remain independent."
+        },
+        "modeControl": {
+          "height": 32,
+          "selectedText": "Text/brand",
+          "itemRadius": 6,
+          "background": "Control/fill/hover",
+          "selectedBackground": "State/selected"
+        }
+      },
+      "ratioAutoLabel": "自适应 in Chinese, Auto in English, 自動 in Japanese; stored value remains auto. Menu and trigger summary use the same localized label.",
+      "ratioControl": {
+        "itemHeight": 42,
+        "wrapperPadding": 4,
+        "height": 50,
+        "width": 309
+      },
+      "resolutionControlHeight": 32,
+      "audio": {
+        "optionsByMode": {
+          "fast": [
+            "auto"
+          ],
+          "professional": [
+            "auto",
+            "mute"
+          ]
+        },
+        "default": "auto",
+        "labelsZh": {
+          "auto": "智能",
+          "mute": "静音"
+        },
+        "controlHeight": 32,
+        "behavior": "Fast mode has the fixed auto option; professional mode can select auto or mute, defaulting to auto. Switching back to fast resets audio to auto. Audio generation service is not connected."
+      },
+      "finalDesignValues": "New short editors default to fast / auto / 768p / 5s; professional fashion editors retain professional / auto / 480p / 30s. Existing valid settings are preserved. Filled-node sample text, sample images and the menu screenshot durations are not prefilled into user nodes.",
+      "updated": "2026-10-23",
+      "summaryOrderByEditor": {
+        "frames": [
+          "generationMode",
+          "ratio",
+          "resolution",
+          "duration"
+        ],
+        "references": [
+          "generationMode",
+          "ratio",
+          "resolution",
+          "duration"
+        ]
+      },
+      "resolutionLabelsZh": {
+        "480p": "样片模式",
+        "720p": "720p",
+        "1080p": "1080p",
+        "768p": "768p",
+        "2K": "2K"
+      },
+      "modeLabelsZh": {
+        "fast": "快捷模式",
+        "professional": "专业模式"
+      },
+      "triggerSource": "Figma 119:11243 generation-settings field: one 296x32px selector, mode | ratio | resolution | duration, existing Beta Select tokens. Applies to both video editors by user request.",
+      "resolutionHelp": {
+        "icon": "public/assets/video-settings/resolution-info.svg",
+        "sourceNodes": [
+          "I113:8302;891:4593;173:31735",
+          "I113:8635;891:4593;173:31723"
+        ],
+        "assetUrl": "https://www.figma.com/api/mcp/asset/8b4f0923-fe45-4930-8869-c1f609646c92.svg",
+        "iconSize": 16,
+        "headingGap": 4,
+        "tooltipNode": "173:31728",
+        "tooltipWidth": 200,
+        "placement": "Right, with existing shared Tooltip viewport fallback.",
+        "textZh": "480P低成本快速出片，满意后选中视频进行高清放大",
+        "interaction": "Only professional mode renders the info icon beside the resolution heading and its hover/keyboard-focus tooltip. Fast mode has neither icon nor tooltip, since it has no 480p option. Reuse TooltipHost without changing settings.",
+        "visibleInModes": [
+          "professional"
+        ]
+      }
+    },
+    "costLabel": "999",
+    "interaction": "Short-video editors retain separate main and optional endFrame fields. Long-video editors show separate image and video reference rows, with independent uploads and counts: up to 9 images including inherited main, and 3 videos. Reorder and renumber within the same media type only; preserve each source binding and inherited main identity. Each node image-picker confirmation creates a fresh UUID canvas image; the same URL may be selected again in later confirmations and counts separately. Deduplicate images by URL only within one confirmation batch. Videos retain URL deduplication and existing canvas-source reuse. Every editor input has a canvas media source and a fixed automatic business association. Non-interactive editor space remains draggable.",
+    "generation": "Disable the native generation button until required inputs are complete: short video needs a main image and non-whitespace prompt, with an optional end frame; professional video needs at least one image or video and a non-whitespace prompt. Video-only references are valid. The callback uses the same readiness predicate and returns when incomplete without opening a picker or focusing an empty field. Ready video editors append a fixed local demo video bound to the generating editor. Real AI generation and smart expansion services are not connected. Smart expansion only saves configuration; it never rewrites content, creates tasks or charges.",
+    "geometryByMode": {
+      "frames": {
+        "emptyNodeId": "84:6110",
+        "filledNodeId": "119:11242",
+        "updated": "2026-10-23",
+        "title": "服装短视频",
+        "width": 320,
+        "height": 641,
+        "headerHeight": 80,
+        "bannerHeight": 28,
+        "banner": "上传首尾帧图片，智能生成短视频",
+        "tabs": false,
+        "contentGap": 16
+      },
+      "references": {
+        "emptyNodeId": "121:17924",
+        "filledNodeId": "121:18150",
+        "updated": "2026-10-23",
+        "title": "专业服装视频",
+        "width": 320,
+        "height": 661,
+        "headerHeight": 80,
+        "bannerHeight": 28,
+        "banner": "支持上传图片/视频作为参考，生成最多30s视频",
+        "tabs": false,
+        "contentGap": 16
+      }
+    },
+    "firstLastFrameLayout": {
+      "title": "服装短视频",
+      "mainRequired": true,
+      "endFrameRequired": false,
+      "uploadCard": {
+        "width": 296,
+        "height": 64
+      },
+      "thumbnail": {
+        "width": 48,
+        "height": 48
+      },
+      "order": [
+        "main",
+        "endFrame"
+      ],
+      "emptyEntry": "Keep independent main-image and optional end-frame upload cards, using the existing single-image AssetPicker.",
+      "removal": "Hover delete is at the thumbnail top right. Delete clears only that frame and retains the canvas source, editor, prompt, settings and other frame. Remove the source/editor line only when no remaining slot uses it. End frame is never promoted to main. Support undo.",
+      "entry": "Initial videoGeneration creates the empty short-video editor. The image toolbar short-video action inherits the actual selected image.",
+      "connections": {
+        "maximumImages": 2,
+        "binding": "Both main and endFrame retain their canvas source association. Each image selected inside the editor creates a fresh UUID canvas image and automatic business line in one undo transaction, including the same image selected separately for main and end frame. Place each image 80 units left of the editor with collision avoidance. The image-toolbar entry keeps the inherited original image ID. Draw one line per source ID/editor pair; distinct IDs sharing a URL remain distinct lines. No ports, free edges or manual reconnect interactions."
+      }
+    },
+    "multipleReferenceLayout": {
+      "emptyNodeId": "121:17924",
+      "filledNodeId": "121:18150",
+      "title": "专业服装视频",
+      "required": true,
+      "tileSize": 64,
+      "rows": [
+        "images",
+        "videos"
+      ],
+      "imageLimit": 9,
+      "videoLimit": 3,
+      "mainCountsTowardImageLimit": true,
+      "upload": "Separate image and video upload actions with separate current/maximum counts. Decode local videos before applying; errors preserve existing content. Every accepted image creates a fresh UUID canvas image 80 units left of the editor with collision avoidance, even if its URL already exists on the canvas or in the node. Bind each new image to this editor atomically with the batch. Videos retain existing media-kind/URL reuse and deduplication.",
+      "ordering": "Reorder only within the same media type. The dragged tile follows the pointer directly; adjacent tiles shift to make room with 200ms ease-out motion. Release immediately applies final positions and numbering, cancels unfinished position animations and adds no settling animation. Alt+Left/Right reorder retains 200ms ease-out position animation; reduced motion switches immediately. Dragging previews order only; drop commits once as one undo action, while cancellation immediately restores the original order without adding history. Preserve canvas media IDs, every source binding, inherited main identity and automatic links; never rebind by position.",
+      "media": "Preview and top-right hover delete for every thumbnail. Delete clears only that reference, retaining the canvas source and editor configuration; remove its automatic line only when no other input uses that source. Canvas videos retain the original video and poster for playback and download.",
+      "deduplication": "Images: deduplicate by URL only within a single confirmed batch; do not exclude inherited-main or existing-reference URLs from the image picker. Later confirmations may add the same URL again, each with a new canvas ID, independent capacity count and line. Reference identity uses sourceImageId, falling back to reference.id for legacy inputs. Videos: retain URL deduplication across current references in picker exclusions and local confirmation.",
+      "generationRequirement": "At least one image or video plus a non-empty prompt; video-only references are valid."
+    },
+    "sharedGenerationControls": {
+      "editors": [
+        "frames",
+        "references"
+      ],
+      "generationModes": [
+        "fast",
+        "professional"
+      ],
+      "defaultsByEditor": {
+        "frames": "fast, auto, 768p, 5s, audio auto",
+        "references": "professional, auto, 480p (样片模式), 30s, audio auto"
+      },
+      "existingValues": "Retain valid existing per-node choices; only newly created short-video nodes and unsupported fast-mode resolution fallback use 768p. Use shared menus and Beta Slider.",
+      "footer": "One full-width generation button with unchanged cost 999.",
+      "layoutByEditor": {
+        "frames": {
+          "combinedControlWidth": 296,
+          "summary": "mode | ratio | resolution | duration",
+          "icon": "Icon/Editor edit-parameters"
+        },
+        "references": {
+          "combinedControlWidth": 296,
+          "summary": "mode | ratio | resolution | duration",
+          "icon": "Icon/Editor edit-parameters"
+        }
+      },
+      "combinedControlWidth": 296,
+      "controlHeight": 32,
+      "modeSelection": "Inside the existing expanded generation settings menu; retain selected values and new-editor Auto defaults."
+    },
+    "editorSelection": "Image-toolbar and blank-canvas menu create separate short or professional fashion video editors. Image-toolbar creation inherits the actual selected image; blank-canvas creation uses the right-click world position. No mode tabs or free connections.",
+    "defaultSettingsByMode": {
+      "frames": {
+        "resolution": "768p",
+        "duration": "5s",
+        "ratio": "auto",
+        "generationMode": "fast",
+        "audio": "auto"
+      },
+      "references": {
+        "resolution": "480p",
+        "duration": "30s",
+        "ratio": "auto",
+        "generationMode": "professional",
+        "audio": "auto"
+      }
+    },
+    "promptTools": {
+      "maxLength": 5000,
+      "component": "PromptTools",
+      "flows": [
+        "expand editor",
+        "save prompt",
+        "prompt library",
+        "nested library return"
+      ],
+      "inlineFooter": [
+        "expand editor",
+        "save prompt",
+        "prompt library",
+        "character counter"
+      ],
+      "expandedFooter": [
+        "save prompt",
+        "prompt library",
+        "character counter",
+        "clear"
+      ],
+      "smartExpand": {
+        "labelZh": "智能扩写",
+        "field": "VideoWorkflow.smartExpand",
+        "type": "optional boolean",
+        "default": false,
+        "placement": "Right of the inline video-description title; synchronized in the expanded header through PromptTools.expandedHeaderAction.",
+        "state": "Per node, with missing values treated as false. Share one state between inline and expanded controls. Existing configuration commit and undo/redo apply. Typing, clearing and applying prompts do not change the setting.",
+        "service": "Configuration only; no automatic text rewrite or AI request.",
+        "component": "src/components/Switch.tsx and src/components/switch.css",
+        "size": {
+          "width": 32,
+          "height": 18,
+          "thumb": 14,
+          "inset": 2,
+          "checkedTranslateX": 14,
+          "radius": 999
+        },
+        "labelRow": {
+          "height": 20,
+          "gap": 4,
+          "paddingInline": 4,
+          "fontSize": 12,
+          "lineHeight": 20,
+          "fontWeight": 500,
+          "textToken": "Text/tertiary"
+        },
+        "tokens": {
+          "offBackground": "Border/medium",
+          "offInsetBorder": "1px Border/weak",
+          "onBackground": "Brand/primary",
+          "onHoverBackground": "Brand/primary-hover",
+          "onBorder": "none",
+          "thumb": "Control/fill/white",
+          "thumbShadow": "0 6px 14px -2px Overlay/weak",
+          "disabledOpacity": 0.4
+        },
+        "motion": "200ms ease-out for thumb and colors; immediate with reduced motion.",
+        "accessibility": "Focusable switch with aria-checked; keyboard activation and disabled state; interaction does not drag the node.",
+        "source": {
+          "fileKey": "1dBgOC793NRsKgbNIaLZMK",
+          "readDate": "2026-10-23",
+          "pageId": "64:1901",
+          "componentSetId": "136:23746",
+          "offDefault": {
+            "nodeId": "136:23747",
+            "key": "34442ab65c1b9282e09ed9d8fcc95d4c9a373967"
+          },
+          "onDefault": {
+            "nodeId": "137:18",
+            "key": "57a228db4ed8b50d9622cdbdb705e4c99e6209dd"
+          },
+          "offHover": "137:2",
+          "onHover": "137:20",
+          "offDisabled": "137:4",
+          "onDisabled": "137:22"
+        },
+        "handoff": "docs/video-smart-expand-handoff.md"
+      },
+      "archivedEffect": {
+        "status": "Reusable components retained; not rendered in current video nodes or their expanded editor.",
+        "components": [
+          "PromptAssistButton",
+          "GradientText"
+        ],
+        "handoff": "docs/video-prompt-assist-handoff.md"
+      }
+    }
+  },
+  "scope": [
+    "topbar entry",
+    "canvas initialization",
+    "image and video uploads",
+    "single image canvas and toolbar",
+    "image toolbar material and video generation hover menus",
+    "uploaded video canvas and toolbar",
+    "separate fashion short-video and long-video editors",
+    "reference image and video uploads",
+    "template dialog and reference image states",
+    "material generation editors and settings",
+    "blank-canvas grouped creation menu",
+    "video upscale editor"
+  ],
+  "userOverrides": {
+    "fixedBusinessAssociations": {
+      "mode": "Use the same fixed business association model as the fusion canvas. Retain normal video editors, editor uploads, reference videos and canvas media interactions.",
+      "creation": "Image toolbar video-generation actions create a short-video or long-video editor and inherit the selected canvas image ID in one undo transaction. Every main, end-frame and image-reference selection inside an editor creates a fresh UUID canvas image and automatic association, even for an already present URL; commit each confirmation batch and its bindings together. Video-reference uploads retain existing canvas-video reuse and URL deduplication. The initial entry creates an empty short editor; long editors have no hidden main-image requirement.",
+      "interaction": "Do not show connection ports or provide free dragging, reconnection, selectable-edge deletion or port plus menus. Automatic lines do not intercept pointer input.",
+      "geometry": "Automatic business lines use the fusion canvas geometry and follow the actual relative left/right positions of media and editor.",
+      "selection": "Selecting either endpoint shows a brand-color marching line over a dark underlay at layer 4. Otherwise show a gray solid line at layer -1. Do not highlight unrelated branches through group association.",
+      "motion": "Marching line uses an 800ms linear loop; color transitions retain 200ms ease-out. Reduced motion disables marching.",
+      "clipboard": "Copy selected image and video media only. Do not copy editors, free relationships or connections back to original nodes.",
+      "canvasMedia": "Each image confirmed through any video-workspace node picker creates a fresh UUID canvas image instead of reusing an existing URL. This covers material references, grid-split input, back image, short-video main/end frame and professional-video image references. New images use the shared landscape-height/portrait-width limit of 360px and 360px square rule, sit 80 units left of the editor and avoid existing content and earlier images in the batch. Separate confirmations may repeat a URL and count independently; only the current multi-select batch deduplicates by URL. Toolbar-created nodes retain the selected original canvas image identity. Videos continue to reuse an existing same-kind/same-URL canvas source without moving or duplicating it, retaining the original file and poster.",
+      "edgeIdentity": "Draw one automatic business line per distinct canvas source ID/editor pair, including every main, end frame and image/video reference. Different image IDs sharing a URL keep independent lines. Keep a line while any input in that editor still uses its source ID.",
+      "removal": "Removing an editor slot/reference detaches only that input and retains canvas media. Deleting canvas media clears all bound slots/references across editors while retaining editors, prompts, settings and unrelated inputs. Deleting an editor retains canvas media. Undo restores media, inputs and derived lines together.",
+      "arrangement": "Group all connected input media and editors for video-canvas arrangement. Position each canvas source ID and editor only once; do not collapse separate images sharing a URL. Retain reference order and business associations, then fit all content."
+    },
+    "workflowMainImageRemoval": "Every frame and reference thumbnail supports preview and top-right hover delete. Removing a slot clears only that input, retains canvas media and editor configuration, and removes the line only if no other input uses that source. End frame stays independent and is not promoted. Deleting canvas media clears all of its bindings across editors. All changes support coherent undo.",
+    "desktopDialogHeight": 720,
+    "templateSidebar": "Use the same sidebar in content and empty states: 256px desktop width, shared spacing and selection styles, no horizontal divider below the title.",
+    "referenceImagePicker": "Reuse the existing AssetPicker in single-image mode for adding and replacing garment/model images. Local uploads apply directly after decoding, without a second Use action.",
+    "referenceImageHover": "Clip the image and hover overlay inside rounded containers.",
+    "referenceDeleteOverlay": "Place the 24px circular Tonal delete action across the thumbnail top-right corner, offset -8px on both axes. Use BackgroundBlur/S via --background-blur-s with the existing dark media overlay and white icon. Clip only the inner preview, and reserve scroll-container space so the action remains visible and clickable.",
+    "workflowBlankAreaDrag": "Non-interactive editor space, including blank areas beside frame/reference thumbnails, drags the node. Reference ordering, upload, preview, delete and form controls retain their own interactions.",
+    "nodeImagePickerIdentity": {
+      "updated": "2026-10-23",
+      "source": "User requested a newly added canvas image even when the node picker selects the same image again.",
+      "scope": [
+        "material references",
+        "grid split input",
+        "back reference",
+        "short-video main frame",
+        "short-video end frame",
+        "professional-video image references"
+      ],
+      "identity": "Fresh UUID and sourceImageId binding for every accepted image selection, including repeated URLs across confirmations.",
+      "deduplication": "URL deduplication only within one confirmed image batch; independent later selections count separately toward capacity.",
+      "placement": "80 units left of the current editor, avoiding existing and newly added content.",
+      "history": "Commit the entire new image batch and current-node bindings as one undo action; removing references preserves their canvas images.",
+      "preserved": "Image-toolbar node creation inherits the selected original image ID. Video-file URL reuse and deduplication remain unchanged."
+    }
+  },
+  "deferred": [
+    "multiple image visual design",
+    "video remake and editing",
+    "storyboard-to-video workflow",
+    "video generation service",
+    "material generation services",
+    "image upscale workflow",
+    "video upscale service",
+    "save to assets",
+    "send image",
+    "AI smart prompt expansion",
+    "image to prompt"
+  ],
+  "verification": {
+    "browser": "not run, per user instruction",
+    "localBuildAndTests": "not run for the completed-page alignment, per user instruction",
+    "deployment": "Local changes only; commit, push and publish only after explicit user request.",
+    "localChecks": "No automated checks or browser inspection were run; implementation is based on live Figma design context and source reads."
+  },
+  "templateDetails": {
+    "updated": "2026-10-23",
+    "nodeId": "76:5477",
+    "heading": "Selected template title and description",
+    "referenceCards": {
+      "nodeId": "171:30350",
+      "size": [
+        90,
+        120
+      ],
+      "gap": 8,
+      "radius": 8,
+      "labels": [],
+      "items": "Each real references.subjects image, followed by the model image; no duplicate placeholders.",
+      "layout": "One horizontal scroll row, no wrap, hidden scrollbar, width follows the existing detail container.",
+      "scroll": {
+        "reference": "SaaS v5.2 FeaturedCases.tsx: scrollLeft and scrollWidth/clientWidth bounds with 1px tolerance, ResizeObserver and onScroll updates.",
+        "step": "max(98px, clientWidth * 0.72)",
+        "motion": "Native smooth scrolling; reduced motion uses auto.",
+        "reset": "Scroll to the start when the template changes."
+      },
+      "arrows": {
+        "component": "Button / Tonal / XS",
+        "size": [
+          20,
+          20
+        ],
+        "iconSize": [
+          16,
+          16
+        ],
+        "edgeInset": 4,
+        "radius": "max",
+        "backgroundToken": "Surface/media-overlay maps the design media overlay rgba(0,0,0,0.6).",
+        "visibility": "Start: right only; middle: both; end: left only; no overflow: neither. Available arrows remain visible without hover."
+      },
+      "arrowIcon": "Both directions use the opaque thumbnail-next.svg from I171:30376;176:1929; rotate 180deg for left. The legacy subject-previous.svg contains 30% disabled opacity and is not used by the scrolling arrows.",
+      "tooltips": {
+        "component": "Shared Button title and TooltipHost",
+        "right": "向右查看更多参考图",
+        "left": "向左查看更多参考图",
+        "interaction": "Show on pointer hover or keyboard focus for available scroll arrows; localized in Chinese, English and Japanese."
+      }
+    },
+    "configuration": {
+      "resolution": "2K",
+      "durationSeconds": 10,
+      "ratioByTemplate": {
+        "commerce": "9:16",
+        "brand": "16:9"
+      },
+      "titleAndRatioDecision": "User confirmed that title and ratio follow the selected template, overriding the commerce title and portrait-ratio placeholders in the landscape design.",
+      "informationLabel": "Resolve the actual node name from template.workflow.mode using the shared videoWorkflowTitle; current commerce and brand examples use 专业服装视频.",
+      "settingsSource": "src/video-templates.ts workflow configuration drives both the summary and instantiated node. Existing 2K / 10s examples use the references node with fast generation mode, where 2K is supported; node type and generation mode are independent."
+    },
+    "generation": {
+      "source": "User instruction 2026-10-26; locally maintained definitions in src/video-templates.ts and slot resolution in src/video-template-generation.ts.",
+      "required": "Generate now requires at least one replacement image (product or model). Edit template also accepts original inputs. Both block during image reading or submission and validate the configured workflow and input capacity.",
+      "replacement": "Replace the whole configured slot image group with the user image when supplied. Otherwise preserve all original slot images. Both replacements apply independently. Bind each resulting canvas image ID to the configured main, endFrame or references input; do not deduplicate by URL.",
+      "canvas": "Generate now closes the dialog and appends only an independent loading result, without input images or an editor. The placeholder uses the submitted generation ratio (portrait width 320, landscape height 320; Auto follows the resolved first input). One undo removes the submission. Preserve existing canvas positions and frame the new result.",
+      "task": "Reuse the existing three-second demo task, ratio-based placeholder, in-place completion and completed-task focus behavior. Each template uses its own preview clip and poster as the fixed demo result; no real AI generation or billing.",
+      "cancellation": "Changing category, closing the dialog, leaving the workspace or unmounting cancels preparation. Failed image reads create no partial nodes or task; uploads remain available to retry.",
+      "editing": "Edit template closes the dialog and appends the resolved input images, configured editor and existing demo result with actual connections. It starts no task. Select the editor, frame the group and commit everything in one undo step."
+    },
+    "chips": {
+      "component": "TagChip / Filled / default / S",
+      "master": "165:28535",
+      "height": 24,
+      "radius": 6,
+      "paddingInline": 4,
+      "slotGap": 4,
+      "emptySlotWidth": 0.01,
+      "groupGap": 8,
+      "wrap": true
+    },
+    "hoverPreviews": {
+      "enabled": false,
+      "reason": "Removed at user request. Thumbnails are static images without hover, focus or click enlargement."
+    },
+    "components": [
+      "Dialog",
+      "Button",
+      "Divider",
+      "GenerateTaskButton",
+      "AssetPicker",
+      "TagChip",
+      "VideoTemplateReferences",
+      "ProgressiveImage",
+      "usePresence"
+    ],
+    "verification": "Edited locally without browser, test or build execution as requested; not published.",
+    "referencesByTemplate": {
+      "commerce": {
+        "subjects": [
+          "subject-front.jpg",
+          "subject-back.png"
+        ],
+        "model": "model-preview.png",
+        "modelDescription": "User-supplied shortened curly-haired model description"
+      },
+      "brand": {
+        "subjects": [
+          "brand-subject.png",
+          "subject-front.jpg",
+          "subject-back.png",
+          "assets/try-on/history/regular-1.png",
+          "assets/try-on/history/regular-2.png",
+          "assets/try-on/history/regular-3.png",
+          "assets/try-on/history/regular-4.png"
+        ],
+        "model": "brand-model.png",
+        "modelDescription": null,
+        "note": "User requested eight references for the horizontal scrolling demo: seven subject/demo images plus the original brand model. Reuses existing local assets. Thumbnails have no enlarged hover preview.",
+        "totalReferenceCount": 8
+      }
+    },
+    "designComparison": {
+      "date": "2026-10-23",
+      "sessionId": "7b409990-b521-48c7-a65b-a90664462a93",
+      "highFidelityNodes": [
+        "64:2059",
+        "64:4439",
+        "76:5003",
+        "76:5477",
+        "64:4646",
+        "76:5455",
+        "141:24242",
+        "141:24346"
+      ],
+      "preserved": [
+        "1280x720 shared populated/empty modal and 256px sidebar",
+        "native video playback and user-supplied replacement commerce clip",
+        "real upload values and reference counts",
+        "title and ratio follow selected template",
+        "below-anchor hover placement and 240px natural-aspect image sizing",
+        "Ghost carousel controls and original SVG arrows"
+      ],
+      "changes": [
+        "Use each template original subject and model assets instead of reusing commerce references for brand story"
+      ],
+      "validation": "Figma screenshot and source comparison only. No browser, build, tests or publication."
+    },
+    "nodeIds": [
+      "76:5477",
+      "76:5003"
+    ],
+    "uploads": {
+      "title": "上传对应素材，替换模版中的商品或人物",
+      "requirement": "使用模版生成时，服装图/模特图2选1，必填",
+      "placeholders": [
+        "替换模版商品",
+        "替换模版人物"
+      ],
+      "layout": {
+        "headingGap": 4,
+        "titleFontSize": 14,
+        "titleLineHeight": 20,
+        "titleFontWeight": 500,
+        "descriptionFontSize": 12,
+        "descriptionLineHeight": 16,
+        "descriptionToken": "Text/tertiary",
+        "sectionGap": 8,
+        "cardGap": 8,
+        "cardHeight": 96,
+        "cardRadius": 16,
+        "thumbnailSize": 80,
+        "thumbnailRadius": 12
+      },
+      "labels": "Individual upload titles remain accessible but are visually hidden. Do not show optional text.",
+      "generation": "Require at least one successfully selected garment or model image for the currently selected template. Either or both are valid. Disable GenerateTaskButton when both are absent; the callback repeats the same guard. Removing the last image disables it immediately; switching templates uses that template's saved uploads. Static template previews do not satisfy the upload requirement.",
+      "picker": "Keep the shared single-image AssetPicker and immediate local upload application; retain drop, replace, delete and file validation.",
+      "content": "Keep the existing user-provided video, native player, real template references and current template title/ratio. Figma sample user uploads are not prefilled.",
+      "responsive": "Retain the existing 760px stacked-layout and 460px compact thumbnail rules; new text wraps naturally and the existing detail body scrolls when needed."
+    },
+    "latestReferenceRail": {
+      "date": "2026-10-23",
+      "sessionId": "50b698d6-0f2e-4eb7-923a-a2d56486faea",
+      "nodeId": "171:30350",
+      "changes": [
+        "Remove thumbnail labels and shot count.",
+        "Show each actual reference as a separate thumbnail in a horizontally scrollable row.",
+        "Brand story shows eight images for the scrolling demo.",
+        "Remove thumbnail enlarged previews and related hover/focus/click actions.",
+        "Use the same opaque arrow artwork in both directions and show localized directional tooltips."
+      ],
+      "verification": "Implementation from live Figma context and existing source. No browser, tests, build or publication per user instruction."
+    }
+  },
+  "completedPageImplementation": {
+    "date": "2026-10-23",
+    "page": "64:1901",
+    "coverage": [
+      "initial canvas",
+      "template dialog and upload states",
+      "horizontally scrollable template reference thumbnails",
+      "image and video toolbars",
+      "blank-canvas cascading menu",
+      "short and professional video editors",
+      "material generation editors and settings",
+      "video upscale editor"
+    ],
+    "validation": "Figma design context and source alignment only; no browser, tests, build, commit, push or deployment requested."
+  },
+  "blankCanvasMenu": {
+    "nodeId": "159:27144",
+    "instanceId": "159:27145",
+    "assetSource": "docs/video-context-submenu-assets.json",
+    "width": 224,
+    "height": 177,
+    "japaneseWidth": 264,
+    "padding": 8,
+    "gap": 8,
+    "radius": 12,
+    "rowHeight": 32,
+    "groups": {
+      "素材生成": [
+        "快捷生图",
+        "多视角",
+        "分镜图",
+        "宫格图切分"
+      ],
+      "视频生成": [
+        "服装短视频",
+        "专业服装视频",
+        "分镜成片",
+        "视频复刻"
+      ]
+    },
+    "actions": [
+      "上传图片/视频",
+      "粘贴"
+    ],
+    "submenus": {
+      "materialsNodeId": "159:27378",
+      "videosNodeId": "159:27502",
+      "width": 224,
+      "height": 168,
+      "behavior": "Hover or click to open one group; keep the trigger highlighted while interacting with its submenu. Reuse 120ms intent dismissal, a 4px gap from the trigger row edge with a matching pointer bridge, and 200ms ease-out presence. ArrowRight/Enter enters the submenu; ArrowLeft/Escape returns focus to its trigger. ArrowUp/ArrowDown navigate only the current menu. Outside interaction or a new context point closes the old group.",
+      "positioning": "Nested top-layer popovers escape parent clipping. Open 4px beyond the trigger row right edge when space permits, otherwise 4px beyond its left edge; clamp both axes within an 8px viewport inset. When neither side fits, keep the submenu within the viewport with necessary overlap. Constrained menus scroll internally. Japanese menus use 264px width."
+    },
+    "creation": "Create any of the six available editor kinds with the node top-left at the original right-click canvas coordinate. Do not avoid collisions or change the viewport for explicit context-menu placement. Shared CanvasContextMenu handles keyboard navigation and dismissal. Fusion and asset context menus are unchanged. Storyboard-to-video and video remake services are not connected."
+  },
+  "videoUpscaleWorkflow": {
+    "nodeId": "175:33378",
+    "instanceId": "175:33379",
+    "filledNodeId": "141:26153",
+    "title": "视频高清放大",
+    "width": 320,
+    "height": 505,
+    "headerHeight": 80,
+    "contentHeight": 368,
+    "footerHeight": 57,
+    "contentGap": 16,
+    "videoArea": {
+      "width": 296,
+      "height": 240,
+      "radius": 16,
+      "fit": "contain",
+      "required": true,
+      "emptyLabel": "上传视频",
+      "emptyLabelToken": "Text/tertiary",
+      "emptyIcon": {
+        "file": "public/assets/video-upscale/add.svg",
+        "sourceNode": "I175:33379;2575:3889;175:33469",
+        "size": 24
+      },
+      "emptyGap": 8
+    },
+    "resolutions": [
+      "540p",
+      "720p",
+      "1080p",
+      "2K",
+      "4K"
+    ],
+    "defaultResolution": "1080p",
+    "costLabel": "20",
+    "behavior": "Create from video toolbar with source binding. Uploading in an empty editor creates or reuses a canvas video in one undo action. Clearing input keeps the canvas asset. Deleting source clears the input. Require a video and valid resolution to enable generation; the button and callback share the same readiness predicate. Shares automatic business connections, layout and full-screen playback. Backend is not connected."
+  },
+  "localDemoGeneration": {
+    "authorized": "2026-10-23: user requested usable demo results and confirmed images for material generation, videos for video generation.",
+    "factory": "src/video-workspace-demo.ts",
+    "defaultRatio": "auto for newly created material/video editors; preserve existing selections.",
+    "image": {
+      "file": "public/assets/workflow-examples/fusion-loungewear-result.png",
+      "width": 1792,
+      "height": 2400
+    },
+    "textOnlyAutoImage": {
+      "condition": "Quick image generation with zero reference images and ratio auto.",
+      "file": "public/assets/try-on/history/regular-5.png",
+      "width": 2048,
+      "height": 2048,
+      "display": "Use the original square image in the 320x320 placeholder without side bars. Canvas, task thumbnail, preview and download share the same square source."
+    },
+    "video": {
+      "file": "public/assets/video-workspace/ecommerce.mp4",
+      "poster": "public/assets/video-workspace/ecommerce-poster-20261021-213138.png",
+      "width": 1176,
+      "height": 1756,
+      "durationSeconds": 10.04
+    },
+    "counts": {
+      "quickAndMultiView": "configured count, 1–4",
+      "storyboard": 1,
+      "gridSplit": "configured grid, 4 or 9",
+      "videoAndUpscale": 1
+    },
+    "validation": "Native button state and generation handler share the same required-field predicate. Incomplete editors produce no result.",
+    "placement": "On submission, append placeholders 80px to the editor right with collision avoidance, retaining existing scene positions. Select and fit inputs/editor/placeholders once. On completion, replace the same IDs at their current positions and dimensions without moving the camera again.",
+    "connections": "Each result has a new ID and generatedByEditorId, rendered with existing automatic business lines. Reuse as a downstream input, arrange by dependency layers, and commit each result batch in one undo operation.",
+    "deletion": "Delete editor: retain results, clear generator binding. Delete result: retain editor and clear any downstream input reference. Undo restores the full snapshot. Clipboard copies omit original generator bindings.",
+    "scope": "Fixed local demo media only; no AI, actual upscaling/cropping, prompt-driven result, backend task or charge. Original file ratio and duration remain unchanged regardless of settings.",
+    "taskList": {
+      "component": "CanvasChrome.tasks -> CanvasTaskList; Figma 165:30270 reuses v5.3 controls, dimensions, tokens and generating animation.",
+      "disclosure": "Click toggles expansion for mouse, touch and keyboard without a background change. Hover, pointer leave and focus changes do not open or close the list. Clicking a result retains expansion; Escape closes. Width, height, header geometry and chevron animate with shared 200ms ease-out, respecting reduced motion.",
+      "durationMs": 3000,
+      "lifecycle": "Each valid click records an independent running task and immediately adds its connected placeholders using the submitted ratio. After 3 seconds, replace surviving placeholders in place and mark the task completed with the first surviving result thumbnail or video poster. Preserve drag/arrangement positions, dimensions and IDs.",
+      "history": "Keep completed records for the mounted workspace session; running count includes only running tasks. The task list remains expandable after all tasks complete.",
+      "removedEditor": "Deleting or undoing away the editor or every placeholder cancels its timer and marks the task failed. Surviving slots show a static failure state; restoring old snapshots does not restart generation. Deleted individual slots are not recreated on completion.",
+      "inactivePage": "Continue tasks across route changes without moving or focusing the hidden canvas. Clean up timers when the workspace unmounts.",
+      "undo": "Each submitted placeholder batch is one canvas undo step; completion adds no undo step. Task execution history is not rewound. Historical slots resolve to completed results or failure when restored.",
+      "examples": "On first activation per workspace session, append three completed examples: two image results and one video result, with a quick-image editor and a short-video editor connected through real IDs. Preserve existing nodes and selection; place examples beside the scene. Empty scenes fit the examples immediately. One undo removes the example scene; route changes do not recreate it.",
+      "resultNavigation": "Tasks store resultIds and output media store generatedTaskId. Resolve current positions by either stable binding, select and fit surviving results. Copies clear generatedTaskId. Deleted or undone results keep their history but cannot navigate until restored.",
+      "legacyNavigation": "Repair missing resultIds from generatedTaskId first. For older one-result demo records without either binding, migrate only complete equal-count groups sharing the exact thumbnail URL: newest submission maps to newest appended unclaimed generated output. Preserve existing bindings and skip ambiguous/deleted groups."
+    },
+    "placeholder": {
+      "component": "CanvasGenerationPlaceholder",
+      "sizing": "Snapshot the submitted ratio. Portrait width 320px; landscape height 320px; square 320x320px; the other side follows the ratio. Auto uses the first bound input intrinsic ratio, falling back to 1:1. Video upscaling uses its input video ratio.",
+      "visual": "Reuse the v5.3 three-color generating SVGs and 3s linear animation, theme tokens and reduced-motion handling. One placeholder per expected output with the same generator edge and final canvas ID.",
+      "interaction": "Move, arrange, select and delete. No preview, download, copying or downstream editor actions until completed. Completed demo files use contain in the reserved frame without cropping or changing source media.",
+      "history": "Submission is one undo step; completion replaces slots without an additional undo step. Restoring historical slots resolves the task outcome instead of restoring a permanent spinner."
+    },
+    "canvasImageFit": "Canvas still images use cover, scaling uniformly and clipping overflow at the center to fill their existing frames without letterboxing. This applies immediately to existing image nodes as well as new results. Video posters keep contain; node geometry, source files, full-image preview and download are unchanged."
+  },
+  "multiSelectionToolbar": {
+    "updated": "2026-10-23",
+    "designNodes": [
+      "173:30406",
+      "173:31990",
+      "173:32914",
+      "173:32318",
+      "173:32676"
+    ],
+    "toolbarNodes": {
+      "images": "173:30452",
+      "videos": "173:32567",
+      "downloadOnly": "173:32960"
+    },
+    "userOverride": "Mixed selections show professional fashion video and download only; hide both image-generation actions.",
+    "rules": [
+      {
+        "selection": "2-9 images, no videos",
+        "actions": [
+          "quick",
+          "storyboard",
+          "professional",
+          "download"
+        ]
+      },
+      {
+        "selection": "2-3 videos, no images",
+        "actions": [
+          "professional",
+          "download"
+        ]
+      },
+      {
+        "selection": "Mixed, images <=9 AND videos <=3",
+        "actions": [
+          "professional",
+          "download"
+        ]
+      },
+      {
+        "selection": "Images >9 OR videos >3",
+        "actions": [
+          "download"
+        ]
+      }
+    ],
+    "geometry": {
+      "height": 40,
+      "padding": 4,
+      "gap": 4,
+      "radius": 12,
+      "buttonHeight": 32,
+      "buttonPaddingHorizontal": 8,
+      "iconSize": 20,
+      "textSize": 12,
+      "textLineHeight": 20,
+      "distanceAboveSelection": 16
+    },
+    "tokens": [
+      "Surface/floating",
+      "Border/weak",
+      "Text/secondary",
+      "Shadow/L"
+    ],
+    "implementation": [
+      "src/video-multi-selection.ts",
+      "src/components/VideoMultiSelectionToolbar.tsx",
+      "src/components/VideoWorkspace.tsx"
+    ],
+    "creation": "Re-evaluate selected IDs and capacities on click. Create one editor 80px right of the selection, vertically centred with collision avoidance. Bind all selected media in selection order using existing canvas IDs. Do not duplicate media. One undo restores the operation. Distinct canvas instances sharing a URL retain independent references, including videos. Picker URL reuse stays unchanged.",
+    "eligibility": "At least two finished media nodes. Hide this toolbar if an editor or generation placeholder is selected. Single-media toolbars stay unchanged.",
+    "download": "Reuse ZIP utility with original image and video URLs, not posters. Prefix filenames with ordinal to prevent duplicate entries. Disable while pending and report errors.",
+    "validation": "Local implementation only. No browser, tests, build or publishing performed.",
+    "assets": {
+      "directory": "public/assets/video-multi-toolbar",
+      "quick": {
+        "file": "quick.svg",
+        "node": "I173:30452;1675:2978;173:31525;1782:23796"
+      },
+      "storyboard": {
+        "file": "storyboard.svg",
+        "node": "I173:30452;1675:2978;173:31588;1782:23796"
+      },
+      "professional": {
+        "file": "professional.svg",
+        "node": "I173:30452;1675:2981;173:30487;1782:23796"
+      },
+      "download": {
+        "file": "download.svg",
+        "node": "I173:30452;1675:2985;173:30479;180:1971"
+      }
+    }
+  },
+  "referenceMediaGrid": {
+    "scope": "Professional fashion video reference images and videos, in separate sections.",
+    "columns": 4,
+    "tileSize": 64,
+    "gap": 8,
+    "addButton": "Occupies one slot below the limit; hidden at capacity.",
+    "layout": "Wrap into new rows without horizontal scrolling. Base node height 661px plus 72px per additional row. Canvas geometry uses the same reference counts.",
+    "sorting": "Fixed two-dimensional slots for cross-row drag sorting; preserve 200ms neighbor animation and immediate drop commit.",
+    "validation": "Local source changes only; no browser, tests or build run per user instruction."
+  },
+  "referenceVideoMarker": {
+    "designNode": "121:18151",
+    "containerNode": "I121:18151;2575:3889;175:33612",
+    "iconNode": "I121:18151;2575:3889;175:33607",
+    "asset": "public/assets/video-node-final/reference-video-element.svg",
+    "containerSize": 16,
+    "iconSize": 12,
+    "padding": 2,
+    "radius": 4,
+    "right": 4,
+    "bottom": 4,
+    "background": "Surface/media-overlay maps the design media badge black 60%; app Surface/floating is a different panel token.",
+    "foreground": "Text/on-brand-white",
+    "scope": "Video reference thumbnail corner marker only; retains numbering, four-column layout and preview interaction."
+  },
+  "canvasArrangement": {
+    "scope": "Video workspace local demo; R02 adopted by user on 2026-10-23. Fusion release scope and Feishu unchanged.",
+    "ownership": "ID-based membership and cross-type insertion order stored per snapshot. Single-group inputs extend that group; cross-group inputs create a separate downstream group.",
+    "ordering": "Earliest input insertion order captured on group creation; later additions retain it. Inputs follow reference lists; dependency stages take priority.",
+    "geometry": {
+      "groupsPerRow": 5,
+      "columnGap": 80,
+      "multiInputOutputGap": 160,
+      "branchGap": 120,
+      "groupGap": 240,
+      "stageGap": 480,
+      "standaloneAreaGap": 480
+    },
+    "behavior": "Arrange every item once, retain selection, sizes and business links, fit all contents, one undo step. Standalone media and empty editors use a separate lower area.",
+    "persistence": "Session snapshot and undo/redo only. Legacy snapshots initialize membership from current relationships and array order; no project storage service.",
+    "implementation": [
+      "src/video-layout-groups.ts",
+      "src/video-workflow-layout.ts",
+      "src/components/VideoWorkspace.tsx"
+    ],
+    "validation": "No browser, tests or build run; local source edits only."
+  }
+}

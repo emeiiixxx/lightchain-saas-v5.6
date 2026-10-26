@@ -1,0 +1,41 @@
+/* Figma 696:7197 / 696:6657; v5.1 Beta primitives and theme tokens. */
+.fusion-node.batch-edit-node { width: 592px; height: 404px; gap: 0; padding: 0; border: 0; border-radius: var(--radius-2xl, 24px); background: transparent; box-shadow: none; }
+.batch-edit-header { display: flex; align-items: center; justify-content: center; width: 100%; height: 52px; flex: 0 0 52px; padding: 12px; }
+.batch-edit-tip { width: fit-content; max-width: 100%; min-width: 0; background: linear-gradient(5.6984deg, rgba(0, 161, 255, .4) 16.533%, rgba(200, 97, 255, .4) 83.467%); }
+.batch-edit-body { position: relative; display: flex; width: 100%; height: 352px; min-height: 352px; overflow: hidden; border-radius: var(--radius-2xl, 24px); background: var(--surface-default); box-shadow: 0 12px 28px -4px var(--overlay-weak); }
+.batch-edit-body::after { content: ''; position: absolute; inset: 0; pointer-events: none; border: 1px solid var(--border-brand); border-radius: inherit; }
+.fusion-position[data-workflow-kind='batch'] { border-radius: var(--radius-2xl, 24px); }
+.fusion-position[data-workflow-kind='batch']::after { top: 52px; }
+.fusion-position[data-workflow-kind='batch'][data-selected='true'] .batch-edit-body::after { opacity: 0; }
+.batch-main-list { display: flex; flex: 0 0 168px; flex-direction: column; gap: 8px; width: 168px; height: 100%; padding: 12px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; background: var(--surface-secondary); }
+.batch-main-card { position: relative; display: flex; flex: 0 0 56px; align-items: center; gap: 8px; width: 100%; min-height: 56px; padding: 0 8px; border: 0; border-radius: 12px; background: var(--state-default); color: var(--text-primary); text-align: left; font-size: 12px; font-weight: 400; line-height: 16px; }
+.batch-add-main { cursor: pointer; transition: background var(--motion-duration) var(--motion-easing); }
+.batch-add-main:hover { background: var(--state-hover); }
+.batch-main-preview, .batch-main-add-tile { display: flex; flex: 0 0 40px; align-items: center; justify-content: center; width: 40px; height: 40px; overflow: hidden; border-radius: var(--radius-base); background: var(--state-default); }
+.batch-main-preview { border: 1px solid var(--border-weak); background: var(--control-fill-hover); }
+.batch-main-preview > .progressive-image, .batch-main-preview img { width: 100%; height: 100%; object-fit: cover; }
+.batch-main-label { min-width: 0; flex: 1; }
+.batch-main-card .batch-main-remove { position: absolute; top: 4px; right: 4px; width: 16px; min-width: 16px; height: 16px; padding: 0; border-radius: 999px; opacity: 0; transition: opacity var(--motion-duration) var(--motion-easing), background var(--motion-duration) var(--motion-easing); }
+.batch-main-card:hover .batch-main-remove, .batch-main-card:focus-within .batch-main-remove { opacity: 1; }
+.batch-edit-fields { display: flex; flex: 1; flex-direction: column; gap: 12px; min-width: 0; height: 100%; padding: 12px; }
+.batch-reference-field { display: flex; flex: 0 0 auto; flex-direction: column; gap: 8px; }
+.batch-reference-heading { display: flex; align-items: center; gap: 8px; min-width: 0; height: 20px; }
+.batch-reference-heading > .fusion-label { flex-shrink: 0; }
+.batch-reference-divider { width: 1px; height: 12px; flex: 0 0 1px; background: var(--border-weak); }
+.batch-reference-count { color: var(--text-tertiary); white-space: nowrap; font-size: 12px; line-height: 16px; }
+.batch-reference-count > span { color: var(--text-brand); }
+.batch-references { display: grid; grid-template-columns: repeat(7, 48px); grid-auto-rows: 48px; align-content: start; gap: 8px; min-height: 48px; max-height: 160px; }
+.batch-references > *, .batch-references .fusion-reference { width: 48px; height: 48px; min-width: 48px; border-radius: var(--radius-base); }
+.batch-references .fusion-reference-wrap .fusion-reference { position: relative; background: var(--control-fill-hover); }
+.batch-references .fusion-reference > .progressive-image { width: 100%; height: 100%; }
+.batch-references .fusion-reference-wrap .fusion-reference-remove { top: 4px; right: 4px; width: 16px; min-width: 16px; height: 16px; border-radius: 999px; transition: opacity var(--motion-duration) var(--motion-easing), background var(--motion-duration) var(--motion-easing); }
+.batch-references .fusion-reference-wrap:hover .fusion-reference::after { content: ''; position: absolute; inset: 0; background: var(--overlay-weak); pointer-events: none; }
+.batch-edit-prompt { flex: 1; min-height: 0; height: auto; }
+.batch-edit-prompt textarea { min-height: 64px; }
+.batch-edit-prompt:hover { background: var(--control-fill-hover); border-color: var(--border-weak); }
+.batch-edit-prompt:focus-within { background: var(--control-fill-focus); border-color: var(--border-brand); }
+.batch-edit-prompt.has-error { border-color: var(--status-danger); }
+.batch-edit-settings { display: flex; flex: 0 0 32px; align-items: center; gap: 8px; width: 100%; min-width: 0; height: 32px; }
+.batch-edit-settings .lc-setting-select { gap: 8px; }
+.batch-output-count { display: inline-flex; flex-shrink: 0; align-items: center; justify-content: center; height: 32px; padding: 0 8px; border: 1px solid var(--border-weak); border-radius: var(--radius-base); background: var(--state-default); color: var(--text-primary); white-space: nowrap; font-size: 12px; line-height: 16px; }
+.batch-edit-settings .generate-task-button { flex-shrink: 0; white-space: nowrap; }

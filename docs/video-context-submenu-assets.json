@@ -1,0 +1,219 @@
+{
+  "figmaFileKey": "1dBgOC793NRsKgbNIaLZMK",
+  "source": "Figma get_design_context",
+  "downloadedAtDate": "2026-10-23",
+  "assetsPreservedAsDownloaded": true,
+  "menus": {
+    "parent": {
+      "nodeId": "159:27144",
+      "contentNodeId": "159:27145",
+      "width": 224,
+      "height": 177
+    },
+    "material": {
+      "nodeId": "159:27378",
+      "contentNodeId": "159:27379",
+      "width": 224,
+      "height": 168
+    },
+    "video": {
+      "nodeId": "159:27502",
+      "contentNodeId": "159:27503",
+      "width": 224,
+      "height": 168
+    }
+  },
+  "layout": {
+    "paddingPx": 8,
+    "rowHeightPx": 32,
+    "rowGapPx": 8,
+    "panelRadiusPx": 12,
+    "itemRadiusPx": 8,
+    "mainMenuDividerHeightPx": 1,
+    "surfaceToken": "Surface/floating",
+    "borderToken": "Border/weak",
+    "shadowToken": "Shadow/L"
+  },
+  "interaction": {
+    "sourceComponent": "DropdownMenu/SubTrigger",
+    "open": [
+      "hover",
+      "click"
+    ],
+    "keepParentHighlightedWhileChildHovered": true,
+    "escapeReturnsFocus": true,
+    "durationMs": 200,
+    "easing": "ease-out"
+  },
+  "assets": [
+    {
+      "file": "public/assets/video-context-submenus-20261023/material.svg",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/e7fa0c73-5b51-4688-9a4e-6c123e9f922e.svg",
+      "sourceMenu": "parent",
+      "sourceNodeId": "159:27144",
+      "sourceContentNodeId": "159:27145",
+      "rootDimensions": {
+        "width": "20",
+        "height": "20",
+        "viewBox": "0 0 20 20"
+      },
+      "displaySizePx": 20
+    },
+    {
+      "file": "public/assets/video-context-submenus-20261023/chevron.svg",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/d208d61b-2f9d-422a-8041-72982332b1e1.svg",
+      "sourceMenu": "parent",
+      "sourceNodeId": "159:27144",
+      "sourceContentNodeId": "159:27145",
+      "rootDimensions": {
+        "width": "16",
+        "height": "16",
+        "viewBox": "0 0 16 16"
+      },
+      "displaySizePx": 16
+    },
+    {
+      "file": "public/assets/video-context-submenus-20261023/video.svg",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/cee614fa-0d49-47e7-b9ed-bf7e456af3ce.svg",
+      "sourceMenu": "parent",
+      "sourceNodeId": "159:27144",
+      "sourceContentNodeId": "159:27145",
+      "rootDimensions": {
+        "width": "20",
+        "height": "20",
+        "viewBox": "0 0 20 20"
+      },
+      "displaySizePx": 20
+    },
+    {
+      "file": "public/assets/video-context-submenus-20261023/upload.svg",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/574e8d3f-2a73-4dfa-982b-98be6eeceb1a.svg",
+      "sourceMenu": "parent",
+      "sourceNodeId": "159:27144",
+      "sourceContentNodeId": "159:27145",
+      "rootDimensions": {
+        "width": "20",
+        "height": "20",
+        "viewBox": "0 0 20 20"
+      },
+      "displaySizePx": 20
+    },
+    {
+      "file": "public/assets/video-context-submenus-20261023/paste.svg",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/dddb963b-a57d-4cd3-a8fc-4e7695f49dbd.svg",
+      "sourceMenu": "parent",
+      "sourceNodeId": "159:27144",
+      "sourceContentNodeId": "159:27145",
+      "rootDimensions": {
+        "width": "20",
+        "height": "20",
+        "viewBox": "0 0 20 20"
+      },
+      "displaySizePx": 20
+    },
+    {
+      "file": "public/assets/video-context-submenus-20261023/quick.svg",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/6339d0b6-9b62-4099-b1ca-872021aada10.svg",
+      "sourceMenu": "material",
+      "sourceNodeId": "159:27378",
+      "sourceContentNodeId": "159:27379",
+      "rootDimensions": {
+        "width": "20",
+        "height": "20",
+        "viewBox": "0 0 20 20"
+      },
+      "displaySizePx": 20
+    },
+    {
+      "file": "public/assets/video-context-submenus-20261023/multi-view.svg",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/965e2cb6-8deb-4b8d-bc91-29d9de97f5b4.svg",
+      "sourceMenu": "material",
+      "sourceNodeId": "159:27378",
+      "sourceContentNodeId": "159:27379",
+      "rootDimensions": {
+        "width": "20",
+        "height": "20",
+        "viewBox": "0 0 20 20"
+      },
+      "displaySizePx": 20
+    },
+    {
+      "file": "public/assets/video-context-submenus-20261023/storyboard-image.svg",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/3a7df608-6ca8-4330-94dc-ae57abcacdd8.svg",
+      "sourceMenu": "material",
+      "sourceNodeId": "159:27378",
+      "sourceContentNodeId": "159:27379",
+      "rootDimensions": {
+        "width": "20",
+        "height": "20",
+        "viewBox": "0 0 20 20"
+      },
+      "displaySizePx": 20
+    },
+    {
+      "file": "public/assets/video-context-submenus-20261023/grid-split.svg",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/4aa48caf-4f32-4524-a651-70bb7a55d5cc.svg",
+      "sourceMenu": "material",
+      "sourceNodeId": "159:27378",
+      "sourceContentNodeId": "159:27379",
+      "rootDimensions": {
+        "width": "20",
+        "height": "20",
+        "viewBox": "0 0 20 20"
+      },
+      "displaySizePx": 20
+    },
+    {
+      "file": "public/assets/video-context-submenus-20261023/fashion-video.svg",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/2cdb7415-96af-4d15-b8f4-e6a574faf1a1.svg",
+      "sourceMenu": "video",
+      "sourceNodeId": "159:27502",
+      "sourceContentNodeId": "159:27503",
+      "rootDimensions": {
+        "width": "20",
+        "height": "20",
+        "viewBox": "0 0 20 20"
+      },
+      "displaySizePx": 20
+    },
+    {
+      "file": "public/assets/video-context-submenus-20261023/pro-fashion-video.svg",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/51dbafb2-0425-415c-a65e-cc4dd7d55192.svg",
+      "sourceMenu": "video",
+      "sourceNodeId": "159:27502",
+      "sourceContentNodeId": "159:27503",
+      "rootDimensions": {
+        "width": "20",
+        "height": "20",
+        "viewBox": "0 0 20 20"
+      },
+      "displaySizePx": 20
+    },
+    {
+      "file": "public/assets/video-context-submenus-20261023/storyboard-video.svg",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/48b26c41-2424-4a6d-8f01-3fe7990ffd3c.svg",
+      "sourceMenu": "video",
+      "sourceNodeId": "159:27502",
+      "sourceContentNodeId": "159:27503",
+      "rootDimensions": {
+        "width": "20",
+        "height": "20",
+        "viewBox": "0 0 20 20"
+      },
+      "displaySizePx": 20
+    },
+    {
+      "file": "public/assets/video-context-submenus-20261023/remake.svg",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/36cb9485-9dcc-4e8a-918e-a4e05b8c9544.svg",
+      "sourceMenu": "video",
+      "sourceNodeId": "159:27502",
+      "sourceContentNodeId": "159:27503",
+      "rootDimensions": {
+        "width": "20",
+        "height": "20",
+        "viewBox": "0 0 20 20"
+      },
+      "displaySizePx": 20
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+.lc-tag-chip { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 4px; height: 24px; padding: 0 4px; border-radius: var(--radius-m, 6px); background: var(--state-hover); color: var(--text-secondary); font-size: 12px; font-weight: 500; line-height: 20px; white-space: nowrap; }
+/* Beta keeps both empty slots, including their 4px gaps. */
+.lc-tag-chip-slot { display: inline-flex; flex: 0 0 auto; align-items: center; }
+.lc-tag-chip-slot:empty { width: .01px; height: .01px; }

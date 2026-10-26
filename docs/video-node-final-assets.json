@@ -1,0 +1,584 @@
+{
+  "figmaFileKey": "1dBgOC793NRsKgbNIaLZMK",
+  "localDirectory": "public/assets/video-node-final/",
+  "note": "Original SVG exports; source metadata only. Tips retain the original gradient and must be rendered as images. SVG geometry has not been modified. Preview photographs are dynamic upload content and are not included.",
+  "runtimeReuse": "GenerateTaskButton uses the original frames-empty-generate-star.svg as a mask in all states, inheriting the shared semantic foreground and disabled color without multiplying the disabled SVG opacity. Tooltip arrows reuse the shared Tooltip component.",
+  "variants": {
+    "framesEmpty": {
+      "auto": {
+        "designNode": "84:6110",
+        "sourceNodes": [
+          "84:6078"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/2230735f-9231-493d-ae33-b8ef6eb754af.svg",
+        "file": "frames-empty-auto.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 2960,
+        "renderAs": "mask"
+      },
+      "tip": {
+        "designNode": "84:6110",
+        "sourceNodes": [
+          "I84:6150;2585:16684;119:11407"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/20004b01-6d0f-44d7-8555-103bc0e4b41f.svg",
+        "file": "frames-empty-tip.svg",
+        "width": 20,
+        "height": 20,
+        "viewBox": "0 0 20 20",
+        "bytes": 3078,
+        "renderAs": "image"
+      },
+      "addImage": {
+        "designNode": "84:6110",
+        "sourceNodes": [
+          "I84:6150;2575:3889;119:11213",
+          "I84:6150;2575:3889;119:11221"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/a71ce28a-fc21-4682-a014-ed7f6cbda42d.svg",
+        "file": "frames-empty-add-image.svg",
+        "width": 20,
+        "height": 20,
+        "viewBox": "0 0 20 20",
+        "bytes": 1632,
+        "renderAs": "mask"
+      },
+      "info": {
+        "designNode": "84:6110",
+        "sourceNodes": [
+          "I84:6150;2575:3889;119:11228"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/c5010c57-8df2-4a60-a4e8-fd7bb396b364.svg",
+        "file": "frames-empty-info.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 785,
+        "renderAs": "mask"
+      },
+      "promptExpand": {
+        "designNode": "84:6110",
+        "sourceNodes": [
+          "I84:6150;2575:3889;84:6136;325:2495;84:6133;139:1698"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/9080e96d-0e6c-47f2-b3a2-71f067bb1261.svg",
+        "file": "frames-empty-prompt-expand.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 846,
+        "renderAs": "mask"
+      },
+      "promptSave": {
+        "designNode": "84:6110",
+        "sourceNodes": [
+          "I84:6150;2575:3889;84:6136;325:2495;84:6134;139:1698"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/8f94fed8-8211-4e40-99b3-84d54246e5b2.svg",
+        "file": "frames-empty-prompt-save.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 900,
+        "renderAs": "mask"
+      },
+      "promptLibrary": {
+        "designNode": "84:6110",
+        "sourceNodes": [
+          "I84:6150;2575:3889;84:6136;325:2495;84:6135;139:1698"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/7486f0b5-84c8-45fe-b67e-dc80c1a74616.svg",
+        "file": "frames-empty-prompt-library.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 1255,
+        "renderAs": "mask"
+      },
+      "promptGenerate": {
+        "designNode": "84:6110",
+        "sourceNodes": [
+          "I84:6150;2575:3889;84:6136;325:2496;84:6245;1782:23568"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/64ef1b38-9979-4b9f-8c6a-06cdf9900298.svg",
+        "file": "frames-empty-prompt-generate.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 1723,
+        "renderAs": "mask"
+      },
+      "chevron": {
+        "designNode": "84:6110",
+        "sourceNodes": [
+          "I84:6150;2575:3889;112:7652;129:2274",
+          "I84:6150;2575:3889;112:7736;129:2274"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/37efc2af-a8e6-4060-9c20-fa095e18ccc2.svg",
+        "file": "frames-empty-chevron.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 601,
+        "renderAs": "mask"
+      },
+      "generateStar": {
+        "designNode": "84:6110",
+        "sourceNodes": [
+          "I84:6150;2575:3890;84:6117;962:10950"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/f4de45c0-aac0-41be-8e81-20c963eab792.svg",
+        "file": "frames-empty-generate-star.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 1335,
+        "renderAs": "image"
+      }
+    },
+    "framesFilled": {
+      "auto": {
+        "designNode": "119:11242",
+        "sourceNodes": [
+          "84:6078"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/b10333eb-40a9-4271-af8d-bb9b9b396112.svg",
+        "file": "frames-filled-auto.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 2960,
+        "renderAs": "mask"
+      },
+      "tip": {
+        "designNode": "119:11242",
+        "sourceNodes": [
+          "I119:11243;2585:16684;119:11416"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/072b9728-6edd-4835-b43c-0c6c6a3832b6.svg",
+        "file": "frames-filled-tip.svg",
+        "width": 20,
+        "height": 20,
+        "viewBox": "0 0 20 20",
+        "bytes": 3078,
+        "renderAs": "image"
+      },
+      "addImage": {
+        "designNode": "119:11242",
+        "sourceNodes": [
+          "I119:11243;2575:3889;119:11269"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/370f3b8d-d71d-4c33-a12b-6a31696df8b9.svg",
+        "file": "frames-filled-add-image.svg",
+        "width": 20,
+        "height": 20,
+        "viewBox": "0 0 20 20",
+        "bytes": 1632,
+        "renderAs": "mask"
+      },
+      "info": {
+        "designNode": "119:11242",
+        "sourceNodes": [
+          "I119:11243;2575:3889;119:11267"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/acf421b9-0d3a-4c35-b52a-9fa87ec7c818.svg",
+        "file": "frames-filled-info.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 783,
+        "renderAs": "mask"
+      },
+      "promptExpand": {
+        "designNode": "119:11242",
+        "sourceNodes": [
+          "I119:11243;2575:3889;119:11273;325:2495;119:11282;139:1698"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/748f96f7-b785-48a3-add2-a2b40cc5c115.svg",
+        "file": "frames-filled-prompt-expand.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 846,
+        "renderAs": "mask"
+      },
+      "promptSave": {
+        "designNode": "119:11242",
+        "sourceNodes": [
+          "I119:11243;2575:3889;119:11273;325:2495;119:11283;139:1698"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/df998904-6cd5-43a4-a396-34efe84ac62d.svg",
+        "file": "frames-filled-prompt-save.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 900,
+        "renderAs": "mask"
+      },
+      "promptLibrary": {
+        "designNode": "119:11242",
+        "sourceNodes": [
+          "I119:11243;2575:3889;119:11273;325:2495;119:11284;139:1698"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/9f2ca23f-7b21-40ca-aa59-94823f70e42a.svg",
+        "file": "frames-filled-prompt-library.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 1255,
+        "renderAs": "mask"
+      },
+      "promptGenerate": {
+        "designNode": "119:11242",
+        "sourceNodes": [
+          "I119:11243;2575:3889;119:11273;325:2496;119:11286;1782:23568"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/de6d5917-695b-4fce-b888-f163a24382f9.svg",
+        "file": "frames-filled-prompt-generate.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 1723,
+        "renderAs": "mask"
+      },
+      "chevron": {
+        "designNode": "119:11242",
+        "sourceNodes": [
+          "I119:11243;2575:3889;119:11278;129:2274",
+          "I119:11243;2575:3889;119:11280;129:2274"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/9e355a70-a9cf-42e7-9b24-1e278a1cab96.svg",
+        "file": "frames-filled-chevron.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 601,
+        "renderAs": "mask"
+      },
+      "generateStar": {
+        "designNode": "119:11242",
+        "sourceNodes": [
+          "I119:11243;2575:3890;119:11251;962:10950"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/9debba3f-9d82-4917-9ed6-4b1f8076eb94.svg",
+        "file": "frames-filled-generate-star.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 1335,
+        "renderAs": "image"
+      },
+      "tooltipArrow": {
+        "designNode": "119:11242",
+        "sourceNodes": [
+          "I119:11244;408:3531"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/7ebcc640-c74d-4b9e-9989-450e66e6cdc0.svg",
+        "file": "frames-filled-tooltip-arrow.svg",
+        "width": 4,
+        "height": 8,
+        "viewBox": "0 0 4 8",
+        "bytes": 612,
+        "renderAs": "image"
+      }
+    },
+    "referencesEmpty": {
+      "auto": {
+        "designNode": "121:17924",
+        "sourceNodes": [
+          "84:6078"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/50aff99d-0e5e-4620-a7d6-d4cf0fd28791.svg",
+        "file": "references-empty-auto.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 2960,
+        "renderAs": "mask"
+      },
+      "tip": {
+        "designNode": "121:17924",
+        "sourceNodes": [
+          "I121:17925;2585:16684;121:17987"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/495daa82-7fef-41cb-8f95-cb33f76ef9a8.svg",
+        "file": "references-empty-tip.svg",
+        "width": 20,
+        "height": 20,
+        "viewBox": "0 0 20 20",
+        "bytes": 3078,
+        "renderAs": "image"
+      },
+      "info": {
+        "designNode": "121:17924",
+        "sourceNodes": [
+          "I121:17925;2575:3889;121:18125"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/14c55bc3-d547-4e2f-b6ce-8294d8a3aa83.svg",
+        "file": "references-empty-info.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 783,
+        "renderAs": "mask"
+      },
+      "addReference": {
+        "designNode": "121:17924",
+        "sourceNodes": [
+          "I121:17925;2575:3889;121:17949;1579:4104",
+          "I121:17925;2575:3889;121:17959;1579:4104"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/367c63b7-c01d-4350-ae26-079f5894db6a.svg",
+        "file": "references-empty-add-reference.svg",
+        "width": 20,
+        "height": 20,
+        "viewBox": "0 0 20 20",
+        "bytes": 643,
+        "renderAs": "mask"
+      },
+      "promptExpand": {
+        "designNode": "121:17924",
+        "sourceNodes": [
+          "I121:17925;2575:3889;121:17962;325:2495;121:17971;139:1698"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/70fecd14-caa2-40a1-800d-1485f283d37e.svg",
+        "file": "references-empty-prompt-expand.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 846,
+        "renderAs": "mask"
+      },
+      "promptSave": {
+        "designNode": "121:17924",
+        "sourceNodes": [
+          "I121:17925;2575:3889;121:17962;325:2495;121:17972;139:1698"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/31c26c11-103c-4953-a3af-247ec770a76a.svg",
+        "file": "references-empty-prompt-save.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 900,
+        "renderAs": "mask"
+      },
+      "promptLibrary": {
+        "designNode": "121:17924",
+        "sourceNodes": [
+          "I121:17925;2575:3889;121:17962;325:2495;121:17973;139:1698"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/ed29629d-7e07-4894-8226-7c7549ce41d4.svg",
+        "file": "references-empty-prompt-library.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 1255,
+        "renderAs": "mask"
+      },
+      "promptGenerate": {
+        "designNode": "121:17924",
+        "sourceNodes": [
+          "I121:17925;2575:3889;121:17962;325:2496;121:17975;1782:23568"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/cf5ce51a-7ee8-4ea9-87d3-1877376104f8.svg",
+        "file": "references-empty-prompt-generate.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 1723,
+        "renderAs": "mask"
+      },
+      "chevron": {
+        "designNode": "121:17924",
+        "sourceNodes": [
+          "I121:17925;2575:3889;121:17967;129:2274",
+          "I121:17925;2575:3889;121:17969;129:2274"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/c2f75fcc-6cf6-4aa5-b1e5-0660081858b5.svg",
+        "file": "references-empty-chevron.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 601,
+        "renderAs": "mask"
+      },
+      "generateStar": {
+        "designNode": "121:17924",
+        "sourceNodes": [
+          "I121:17925;2575:3890;121:17933;962:10994"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/0448ea4b-01d3-4648-a2e1-d8becfdb5e23.svg",
+        "file": "references-empty-generate-star.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 1369,
+        "renderAs": "image"
+      },
+      "tooltipArrow": {
+        "designNode": "121:17924",
+        "sourceNodes": [
+          "I121:18127;408:3531"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/e168b584-e43a-455c-9a7d-30f8bdfeee99.svg",
+        "file": "references-empty-tooltip-arrow.svg",
+        "width": 4,
+        "height": 8,
+        "viewBox": "0 0 4 8",
+        "bytes": 612,
+        "renderAs": "image"
+      }
+    },
+    "referencesFilled": {
+      "auto": {
+        "designNode": "121:18150",
+        "sourceNodes": [
+          "84:6078"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/64ef4f50-5b7c-4627-9b98-c8321a1600db.svg",
+        "file": "references-filled-auto.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 2960,
+        "renderAs": "mask"
+      },
+      "tip": {
+        "designNode": "121:18150",
+        "sourceNodes": [
+          "I121:18151;2585:16684;121:18215"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/c0c1f730-f31a-4ad3-8da4-9ebb4547260b.svg",
+        "file": "references-filled-tip.svg",
+        "width": 20,
+        "height": 20,
+        "viewBox": "0 0 20 20",
+        "bytes": 3078,
+        "renderAs": "image"
+      },
+      "info": {
+        "designNode": "121:18150",
+        "sourceNodes": [
+          "I121:18151;2575:3889;121:18159"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/7c5c19e3-dc48-491d-b961-4409b2aabb94.svg",
+        "file": "references-filled-info.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 785,
+        "renderAs": "mask"
+      },
+      "addReference": {
+        "designNode": "121:18150",
+        "sourceNodes": [
+          "I121:18151;2575:3889;121:18336;1579:4104",
+          "I121:18151;2575:3889;121:18177;1579:4104"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/6bbdec7a-c0c5-47df-a44e-1650d4f19417.svg",
+        "file": "references-filled-add-reference.svg",
+        "width": 20,
+        "height": 20,
+        "viewBox": "0 0 20 20",
+        "bytes": 643,
+        "renderAs": "mask"
+      },
+      "promptExpand": {
+        "designNode": "121:18150",
+        "sourceNodes": [
+          "I121:18151;2575:3889;121:18180;325:2495;121:18189;139:1698"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/4ba3e183-ce30-4b64-9cad-41d98833b0d4.svg",
+        "file": "references-filled-prompt-expand.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 846,
+        "renderAs": "mask"
+      },
+      "promptSave": {
+        "designNode": "121:18150",
+        "sourceNodes": [
+          "I121:18151;2575:3889;121:18180;325:2495;121:18190;139:1698"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/ad82190a-667b-40dd-b176-8d96cd7f372d.svg",
+        "file": "references-filled-prompt-save.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 900,
+        "renderAs": "mask"
+      },
+      "promptLibrary": {
+        "designNode": "121:18150",
+        "sourceNodes": [
+          "I121:18151;2575:3889;121:18180;325:2495;121:18191;139:1698"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/5553e76e-5cc8-4d10-9d21-ffc555eb5ef5.svg",
+        "file": "references-filled-prompt-library.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 1255,
+        "renderAs": "mask"
+      },
+      "promptGenerate": {
+        "designNode": "121:18150",
+        "sourceNodes": [
+          "I121:18151;2575:3889;121:18180;325:2496;121:18193;1782:23568"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/28416db7-425e-4d45-9269-a34953c2248d.svg",
+        "file": "references-filled-prompt-generate.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 1723,
+        "renderAs": "mask"
+      },
+      "chevron": {
+        "designNode": "121:18150",
+        "sourceNodes": [
+          "I121:18151;2575:3889;121:18185;129:2274",
+          "I121:18151;2575:3889;121:18187;129:2274"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/37e80693-f84f-47df-b9bc-340489d6f0f2.svg",
+        "file": "references-filled-chevron.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 601,
+        "renderAs": "mask"
+      },
+      "generateStar": {
+        "designNode": "121:18150",
+        "sourceNodes": [
+          "I121:18151;2575:3890;121:18208;962:10994"
+        ],
+        "url": "https://www.figma.com/api/mcp/asset/40f3b2bb-d053-4208-a146-4c59b7499227.svg",
+        "file": "references-filled-generate-star.svg",
+        "width": 16,
+        "height": 16,
+        "viewBox": "0 0 16 16",
+        "bytes": 1369,
+        "renderAs": "image"
+      }
+    }
+  },
+  "combinedSettingsIcon": {
+    "designNodes": [
+      "84:6110",
+      "119:11242"
+    ],
+    "name": "Icon/Editor edit-parameters",
+    "slot": "I84:6150;2575:3889;165:29735;570:4024",
+    "url": "https://www.figma.com/api/mcp/asset/cb20a545-4601-4ede-a770-e345b2dee168.svg",
+    "file": "settings-edit-parameters.svg",
+    "width": 16,
+    "height": 16,
+    "bytes": 1165,
+    "renderAs": "mask",
+    "usage": "Combined short-video generation settings trigger; professional-fashion trigger keeps the selected aspect-ratio icon."
+  }
+}

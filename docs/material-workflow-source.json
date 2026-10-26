@@ -1,0 +1,149 @@
+{
+  "figmaFileKey": "1dBgOC793NRsKgbNIaLZMK",
+  "sourceDate": "2026-10-23",
+  "nodes": {
+    "141:24357": {
+      "kind": "quick",
+      "state": "empty",
+      "width": 320,
+      "height": 533
+    },
+    "141:24359": {
+      "kind": "quick",
+      "state": "references added",
+      "width": 320,
+      "height": 533
+    },
+    "141:25185": {
+      "kind": "multiView",
+      "state": "front",
+      "width": 320,
+      "height": 441
+    },
+    "141:25509": {
+      "kind": "multiView",
+      "state": "back",
+      "width": 320,
+      "height": 541
+    },
+    "141:25380": {
+      "kind": "storyboard",
+      "width": 320,
+      "height": 533,
+      "fields": [
+        "references",
+        "grid",
+        "prompt"
+      ]
+    },
+    "141:25857": {
+      "kind": "gridSplit",
+      "width": 320,
+      "height": 329,
+      "fields": [
+        "references",
+        "grid"
+      ]
+    },
+    "141:24676": {
+      "kind": "generation settings",
+      "width": 476,
+      "height": 242
+    }
+  },
+  "implementation": {
+    "model": "src/material-workflow.ts",
+    "node": "src/components/MaterialWorkflowNode.tsx",
+    "workspace": "src/components/VideoWorkspace.tsx",
+    "settings": "src/components/MaterialGenerationSettings.tsx",
+    "assets": "docs/material-generation-settings-assets.json"
+  },
+  "rules": {
+    "referenceLimit": {
+      "quick": 9,
+      "multiView": 1,
+      "storyboard": 9,
+      "gridSplit": 1
+    },
+    "referencePicker": "Quick and storyboard references use AssetPicker multi-select for library and local images, limited to the remaining slots out of 9. Confirm the entire batch together. Deduplicate by URL only within that confirmation batch; do not exclude URLs already referenced by the node. The same URL may be selected again in a later confirmation and counts as another image. Multi-view, grid split and back-reference fields remain single-select with direct local-upload confirmation.",
+    "promptLimit": 2000,
+    "promptNodes": [
+      "quick",
+      "storyboard"
+    ],
+    "settingsNodes": [
+      "quick",
+      "multiView"
+    ],
+    "smartExpandNodes": [
+      "quick"
+    ],
+    "views": [
+      "front",
+      "left45",
+      "left",
+      "right45",
+      "right",
+      "back"
+    ],
+    "backReference": "One required image whenever the selected view set includes Back. Show the field, increase the editor height and include its automatic canvas relation while Back is selected. Deselecting Back hides the field and relation but retains the uploaded image for reselection. Deleting its canvas asset still clears the stored binding even while hidden.",
+    "gridOptions": [
+      4,
+      9
+    ],
+    "defaultSettings": {
+      "ratio": "auto",
+      "resolution": "2K",
+      "count": 1
+    },
+    "cost": 20,
+    "emptyReferences": "Use actual count; do not populate example images or the static 2/9 label.",
+    "generation": "Keep the native GenerateTaskButton disabled until all required fields are complete. Quick image needs a non-whitespace prompt only; storyboard needs references and a non-whitespace prompt; multi-view needs at least one reference image and at least one selected view, plus a back image whenever the selected view set includes Back; grid split needs one reference. Existing default view/grid selections count as filled. The callback uses the same readiness predicate and returns without opening a picker or showing an error when incomplete. When ready, append fixed local demo images linked to the generating editor in one undo operation. No real AI task or charge; see docs/video-workspace-source.json localDemoGeneration.",
+    "canvas": "Every confirmed image from a material-node picker creates a fresh UUID canvas image, including references, grid-split input and back reference. Never reuse an existing canvas image by URL. Place it 80 canvas units to the editor left, avoiding existing content and other images in the batch, then bind its distinct sourceImageId to the current editor and draw its own automatic relation. Add the full batch and bindings as one undo operation. Images with the same URL from separate confirmations keep independent identities, capacity counts and relations. Removing a reference preserves its canvas image; deleting a canvas image clears only references bound to that identity. Creating a node from the selected canvas image toolbar still inherits the original image ID. Video-file URL reuse and deduplication remain unchanged.",
+    "referenceRequired": {
+      "quick": false,
+      "multiView": true,
+      "storyboard": true,
+      "gridSplit": true
+    },
+    "quickGeneration": "Reference images are optional (0–9). A non-whitespace prompt is required; disable the quick-generation button while it is empty. Text-only input produces local demo images without opening the image picker.",
+    "viewSelection": {
+      "mode": "multiple",
+      "default": [
+        "front"
+      ],
+      "toggle": "All six views may be selected together. Clicking a selected item deselects it; an empty selection is allowed but disables generation.",
+      "keyboard": "Arrow keys move focus only. Enter or Space toggles the focused view without changing other selections.",
+      "compatibility": "Read legacy single-view values as a one-item selection. Preserve compatibility with earlier undo snapshots; undo and redo restore the full selected set, conditional back-reference field, editor height and automatic edges.",
+      "demoOutputCount": "Keep the current generation count setting of 1–4 images; do not multiply by the number of selected views."
+    },
+    "multiViewReferenceHeading": "Show only 参考图 and the required marker. No info icon, divider, limit text or uploaded count. Maximum one reference; use the single-select picker and hide Add once filled.",
+    "singleReferenceInteraction": "Fields with capacity one have no ordinal, drag sorting, keyboard sorting or reorder hint. Includes multi-view references, grid crop and back references. Multi-image fields retain ordering based on capacity, not current uploaded count."
+  },
+  "reuse": [
+    "AssetPicker",
+    "ReactFlowCanvas",
+    "ImageConnection",
+    "PromptTools",
+    "Switch",
+    "GenerateTaskButton",
+    "ProgressiveImage",
+    "useVideoReferenceSort",
+    "5.1 Beta theme tokens and original SVGs"
+  ],
+  "designNotes": [
+    "Latest storyboard context is 320x533 without smart expansion or generation settings.",
+    "Multi-view, storyboard and grid crop retain the supplied banner placeholder text until product copy is supplied.",
+    "New images use the existing video workspace image-sizing and placement rules. Sorting only changes reference order, not canvas identity or position.",
+    "The latest user correction on 2026-10-23 makes the six multi-view choices independently selectable; default Front only. This overrides any earlier single-selection interpretation without changing demo output counts.",
+    "User correction on 2026-10-23: selecting the same image again through a node picker adds another independently bound canvas image. This overrides earlier cross-confirmation URL deduplication and canvas-image reuse rules; single-batch URL deduplication remains."
+  ],
+  "delivery": {
+    "localOnly": true,
+    "browserOpened": false,
+    "checksRun": false,
+    "testsRun": false,
+    "buildRun": false,
+    "published": false
+  }
+}

@@ -1,0 +1,10 @@
+.lc-switch { position: relative; display: inline-flex; flex: 0 0 32px; align-items: center; width: 32px; min-width: 32px; height: 18px; min-height: 18px; padding: 2px; border: 0; border-radius: var(--radius-max); background: var(--border-medium); box-shadow: inset 0 0 0 1px var(--border-weak); cursor: pointer; transition: background-color 200ms ease-out, box-shadow 200ms ease-out, opacity 200ms ease-out; }
+.lc-switch[aria-checked='true'] { background: var(--brand-primary); box-shadow: none; }
+.lc-switch[aria-checked='true']:hover:not(:disabled) { background: var(--brand-primary-hover); }
+.lc-switch:focus-visible { outline: 2px solid var(--border-brand); outline-offset: 3px; }
+.lc-switch:disabled { opacity: .4; cursor: not-allowed; }
+.lc-switch-handle { display: block; flex: 0 0 14px; width: 14px; height: 14px; border-radius: var(--radius-max); background: var(--control-fill-white); box-shadow: 0 6px 14px -2px var(--overlay-weak); transform: translateX(0); transition: transform 200ms ease-out; }
+.lc-switch[aria-checked='true'] .lc-switch-handle { transform: translateX(14px); }
+@media (prefers-reduced-motion: reduce) {
+  .lc-switch, .lc-switch-handle { transition: none; }
+}

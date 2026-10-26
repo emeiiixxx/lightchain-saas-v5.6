@@ -1,0 +1,8 @@
+/* v5.4 element-design-menu / download-format-menu, shared Beta tokens. */
+.download-format-control { display: inline-flex; flex: 0 0 32px; width: 32px; height: 32px; }
+.download-format-control > .lc-button { border: 0; }
+.download-format-control > .lc-button[aria-expanded='true'] { background: var(--state-hover); color: var(--text-brand); }
+.download-format-menu { position: fixed; inset: auto; z-index: 40; margin: 0; width: 144px; min-width: 144px; max-width: calc(100vw - 16px); flex-direction: column; gap: 4px; padding: 4px; border: 1px solid var(--border-weak); border-radius: var(--radius-l); background: var(--surface-secondary); box-shadow: var(--shadow-l); color: var(--text-secondary); pointer-events: auto; }
+.download-format-menu:popover-open { display: flex; }
+.download-format-menu > .lc-button { display: flex; width: 100%; height: 32px; min-height: 32px; align-items: center; justify-content: flex-start; gap: 8px; padding: 0 8px; border: 0; border-radius: var(--radius-base); background: transparent; color: var(--text-secondary); font-size: 14px; line-height: 20px; font-weight: 400; white-space: nowrap; text-align: left; }
+.download-format-menu > .lc-button:is(:hover, :focus-visible) { background: var(--state-hover); color: var(--text-primary); }

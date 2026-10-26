@@ -1,0 +1,18 @@
+/* Figma 141:24676 with content-sized width, reusing the Beta parameter styles. */
+.material-generation-settings {
+  width: max-content;
+  max-width: calc(100vw - 32px);
+}
+.material-generation-ratio-icon { flex-shrink: 0; }
+.material-generation-settings .video-parameter-segments--ratios {
+  width: max-content;
+  min-width: 0;
+}
+.material-generation-settings .video-parameter-segments--ratios button {
+  flex: 0 0 auto;
+}
+.material-generation-settings .video-parameter-segments button { padding-inline: 8px; }
+.material-generation-settings .video-parameter-segments-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}

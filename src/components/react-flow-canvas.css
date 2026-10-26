@@ -1,0 +1,87 @@
+.lc-react-flow { position: absolute; inset: 0; }
+.lc-react-flow .react-flow__pane { cursor: default; }
+.lc-react-flow[data-hand='true'] .react-flow__pane { cursor: grab; }
+.lc-react-flow .react-flow__pane.dragging { cursor: grabbing; }
+/* The drag marquee is outline-only; the selected group owns its own fill. */
+.lc-react-flow .react-flow { background: transparent; --xy-node-background-color: transparent; --xy-node-border: none; --xy-selection-background-color: transparent; --xy-selection-border: 2px dashed var(--selection-blue); }
+.lc-react-flow .react-flow__viewport,
+.lc-react-flow .react-flow__node,
+.lc-react-flow .react-flow__nodesselection,
+.lc-react-flow .react-flow__nodesselection-rect { transition: none; }
+.lc-react-flow .react-flow__node-lightchain { padding: 0; border: 0; background: transparent; box-shadow: none; border-radius: 16px; }
+.lc-react-flow .react-flow__node:focus { outline: none; }
+.lc-react-flow .lc-flow-handle { opacity: 0; pointer-events: none; width: 1px; height: 1px; min-width: 0; min-height: 0; border: 0; }
+.lc-react-flow .react-flow__handle.lc-flow-free-handle {
+  /* React Flow measures this box for the line anchor. Keep it at the dot's
+     centre; the pseudo-element owns the larger, constant pointer hit area. */
+  width: 0; height: 0;
+  min-width: 0; min-height: 0; border: 0; background: transparent; z-index: 10;
+  opacity: 0; pointer-events: none; transition-property: opacity;
+}
+.lc-react-flow .lc-flow-free-handle::before {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: calc(32px * var(--canvas-inverse-scale)); height: calc(32px * var(--canvas-inverse-scale));
+  transform: translate(-50%, -50%); transition: none;
+}
+.lc-react-flow .lc-flow-free-handle::after {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: calc(16px * var(--canvas-inverse-scale)); height: calc(16px * var(--canvas-inverse-scale)); box-sizing: border-box;
+  border: calc(2px * var(--canvas-inverse-scale)) solid var(--border-medium);
+  border-radius: 50%; background: var(--control-fill-default); pointer-events: none;
+  transform: translate(-50%, -50%);
+  transition: transform var(--motion-duration) var(--motion-easing), background-color var(--motion-duration) var(--motion-easing), border-color var(--motion-duration) var(--motion-easing);
+}
+.lc-react-flow .lc-flow-handle-plus {
+  position: absolute; left: 50%; top: 50%; z-index: 1; pointer-events: none;
+  width: calc(10px * var(--canvas-inverse-scale)); height: calc(10px * var(--canvas-inverse-scale));
+  color: var(--text-secondary); transform: translate(-50%, -50%);
+  transition: transform var(--motion-duration) var(--motion-easing), color var(--motion-duration) var(--motion-easing);
+}
+.lc-react-flow .lc-flow-free-handle.react-flow__handle-left { left: calc(-12px * var(--canvas-inverse-scale)); }
+.lc-react-flow .lc-flow-free-handle.react-flow__handle-right { right: calc(-12px * var(--canvas-inverse-scale)); }
+.lc-react-flow[data-connectable='true'] .react-flow__node:hover .lc-flow-free-handle,
+.lc-react-flow[data-connectable='true'] .react-flow__node.selected .lc-flow-free-handle[data-node-kind='editor'],
+.lc-react-flow[data-connectable='true'] .lc-flow-free-handle[data-reconnectable='true'],
+.lc-react-flow[data-connectable='true'] .lc-flow-free-handle[data-add-menu='true']:is(:focus-visible, [aria-expanded='true']),
+.lc-react-flow[data-connectable='true'][data-connecting='true'] .lc-flow-free-handle[data-node-kind='editor'],
+.lc-react-flow[data-connectable='true'] .lc-flow-free-handle[data-feedback='source'] {
+  opacity: 1; pointer-events: all; cursor: crosshair;
+}
+.lc-react-flow .lc-flow-free-handle:is(:hover, [data-reconnect-hovered='true'], [data-feedback='source'], [data-feedback='valid'], [data-feedback='invalid'])::after {
+  transform: translate(-50%, -50%) scale(1.25);
+  border-color: var(--border-brand); background: var(--brand-primary);
+}
+.lc-react-flow .lc-flow-free-handle[data-add-menu='true']:focus-visible::after { border-color: var(--border-brand); }
+.lc-react-flow .lc-flow-free-handle:is(:hover, [data-reconnect-hovered='true'], [data-feedback='source'], [data-feedback='valid'], [data-feedback='invalid']) .lc-flow-handle-plus {
+  transform: translate(-50%, -50%) scale(1.25); color: var(--text-primary);
+}
+.canvas-context-menu.lc-flow-add-menu { width: 160px; }
+.lc-react-flow .lc-flow-free-handle[data-feedback='valid']::after { border-color: var(--status-success); background: var(--status-success); }
+.lc-react-flow .lc-flow-free-handle[data-feedback='invalid']::after { border-color: var(--status-danger); background: var(--status-danger); }
+/* Keep the selection overlay visual-only. Its native drag surface otherwise
+   covers node forms after box selection or programmatic selection (e.g. merge).
+   Dragging a selected node still moves the selected group through React Flow. */
+.lc-react-flow .react-flow__nodesselection-rect { border: 0; background: transparent; pointer-events: none; }
+.lc-react-flow .react-flow__selection { transition: none; }
+.lc-react-flow .react-flow__edge { pointer-events: none; }
+/* Only user-created lines have hit areas; automatic business lines remain visual. */
+.lc-react-flow[data-connectable='true'] .lc-flow-free-edge { pointer-events: visibleStroke; }
+.lc-react-flow .lc-flow-free-edge .lc-flow-edge-underlay { pointer-events: none; }
+.lc-react-flow[data-connectable='false'] .lc-flow-free-edge,
+.lc-react-flow[data-connectable='false'] .lc-flow-free-edge .react-flow__edgeupdater { pointer-events: none; }
+.lc-react-flow .lc-flow-free-edge .react-flow__edgeupdater {
+  /* The library centre is the Handle centre (reconnectRadius=0). Geometry
+     below enlarges only the hit area; CanvasConnectionHandle draws the dot. */
+  r: calc(16px * var(--canvas-inverse-scale));
+  fill: transparent; stroke: none; cursor: crosshair; transition: none;
+}
+.lc-react-flow[data-connectable='true'][data-connecting='false'] .lc-flow-free-handle[data-reconnectable='true'] { pointer-events: none; }
+.lc-react-flow[data-connecting='true'] .lc-flow-free-edge .react-flow__edgeupdater { pointer-events: none; }
+.lc-flow-connection path { fill: none; transition-property: stroke; }
+.lc-flow-edge-line { stroke: var(--border-medium); stroke-width: calc(2px * var(--canvas-inverse-scale, 1)); }
+.lc-flow-connection[data-active='true'] .lc-flow-edge-line { stroke: var(--border-brand); stroke-dasharray: calc(8px * var(--canvas-inverse-scale, 1)) calc(6px * var(--canvas-inverse-scale, 1)); animation: lc-flow-ants 800ms linear infinite; }
+.lc-flow-edge-underlay { stroke: #111817; stroke-width: calc(4px * var(--canvas-inverse-scale, 1)); stroke-linecap: round; }
+.lc-flow-draft-connection { pointer-events: none; }
+.lc-flow-draft-connection[data-invalid='true'] { opacity: .5; }
+@keyframes lc-flow-ants { to { stroke-dashoffset: calc(-14px * var(--canvas-inverse-scale, 1)); } }
+@media (prefers-reduced-motion: reduce) { .lc-flow-connection path { animation: none !important; } }

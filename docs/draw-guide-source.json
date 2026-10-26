@@ -1,0 +1,370 @@
+{
+  "design": {
+    "fileKey": "1dBgOC793NRsKgbNIaLZMK",
+    "nodeId": "1:1724",
+    "pageId": "0:1",
+    "requiredLibrary": "5.1 Beta"
+  },
+  "export": {
+    "format": "SVG_STRING",
+    "source": "COMPONENT masters; tooltip arrow from original VECTOR instance child",
+    "geometry": "Original Figma export; paths, viewBox, fills and cursor effects preserved",
+    "masterOpacity": 1
+  },
+  "icons": [
+    {
+      "name": "slider-tooltip-arrow",
+      "path": "public/assets/draw-guide/slider-tooltip-arrow.svg",
+      "source": "SVG_STRING export of original Arrow VECTOR I1:1674;406:2898 in Tooltip 1:1674",
+      "sourceSize": { "width": 8, "height": 4 },
+      "designSize": { "width": 8, "height": 4 },
+      "sourceRotation": 180,
+      "exportOrientation": "Downward; source rotation baked into SVG geometry",
+      "cssRotation": 0
+    },
+    {
+      "name": "marker",
+      "path": "public/assets/draw-guide/marker.svg",
+      "component": {
+        "fileKey": "1dBgOC793NRsKgbNIaLZMK",
+        "nodeId": "2:306",
+        "name": "Name=marker",
+        "key": "4ffe627637f1f653094cc4f1c4f92e51075897c3"
+      },
+      "sourceSize": {
+        "width": 16,
+        "height": 16
+      },
+      "designSize": {
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "name": "eraser",
+      "path": "public/assets/draw-guide/eraser.svg",
+      "component": {
+        "fileKey": "1dBgOC793NRsKgbNIaLZMK",
+        "nodeId": "2:308",
+        "name": "Name=eraser",
+        "key": "56e6e3fc3f1a8476d7dc38f17ea663179762603d"
+      },
+      "sourceSize": {
+        "width": 16,
+        "height": 16
+      },
+      "designSize": {
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "name": "minus",
+      "path": "public/assets/draw-guide/minus.svg",
+      "component": {
+        "fileKey": "1dBgOC793NRsKgbNIaLZMK",
+        "nodeId": "1:57",
+        "name": "Style=Linear, Name=minus",
+        "key": "0dc1b59fb352e61bef3a13544ca67833455f5832"
+      },
+      "sourceSize": {
+        "width": 16,
+        "height": 16
+      },
+      "designSize": {
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "name": "plus",
+      "path": "public/assets/draw-guide/plus.svg",
+      "component": {
+        "fileKey": "1dBgOC793NRsKgbNIaLZMK",
+        "nodeId": "1:59",
+        "name": "Style=Linear, Name=plus",
+        "key": "f5c2219bdc442a9e6dedd1f4477bb62c2468a625"
+      },
+      "sourceSize": {
+        "width": 16,
+        "height": 16
+      },
+      "designSize": {
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "name": "undo",
+      "path": "public/assets/draw-guide/undo.svg",
+      "component": {
+        "fileKey": "1dBgOC793NRsKgbNIaLZMK",
+        "nodeId": "1:9",
+        "name": "Name=flip-left",
+        "key": "a4796b5249a8e294dd0df630f6c1d87b36d997f7"
+      },
+      "sourceSize": {
+        "width": 16,
+        "height": 16
+      },
+      "designSize": {
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "name": "redo",
+      "path": "public/assets/draw-guide/redo.svg",
+      "component": {
+        "fileKey": "1dBgOC793NRsKgbNIaLZMK",
+        "nodeId": "1:11",
+        "name": "Name=flip-right",
+        "key": "d1e8beb52989aba53460def18b6596ed09b45321"
+      },
+      "sourceSize": {
+        "width": 16,
+        "height": 16
+      },
+      "designSize": {
+        "width": 24,
+        "height": 24
+      }
+    },
+    {
+      "name": "clear",
+      "path": "public/assets/draw-guide/clear.svg",
+      "component": {
+        "fileKey": "1dBgOC793NRsKgbNIaLZMK",
+        "nodeId": "1:7",
+        "name": "Name=clear",
+        "key": "ad8560798439a0adbda0ffc904bd54d903669f01"
+      },
+      "sourceSize": {
+        "width": 16,
+        "height": 16
+      },
+      "designSize": {
+        "width": 20,
+        "height": 20
+      }
+    },
+    {
+      "name": "cursor",
+      "path": "public/assets/draw-guide/cursor.svg",
+      "component": {
+        "fileKey": "1dBgOC793NRsKgbNIaLZMK",
+        "nodeId": "12:843",
+        "name": "Name=object-select",
+        "key": "4c1d21f7b18c65af017865daa44d4dc480582fa3"
+      },
+      "sourceSize": {
+        "width": 32,
+        "height": 32
+      },
+      "designSize": {
+        "width": 32,
+        "height": 32
+      }
+    }
+  ],
+  "tokenSources": {
+    "semantic": {
+      "name": "Semantic Tokens",
+      "collectionKey": "1d9ae9b382a322b3269f72a299610a0d514dff19",
+      "libraryCollectionId": "VariableCollectionId:3:8",
+      "modes": {
+        "Dark": "3:0",
+        "Light": "54:0"
+      }
+    },
+    "primitive": {
+      "collectionKey": "c673cebe8743c918e4d5654048aaa359342f70c1"
+    }
+  },
+  "tokens": [
+    {
+      "name": "Surface/floating",
+      "libraryVariableId": "3921:22210",
+      "collection": "semantic",
+      "values": {
+        "Dark": "#262a2b",
+        "Light": "#ffffff"
+      }
+    },
+    {
+      "name": "Border/weak",
+      "libraryVariableId": "3:23",
+      "collection": "semantic",
+      "values": {
+        "Dark": "rgba(255, 255, 255, 0.1)",
+        "Light": "rgba(0, 0, 0, 0.05)"
+      }
+    },
+    {
+      "name": "Text/secondary",
+      "libraryVariableId": "3:14",
+      "collection": "semantic",
+      "values": {
+        "Dark": "#e3e8e8",
+        "Light": "#2f3b3a"
+      }
+    },
+    {
+      "name": "Text/primary",
+      "libraryVariableId": "30:78",
+      "collection": "semantic",
+      "values": {
+        "Dark": "#ffffff",
+        "Light": "#111817"
+      }
+    },
+    {
+      "name": "Text/disabled",
+      "libraryVariableId": "3:16",
+      "collection": "semantic",
+      "values": {
+        "Dark": "rgba(255, 255, 255, 0.3)",
+        "Light": "rgba(0, 0, 0, 0.2)"
+      }
+    },
+    {
+      "name": "Brand/primary",
+      "libraryVariableId": "3:9",
+      "collection": "semantic",
+      "values": {
+        "Dark": "#0bc1b8",
+        "Light": "#70ebde"
+      }
+    },
+    {
+      "name": "Border/brand",
+      "libraryVariableId": "34:2",
+      "collection": "semantic",
+      "values": {
+        "Dark": "#0bc1b8",
+        "Light": "#20d0c4"
+      }
+    },
+    {
+      "name": "State/hover",
+      "libraryVariableId": "3:24",
+      "collection": "semantic",
+      "values": {
+        "Dark": "rgba(255, 255, 255, 0.1)",
+        "Light": "rgba(0, 0, 0, 0.08)"
+      }
+    },
+    {
+      "name": "Control/fill/white",
+      "libraryVariableId": "2261:8661",
+      "collection": "semantic",
+      "values": {
+        "Dark": "#ffffff",
+        "Light": "#ffffff"
+      }
+    },
+    {
+      "name": "Border/strong",
+      "libraryVariableId": "781:7115",
+      "collection": "semantic",
+      "values": {
+        "Dark": "rgba(255, 255, 255, 0.2)",
+        "Light": "rgba(0, 0, 0, 0.08)"
+      }
+    },
+    {
+      "name": "Border/medium",
+      "libraryVariableId": "3:22",
+      "collection": "semantic",
+      "values": {
+        "Dark": "#798080",
+        "Light": "#a2a9a9"
+      }
+    },
+    {
+      "name": "Overlay/weak",
+      "libraryVariableId": "1469:13259",
+      "collection": "semantic",
+      "values": {
+        "Dark": "rgba(0, 0, 0, 0.2)",
+        "Light": "rgba(0, 0, 0, 0.05)"
+      }
+    },
+    {
+      "name": "Overlay/scrim",
+      "libraryVariableId": "3:26",
+      "collection": "semantic",
+      "values": {
+        "Dark": "rgba(0, 0, 0, 0.75)",
+        "Light": "rgba(0, 0, 0, 0.75)"
+      }
+    },
+    {
+      "name": "Overlay/toast",
+      "libraryVariableId": "781:8226",
+      "collection": "semantic",
+      "values": {
+        "Dark": "rgba(36, 48, 50, 0.8)",
+        "Light": "rgba(61, 72, 75, 0.6)"
+      }
+    },
+    {
+      "name": "Surface/media-overlay-strong",
+      "libraryVariableId": "51:3",
+      "collection": "semantic",
+      "values": {
+        "Dark": "rgba(0, 0, 0, 0.75)",
+        "Light": "rgba(0, 0, 0, 0.75)"
+      }
+    },
+    {
+      "name": "Status/danger",
+      "libraryVariableId": "31:3",
+      "collection": "semantic",
+      "values": {
+        "Dark": "#ff4c4c",
+        "Light": "#ff4c4c"
+      }
+    },
+    {
+      "name": "Status/warning",
+      "libraryVariableId": "31:4",
+      "collection": "semantic",
+      "values": {
+        "Dark": "#fca73b",
+        "Light": "#fa8c16"
+      }
+    },
+    {
+      "name": "DodgerBlue/500",
+      "libraryVariableId": "44:17",
+      "collection": "primitive",
+      "values": {
+        "Dark": "#3a97f7",
+        "Light": "#3a97f7"
+      }
+    },
+    {
+      "name": "Text/on-brand-black",
+      "libraryVariableId": "3:30",
+      "collection": "semantic",
+      "values": {
+        "Dark": "#111817",
+        "Light": "#111817"
+      }
+    }
+  ],
+  "effects": {
+    "name": "Shadow/M",
+    "x": 0,
+    "y": 6,
+    "blur": 14,
+    "spread": -2,
+    "colorToken": "Overlay/weak"
+  },
+  "geometry": {
+    "toolbarSpacing": 4,
+    "toolbarPadding": 4,
+    "toolbarRadius": 12
+  }
+}

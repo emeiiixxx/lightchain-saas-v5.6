@@ -1,0 +1,87 @@
+/* Figma 76:5477 / 76:5003, updated 2026-10-23; shared Beta primitives and native player. */
+.lc-dialog.video-template-dialog { width: min(1280px, calc(100vw - 32px)); height: min(720px, calc(100dvh - 80px)); max-width: none; max-height: none; padding: 0; overflow: hidden; border-radius: var(--radius-2xl, 24px); color: var(--text-primary); transition-property: height, color, background-color, border-color, opacity; }
+.video-template-dialog[open] { display: flex; }
+.video-template-dialog::backdrop { background: var(--overlay-scrim); backdrop-filter: none; }
+.video-template-dialog > .divider--vertical { height: 100%; }
+.video-template-sidebar { display: flex; flex: 0 0 256px; flex-direction: column; min-height: 0; background: var(--surface-secondary); transition-property: flex-basis, background-color; }
+.video-template-sidebar h2 { flex-shrink: 0; margin: 0; padding: 24px; color: var(--text-primary); font-size: 20px; font-weight: 700; line-height: 28px; }
+.video-template-tabs { display: flex; flex-direction: column; gap: 8px; min-height: 0; padding: 0 16px 16px; overflow-y: auto; overscroll-behavior: contain; }
+.video-template-tabs button { flex-shrink: 0; width: 100%; min-height: 36px; padding: 8px; border: 0; border-radius: var(--radius-base); background: transparent; color: var(--text-secondary); font-size: 14px; font-weight: 400; line-height: 20px; text-align: left; overflow-wrap: anywhere; }
+.video-template-tabs button:hover { background: var(--state-hover); color: var(--text-primary); }
+.video-template-tabs button[aria-selected='true'] { background: var(--state-selected); color: var(--text-primary); }
+.video-template-content { display: flex; flex: 1; gap: 24px; min-width: 0; height: 100%; padding: 16px; overflow: hidden; }
+.video-template-preview { position: relative; display: flex; flex: 1; align-items: center; justify-content: center; min-width: 0; min-height: 0; overflow: hidden; border-radius: var(--radius-l); background: var(--background-default); }
+.video-template-preview > :is(video, img) { display: block; width: 100%; height: 100%; min-width: 0; min-height: 0; object-fit: contain; }
+.video-template-preview-notice { position: absolute; right: 12px; bottom: 12px; left: 12px; margin: 0; padding: 8px 12px; border-radius: var(--radius-base); background: var(--surface-media-overlay); color: var(--text-on-brand-white); font-size: 12px; line-height: 16px; text-align: center; pointer-events: none; }
+.video-template-details { display: flex; flex: 0 0 320px; flex-direction: column; min-width: 0; min-height: 0; }
+.video-template-close { display: flex; flex-shrink: 0; align-items: flex-start; justify-content: flex-end; width: 100%; height: 32px; }
+.video-template-close .lc-button { width: 32px; min-width: 32px; height: 32px; padding: 0; }
+.video-template-detail-body { display: flex; flex: 1; flex-direction: column; gap: 8px; min-height: 0; padding-bottom: 16px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.video-template-heading { display: flex; flex-shrink: 0; flex-direction: column; gap: 8px; }
+.video-template-title { display: flex; flex-direction: column; gap: 8px; }
+.video-template-heading h3 { margin: 0; color: var(--text-primary); font-size: 20px; font-weight: 700; line-height: 28px; }
+.video-template-heading p { margin: 0; color: var(--text-secondary); font-size: 12px; font-weight: 400; line-height: 16px; }
+.video-template-configuration { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; }
+.video-template-uploads { display: flex; flex: 0 0 auto; flex-direction: column; gap: 8px; min-width: 0; }
+.video-template-upload-heading { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.video-template-upload-heading h4 { margin: 0; color: var(--text-primary); font-size: 14px; font-weight: 500; line-height: 20px; overflow-wrap: anywhere; }
+.video-template-upload-heading p { margin: 0; color: var(--text-tertiary); font-size: 12px; font-weight: 400; line-height: 16px; overflow-wrap: anywhere; }
+.video-template-upload-fields { display: flex; flex-direction: column; gap: 8px; }
+.video-template-image-field { display: flex; flex-shrink: 0; flex-direction: column; gap: 8px; min-width: 0; }
+.video-template-image-field h4 { margin: 0; }
+.video-template-visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.video-template-upload { position: relative; display: flex; align-items: center; gap: 8px; height: 96px; padding: 8px; overflow: hidden; border-radius: var(--radius-xl); background: var(--state-default); color: var(--text-tertiary); }
+.video-template-upload:hover, .video-template-upload:focus-within { background: var(--state-hover); }
+.video-template-upload[data-dragging='true'] { box-shadow: inset 0 0 0 1px var(--border-brand); background: var(--alpha-brand-20); }
+.video-template-upload-empty { display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; height: 100%; padding: 0; border: 0; border-radius: var(--radius-base); background: transparent; color: var(--text-tertiary); font-size: 12px; font-weight: 400; line-height: 16px; }
+.video-template-upload-empty:hover, .video-template-upload-empty:focus-visible { color: var(--text-secondary); }
+.video-template-upload-empty span:not(.icon) { overflow-wrap: anywhere; }
+/* Clip the image and rectangular hover layer together; a separate rounded overlay exposes bright image edges. */
+.video-template-thumbnail { position: relative; isolation: isolate; width: 80px; height: 80px; flex: 0 0 80px; overflow: hidden; border-radius: var(--radius-l); clip-path: inset(0 round var(--radius-l)); background: var(--control-fill-hover); }
+.video-template-thumbnail > img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.video-template-file-name { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; min-width: 0; max-height: 64px; margin: 0; padding-inline: 4px; overflow: hidden; color: var(--text-tertiary); font-size: 12px; font-weight: 400; line-height: 16px; overflow-wrap: anywhere; }
+.video-template-image-actions { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 4px; opacity: 0; pointer-events: none; background: var(--surface-media-overlay); backdrop-filter: blur(10px); }
+.video-template-upload:hover .video-template-image-actions, .video-template-upload:focus-within .video-template-image-actions { opacity: 1; pointer-events: auto; }
+.video-template-image-actions .lc-button { width: 24px; min-width: 24px; height: 24px; padding: 0; border-radius: 6px; color: var(--text-on-brand-white); }
+.video-template-image-actions .lc-button:hover:not(:disabled) { background: var(--surface-media-overlay); color: var(--text-on-brand-white); }
+.video-template-upload-status { position: absolute; right: 8px; bottom: 4px; padding: 2px 4px; border-radius: 4px; background: var(--surface-default); color: var(--text-tertiary); font-size: 12px; line-height: 16px; }
+.video-template-actions { display: flex; flex-shrink: 0; align-items: flex-start; gap: 8px; width: 100%; }
+.video-template-actions > .lc-button { padding-inline: 24px; }
+.video-template-actions > .generate-task-button { flex: 1; min-width: 0; height: 40px; padding-inline: 20px; font-size: 14px; line-height: 20px; white-space: nowrap; }
+.video-template-dialog:lang(en) .video-template-actions > .lc-button, .video-template-dialog:lang(ja) .video-template-actions > .lc-button { padding-inline: 12px; }
+.video-template-dialog:lang(en) .video-template-actions > .generate-task-button, .video-template-dialog:lang(ja) .video-template-actions > .generate-task-button { padding-inline: 12px; }
+.video-template-content.is-empty { flex-direction: column; }
+.video-template-empty { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; min-height: 0; padding-bottom: 8px; text-align: center; }
+.video-template-empty img { flex-shrink: 0; width: 128px; height: 128px; object-fit: contain; }
+.video-template-empty h3 { margin: 0; color: var(--text-tertiary); font-size: 16px; font-weight: 500; line-height: 24px; }
+.video-template-empty p { margin: 4px 0 0; color: var(--text-placeholder); font-size: 12px; line-height: 16px; }
+@media (max-width: 1050px) {
+  .video-template-sidebar { flex-basis: 208px; }
+  .video-template-content { gap: 16px; }
+  .video-template-details { flex-basis: 288px; }
+  .video-template-actions > .lc-button { padding-inline: 16px; }
+  .video-template-actions > .generate-task-button { padding-inline: 12px; }
+}
+@media (max-width: 760px) {
+  .lc-dialog.video-template-dialog { height: calc(100dvh - 32px); }
+  .video-template-sidebar { flex-basis: 152px; }
+  .video-template-sidebar h2 { padding: 20px 16px; font-size: 16px; line-height: 24px; }
+  .video-template-tabs { padding-inline: 8px; }
+  .video-template-content:not(.is-empty) { position: relative; flex-direction: column; overflow-y: auto; }
+  .video-template-preview { flex: 0 0 280px; min-height: 280px; margin-top: 32px; }
+  .video-template-details { flex: 0 0 auto; }
+  .video-template-details > .video-template-close { position: absolute; top: 16px; right: 16px; width: 32px; }
+  .video-template-detail-body { flex: 0 0 auto; overflow: visible; }
+  .video-template-actions { flex-wrap: wrap; }
+  .video-template-actions > .generate-task-button { min-width: 152px; }
+}
+@media (max-width: 460px) {
+  .video-template-sidebar { flex-basis: 112px; }
+  .video-template-sidebar h2 { padding: 16px 12px; }
+  .video-template-tabs button { font-size: 12px; line-height: 18px; }
+  .video-template-content { padding: 12px; }
+  .video-template-preview { flex-basis: 224px; min-height: 224px; }
+  .video-template-thumbnail { width: 64px; height: 64px; flex-basis: 64px; }
+  .video-template-upload { gap: 4px; }
+}
+@media (hover: none) { .video-template-image-actions { opacity: 1; pointer-events: auto; } }

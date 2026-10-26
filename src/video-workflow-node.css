@@ -1,0 +1,65 @@
+/* Final node shells: Figma 84:6110 / 119:11242 and 121:17924 / 121:18150. */
+.fusion-node.video-workflow-node { position: relative; width: 320px; height: 641px; padding: 0; gap: 0; border: 0; }
+.fusion-node.video-workflow-node[data-mode='references'] { height: 661px; }
+.video-workflow-node::before { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
+.fusion-position[data-selected='true'] .video-workflow-node::before { opacity: 0; }
+.video-workflow-header { height: 80px; flex: 0 0 80px; padding: 12px; gap: 8px; }
+.video-workflow-header h2 { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.video-workflow-header .fusion-tip { flex: 0 0 28px; background: linear-gradient(10.839779284859844deg, rgba(0,161,255,.4) 16.533%, rgba(200,97,255,.4) 83.467%); }
+.video-workflow-content { flex: 0 0 504px; height: 504px; margin: 0; padding: 12px; gap: 16px; }
+.video-workflow-node[data-mode='references'] .video-workflow-content { flex: 1 0 auto; height: auto; }
+.video-workflow-content > * { flex-shrink: 0; }
+.video-workflow-frame-field { height: 92px; }
+.video-node-icon { flex-shrink: 0; width: 16px; height: 16px; }
+.video-workflow-node .video-reference-info { width: 16px; min-width: 16px; height: 16px; min-height: 16px; padding: 0; border: 0; border-radius: 4px; color: var(--text-tertiary); }
+.video-frame-upload { display: flex; align-items: center; gap: 8px; width: 100%; height: 64px; flex: 0 0 64px; padding: 8px; border: 0; border-radius: 16px; background: var(--state-default); color: var(--text-secondary); font-size: 12px; line-height: 16px; }
+.video-frame-upload-empty { justify-content: center; gap: 4px; cursor: pointer; transition: background-color 200ms ease-out; }
+.video-frame-upload-empty:hover { background: var(--state-hover); }
+.video-frame-upload > .video-reference-tile { flex: 0 0 48px; width: 48px; height: 48px; }
+.video-workflow-materials { min-height: 220px; gap: 8px; }
+.video-reference-section { display: flex; flex-direction: column; gap: 8px; min-height: 92px; }
+.video-reference-section-label { display: flex; align-items: center; gap: 4px; height: 20px; flex: 0 0 20px; color: var(--text-tertiary); font-size: 12px; line-height: 16px; white-space: nowrap; }
+.video-reference-section-label > span:first-child { line-height: 20px; }
+.video-reference-label-divider { width: 1px; height: 12px; background: var(--border-weak); }
+.video-reference-count { color: var(--text-brand); }
+/* Reserve overflow room for the corner action without shifting thumbnails. */
+.video-workflow-references { display: flex; flex-wrap: nowrap; align-items: flex-start; gap: 8px; width: calc(100% + 8px); height: 72px; min-height: 72px; margin-top: -8px; padding: 8px 8px 0 0; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior: contain; }
+.video-workflow-references::-webkit-scrollbar { display: none; }
+.video-workflow-references > * { flex: 0 0 64px; width: 64px; height: 64px; }
+.video-workflow-references.video-reference-grid { display: grid; grid-template-columns: repeat(4, 64px); grid-auto-rows: 64px; height: auto; overflow: visible; }
+.video-reference-tile { position: relative; isolation: isolate; overflow: visible; border-radius: 12px; background: var(--state-default); transition: opacity 200ms ease-out, box-shadow 200ms ease-out; }
+.video-reference-tile[draggable='true'] { cursor: grab; }
+.video-reference-tile[data-dragging='true'] { opacity: .45; }
+.video-reference-tile::after { content: ''; position: absolute; inset: 0; border: 2px solid var(--brand-primary); border-radius: inherit; opacity: 0; pointer-events: none; transition: opacity 200ms ease-out; }
+.video-reference-tile[data-dragging='true']::after { opacity: 1; }
+.video-workflow-references[data-reference-sorting='true'] { cursor: grabbing; }
+.video-reference-preview { position: relative; display: block; width: 100%; height: 100%; padding: 0; border: 0; border-radius: inherit; overflow: hidden; background: transparent; color: var(--text-primary); cursor: inherit; }
+.video-reference-preview > :is(.progressive-image, video) { display: block; width: 100%; height: 100%; object-fit: cover; }
+.video-reference-preview img { -webkit-user-drag: none; }
+.video-reference-preview::after { content: ''; position: absolute; inset: 0; background: var(--overlay-weak); opacity: 0; pointer-events: none; transition: opacity 200ms ease-out; }
+.video-reference-tile:is(:hover, :focus-within) .video-reference-preview::after { opacity: 1; }
+.video-reference-tile .video-reference-remove { position: absolute; z-index: 2; top: -8px; right: -8px; width: 24px; min-width: 24px; height: 24px; min-height: 24px; padding: 0; border: 0; border-radius: 999px; -webkit-backdrop-filter: blur(var(--background-blur-s)); backdrop-filter: blur(var(--background-blur-s)); opacity: 0; pointer-events: none; transition: opacity 200ms ease-out, background-color 200ms ease-out; }
+.video-reference-tile:is(:hover, :focus-within) .video-reference-remove { opacity: 1; pointer-events: auto; }
+.video-workflow-references[data-reference-sorting='true'] .video-reference-remove { opacity: 0; pointer-events: none; }
+.video-reference-number { position: absolute; left: 4px; bottom: 4px; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 999px; background: var(--brand-primary); color: var(--text-on-brand-black); font-size: 12px; line-height: 16px; pointer-events: none; }
+.video-reference-video-mark { position: absolute; right: 4px; bottom: 4px; display: flex; align-items: center; justify-content: center; width: 16px; height: 16px; padding: 2px; border-radius: 4px; background: var(--surface-media-overlay); color: var(--text-on-brand-white); pointer-events: none; }
+.video-workflow-reference-add { padding: 0; }
+.video-workflow-prompt { height: 188px; }
+.video-workflow-prompt-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 20px; }
+.video-workflow-prompt-heading > .fusion-label { min-width: 0; }
+.video-prompt-expansion { display: inline-flex; flex-shrink: 0; align-items: center; gap: 4px; height: 20px; padding: 0 4px; color: var(--text-tertiary); font-size: 12px; line-height: 20px; font-weight: 500; white-space: nowrap; cursor: pointer; }
+.video-prompt-expansion > span { cursor: pointer; }
+.video-workflow-prompt .fusion-textarea { flex-shrink: 0; border: 0; box-shadow: inset 0 0 0 1px var(--border-weak); }
+.video-workflow-prompt .fusion-textarea:hover { box-shadow: inset 0 0 0 1px var(--border-strong); }
+.video-workflow-prompt .fusion-textarea:focus-within { box-shadow: inset 0 0 0 1px var(--brand-primary); }
+.video-workflow-prompt .fusion-textarea.has-error { box-shadow: inset 0 0 0 1px var(--status-danger); }
+.video-prompt-assist { display: flex; flex: 1; min-width: 0; justify-content: flex-end; align-items: center; gap: 4px; }
+.video-prompt-assist .fusion-counter { flex: 0 0 auto; }
+.video-workflow-settings { height: 60px; }
+.video-workflow-settings .lc-setting-select-value { font-size: 12px; line-height: 16px; }
+.fusion-node-action.video-workflow-action { height: 57px; flex: 0 0 57px; margin: 0; padding: 12px; }
+.video-workflow-node .fusion-generate { flex: 1; min-width: 0; width: 100%; padding: 0 20px; font-size: 14px; line-height: 20px; white-space: nowrap; }
+@media (prefers-reduced-motion: reduce) {
+  .video-frame-upload-empty, .video-reference-tile, .video-reference-tile::after, .video-reference-preview::after, .video-reference-tile .video-reference-remove { transition: none; }
+}
+

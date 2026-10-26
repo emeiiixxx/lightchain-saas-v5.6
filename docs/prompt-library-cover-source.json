@@ -1,0 +1,20 @@
+{
+  "feature": "提示词库选填封面",
+  "targetVersion": "5.5",
+  "source": {
+    "repository": "lightchain-saas-v5.4",
+    "revision": "083e419",
+    "files": [
+      "src/components/PromptLibrary.tsx",
+      "src/components/PromptCoverField.tsx",
+      "src/components/prompt-library.css",
+      "src/prompt-storage.ts",
+      "src/useSavedPrompts.ts"
+    ],
+    "figmaNodes": { "list": ["77:6944", "77:7298"], "detail": "77:5993" },
+    "icons": ["public/assets/prompt-cover-add-image.svg", "public/assets/prompt-cover-replace.svg"]
+  },
+  "cover": { "optional": true, "maxCount": 1, "maxBytes": 20971520, "formats": ["JPG", "PNG", "WebP", "SVG"] },
+  "storage": { "database": "lc-v55-flow-prompt-library", "legacyKey": "lc-v55-flow-fusion-prompts", "migrates": ["string[]", "PromptEntry[]", "version:2 entries"] },
+  "verification": "未运行测试、构建或浏览器验证"
+}

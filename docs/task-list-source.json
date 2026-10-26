@@ -1,0 +1,85 @@
+{
+  "fileKey": "1dBgOC793NRsKgbNIaLZMK",
+  "nodeId": "165:30270",
+  "geometry": {
+    "width": 240,
+    "threeRowHeight": 266,
+    "expandedTrigger": 32,
+    "rowHeight": 64,
+    "thumbnail": 48,
+    "padding": 12,
+    "gap": 8
+  },
+  "motion": {
+    "nodeId": "103:4266",
+    "rotate": [
+      -360,
+      0
+    ],
+    "durationMs": 3000,
+    "easing": "linear",
+    "repeat": "infinite",
+    "reducedMotion": "static"
+  },
+  "dataContract": {
+    "component": "CanvasTaskList",
+    "via": "CanvasChrome.tasks",
+    "fields": [
+      "id",
+      "status: running|completed|failed",
+      "createdAt: ISO timestamp",
+      "thumbnailUrl?: string",
+      "resultIds?: string[]"
+    ],
+    "default": [],
+    "expandAllowed": "tasks.length > 0, including completed-only lists",
+    "count": "running only",
+    "clear": "close and disable",
+    "selection": "Completed rows are native buttons when the parent resolves surviving results by resultIds or generatedTaskId. Click, Enter or Space selects those results and centers them in the canvas using the existing camera transition. Keep the list open. Running, failed and missing-result rows do not navigate."
+  },
+  "videoWorkspaceDemo": {
+    "updated": "2026-10-23",
+    "source": "src/components/VideoWorkspace.tsx",
+    "contract": {
+      "component": "CanvasChrome.tasks -> CanvasTaskList; Figma 165:30270 reuses v5.3 controls, dimensions, tokens and generating animation.",
+      "durationMs": 3000,
+      "lifecycle": "Each valid click records an independent running task and immediately adds its connected placeholders using the submitted ratio. After 3 seconds, replace surviving placeholders in place and mark the task completed with the first surviving result thumbnail or video poster. Preserve drag/arrangement positions, dimensions and IDs.",
+      "history": "Keep completed records for the mounted workspace session; running count includes only running tasks. The task list remains expandable after all tasks complete.",
+      "removedEditor": "Deleting or undoing away the editor or every placeholder cancels its timer and marks the task failed. Surviving slots show a static failure state; restoring old snapshots does not restart generation. Deleted individual slots are not recreated on completion.",
+      "inactivePage": "Continue tasks across route changes without moving or focusing the hidden canvas. Clean up timers when the workspace unmounts.",
+      "undo": "Each submitted placeholder batch is one canvas undo step; completion adds no undo step. Task execution history is not rewound. Historical slots resolve to completed results or failure when restored.",
+      "examples": "On first activation per workspace session, append three completed examples: two image results and one video result, with a quick-image editor and a short-video editor connected through real IDs. Preserve existing nodes and selection; place examples beside the scene. Empty scenes fit the examples immediately. One undo removes the example scene; route changes do not recreate it.",
+      "resultNavigation": "Tasks store resultIds and output media store generatedTaskId. Resolve current positions by either stable binding, select and fit surviving results. Copies clear generatedTaskId. Deleted or undone results keep their history but cannot navigate until restored.",
+      "legacyNavigation": "Repair missing resultIds from generatedTaskId first. For older one-result demo records without either binding, migrate only complete equal-count groups sharing the exact thumbnail URL: newest submission maps to newest appended unclaimed generated output. Preserve existing bindings and skip ambiguous/deleted groups."
+    },
+    "verification": "Source implementation only. No browser, automated checks, tests, build or deployment, per user instruction.",
+    "canvasPlaceholder": {
+      "component": "CanvasGenerationPlaceholder",
+      "sizing": "Snapshot the submitted ratio. Portrait width 320px; landscape height 320px; square 320x320px; the other side follows the ratio. Auto uses the first bound input intrinsic ratio, falling back to 1:1. Video upscaling uses its input video ratio.",
+      "visual": "Reuse the v5.3 three-color generating SVGs and 3s linear animation, theme tokens and reduced-motion handling. One placeholder per expected output with the same generator edge and final canvas ID.",
+      "interaction": "Move, arrange, select and delete. No preview, download, copying or downstream editor actions until completed. Completed demo files use contain in the reserved frame without cropping or changing source media.",
+      "history": "Submission is one undo step; completion replaces slots without an additional undo step. Restoring historical slots resolves the task outcome instead of restoring a permanent spinner."
+    }
+  },
+  "baseline": {
+    "fileKey": "lDDzsXpslev95eZ1ZpAHVt",
+    "nodeId": "103:4291",
+    "validation": [
+      "TypeScript noEmit passed",
+      "Isolated browser fixtures: empty disabled, nonempty expand, completed-only expand, running count, clear auto-close, keyboard activation, 240x266 geometry, both themes and reduced motion passed",
+      "Dark/light screenshots inspected; fixtures not persisted or added to production canvas"
+    ]
+  },
+  "updated": "2026-10-23",
+  "visual": {
+    "surface": "Surface/default, unchanged between collapsed and expanded states",
+    "border": "Border/weak",
+    "shadow": "Shadow/L",
+    "radius": 12,
+    "rowSurface": "Surface/secondary",
+    "thumbnailFit": "contain",
+    "triggerInteraction": "Click toggles expansion consistently for mouse, touch and keyboard. Hover, pointer leave and focus changes do not change expansion. Clicking a result keeps the list open; Escape closes. Container and trigger backgrounds remain unchanged.",
+    "disclosureMotion": "Shell width/height, header geometry and chevron rotation use shared 200ms ease-out transitions, including interrupted direction changes. Retain closing content through its exit and disable its interaction immediately. Reduced motion switches directly."
+  },
+  "verification": "Implementation only. Current Figma context and motion were read. No browser, automated checks, tests, build or deployment, per user instruction. Baseline validation is historical and does not verify these changes."
+}

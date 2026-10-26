@@ -1,0 +1,35 @@
+.canvas-generation-placeholder {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: inherit;
+  background: var(--background-default);
+  pointer-events: none;
+  user-select: none;
+}
+
+.canvas-generation-placeholder-label {
+  position: relative;
+  padding: 8px 12px;
+  border-radius: var(--radius-max);
+  background: var(--surface-floating);
+  box-shadow: inset 0 0 0 1px var(--border-weak);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  text-align: center;
+}
+
+.canvas-generation-placeholder.is-failed .canvas-task-gradient {
+  animation: none;
+  opacity: .35;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .canvas-generation-placeholder .canvas-task-gradient { animation: none; }
+}
