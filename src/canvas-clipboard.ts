@@ -19,6 +19,7 @@ export function copyCanvasSelection(items: CanvasImage[], selected: string[]): C
         ? `${item.generatedByEditorId}:fusion` : undefined;
       copies.push({ id: item.id, name: item.name, url: item.url, x: item.x, y: item.y, width: item.width, height: item.height,
         naturalWidth: item.naturalWidth, naturalHeight: item.naturalHeight,
+        generatedFile: item.generatedFile ? { ...item.generatedFile } : undefined,
         sourceImageId, generatedByEditorId, generatedFromReferenceId: item.generatedFromReferenceId && imageIds.has(item.generatedFromReferenceId) ? item.generatedFromReferenceId : undefined });
     }
     if (item.fusion && editorIds.has(item.id)) {
@@ -56,6 +57,7 @@ export function pasteCanvasSelection(items: CanvasImage[], dx: number, dy: numbe
     const position = { x: item.x + dx, y: item.y + dy };
     return {
       ...item, id: newIds.get(item.id)!, ...position,
+      projectCover: undefined, coverOrder: undefined,
       generatedTaskId: undefined, generation: undefined,
       editorSourceId: isMultiInputWorkflow(item.fusion) ? undefined : remapImage(item.editorSourceId),
       sourceImageId: remapImage(item.sourceImageId),

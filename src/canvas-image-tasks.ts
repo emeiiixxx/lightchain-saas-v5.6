@@ -15,7 +15,7 @@ export function resolveImageTaskSlots(images: CanvasImage[], records: ReadonlyMa
     if (!image.generation) return image;
     const task = records.get(image.generation.taskId);
     const result = task?.status === 'completed' ? task.results.find(result => result.id === image.id) : undefined;
-    if (result) return { ...image, url: result.url, name: result.name,
+    if (result) return { ...image, url: result.url, name: result.name, coverOrder: image.coverOrder ?? result.coverOrder,
       naturalWidth: result.naturalWidth, naturalHeight: result.naturalHeight, generation: undefined };
     if ((!task || task.status !== 'running') && image.generation.status !== 'failed') {
       return { ...image, generation: { ...image.generation, status: 'failed' as const } };

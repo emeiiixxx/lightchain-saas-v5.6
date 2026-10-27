@@ -3,6 +3,9 @@ import { VideoWorkspace } from './components/VideoWorkspace';
 import { CanvasBackground } from './components/CanvasBackground';
 import { CanvasProjectPanel } from './components/CanvasProjectPanel';
 import { ProgressiveImage } from './components/ProgressiveImage';
+import { CanvasMediaFilename } from './components/CanvasMediaFilename';
+import { CanvasProjectCoverBadge } from './components/CanvasProjectCoverBadge';
+import { useRememberProjectCoverUse } from './project-cover-onboarding';
 import { notify, ToastHost } from './components/Toast';
 import { CutoutEditor } from './components/CutoutEditor';
 import { DrawingGuideEditor } from './components/DrawingGuideEditor';
@@ -37,6 +40,8 @@ import { standaloneTaskInputs } from './canvas-task-layout';
 import { createImageResults } from './canvas-image-results';
 import { withCanvasOriginOrder } from './canvas-origin-order';
 import { canvasImageTaskResults, resolveImageTaskSlots, type CanvasImageTaskRecord } from './canvas-image-tasks';
+import { createCanvasFileNamer } from './canvas-media-filename';
+import { isProjectCoverCandidate, projectCoverMessages, resolveProjectCover, toggleProjectCover, withProjectCoverOrder } from './canvas-project-cover';
 import { getMotionDurationMs } from './motion';
 import { PromptLibraryProvider } from './PromptLibraryContext';
 
@@ -81,17 +86,19 @@ export default function App() {
   const [systemDark, setSystemDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches);
   const [projectName, setProjectName] = useState(() => saved('lc-v56-flow-project-name', 'Untitle'));
   const [menu, setMenu] = useState<'language' | null>(null);
-  const [canvasMenu, setCanvasMenu] = useState<{ x: number; y: number; worldX: number; worldY: number; kind?: 'image' } | null>(null);
+  const [canvasMenu, setCanvasMenu] = useState<{ x: number; y: number; worldX: number; worldY: number; kind?: 'image'; imageId?: string } | null>(null);
   const closeCanvasMenu = useCallback(() => setCanvasMenu(null), []);
   const [modal, setModal] = useState<Modal>(null);
   const [tasks, setTasks] = useState<CanvasTask[]>([]);
   const imageTasks = useRef(new Map<string, CanvasImageTaskRecord>());
+  const fileNamer = useRef(createCanvasFileNamer()).current;
   const [images, commitImages] = useState<CanvasImage[]>([]);
+  useRememberProjectCoverUse(images);
   function setImages(update: CanvasImage[] | ((previous: CanvasImage[]) => CanvasImage[])) {
     commitImages(previous => {
       const before = withCanvasOriginOrder(previous);
       const next = typeof update === 'function' ? update(before) : update;
-      return withCanvasOriginOrder(resolveImageTaskSlots(next, imageTasks.current), before);
+      return withProjectCoverOrder(withCanvasOriginOrder(resolveImageTaskSlots(next, imageTasks.current), before), previous);
     });
   }
   const [referenceTarget, setReferenceTarget] = useState<ImagePickerTarget | null>(null);
@@ -248,6 +255,8 @@ export default function App() {
   });
   const shownReturnToNodes = usePresence(nodesOutsideView ? 'return' : null);
   const activeTool = tools.find(tool => tool.id === shownModal.value);
+  const contextCoverTarget = images.find(image => image.id === canvasMenu?.imageId);
+  const projectCover = resolveProjectCover(images);
 
   useEffect(() => {
     const route = () => {
@@ -328,6 +337,14 @@ export default function App() {
     if (element) setView(current => ({ ...current, x: element.clientWidth / 2 - x * current.zoom, y: element.clientHeight / 2 - y * current.zoom }));
   }, []);
   const removeSelected = useCallback(() => { if (selectedIds.length) { remember(imageRef.current); setImages(items => deleteCanvasSelection(items, selectedIds)); setSelectedIds([]); } }, [selectedIds, remember]);
+  function setCoverFromMenu() {
+    const target = imageRef.current.find(image => image.id === canvasMenu?.imageId);
+    closeCanvasMenu();
+    if (!target || !isProjectCoverCandidate(target)) return;
+    remember(imageRef.current);
+    setImages(items => toggleProjectCover(items, target.id));
+    notify(projectCoverMessages[locale][target.projectCover ? 'resetDone' : 'setDone']);
+  }
   const closeModal = useCallback(() => { uploadEpoch.current++; uploadPoint.current = null; setModal(null); setReading(false); }, []);
 
   const pasteCopiedItems = useCallback((point?: { x: number; y: number }, sourceItems?: CanvasImage[]) => {
@@ -468,11 +485,12 @@ export default function App() {
     if (!sources.length) return;
     // Background removal remains an immediate local interaction fixture.
     const sample = workflowExampleResult('flat');
-    const results = createImageResults(current, sources.map(source => ({
+    const outputs = createImageResults(current, sources.map(source => ({
       sourceId: source.id, sourceUrl: source.url,
       url: sample.url, width: sample.width, height: sample.height,
       name: `${source.name} · 去底结果 · 演示`,
     })));
+    const results = fileNamer.assign(outputs, 'removeBackground', t.removeBackground, current);
     if (!results.length) return;
     remember(current);
     const independent = standaloneTaskInputs(current);
@@ -524,7 +542,9 @@ export default function App() {
       const example = await createWorkflowExample(kind);
       if (epoch !== uploadEpoch.current || imageRef.current.length || window.location.hash === '#/ai-try-on' || !canvas.current) return;
       const rect = canvas.current.getBoundingClientRect();
-      const next = arrangeImages(example, 0, rect);
+      const namedResults = fileNamer.assign(example.filter(item => !!item.generatedByEditorId), kind, workflowFilenameTitle(kind), imageRef.current);
+      const resultsById = new Map(namedResults.map(result => [result.id, result]));
+      const next = arrangeImages(example.map(item => resultsById.get(item.id) ?? item), 0, rect);
       remember(imageRef.current);
       imageRef.current = next; selectedRef.current = [];
       setImages(next); setSelectedIds([]);
@@ -576,9 +596,15 @@ export default function App() {
     animateView(fitImages(results, element.clientWidth, element.clientHeight));
     element.focus({ preventScroll: true });
   }
-  function startImageTask(editor: CanvasImage, results: CanvasImage[], fitResults = false) {
-    if (!results.length) return;
+  function workflowFilenameTitle(kind: WorkflowKind) {
+    return kind === 'batch' ? t.batchEdit : kind === 'merge' ? t.mergeImages : kind === 'directed' ? t.directed
+      : kind === 'lingerie' ? t.lingerie : kind === 'flat' ? t.flat : t.fusion;
+  }
+  function startImageTask(editor: CanvasImage, outputs: CanvasImage[], fitResults = false) {
+    if (!outputs.length) return;
     const previous = imageRef.current;
+    const kind = editor.fusion?.kind ?? 'fusion';
+    const results = fileNamer.assign(outputs, kind, workflowFilenameTitle(kind), previous);
     const id = crypto.randomUUID();
     const record: CanvasImageTaskRecord = { editorId: editor.id, status: 'running', timer: null, results };
     imageTasks.current.set(id, record);
@@ -600,6 +626,7 @@ export default function App() {
       const remaining = current.filter(image => image.generation?.taskId === id);
       const editorExists = current.some(image => image.id === editor.id && image.fusion);
       record.status = editorExists && remaining.length ? 'completed' : 'failed';
+      if (record.status === 'completed') record.results = withProjectCoverOrder(record.results, current);
       setImages(items => items);
       const thumbnailUrl = record.status === 'completed'
         ? results.find(result => remaining.some(image => image.id === result.id))?.url : undefined;
@@ -898,8 +925,10 @@ export default function App() {
             setDragging(false); setSelecting(false); setSnapGuide(null);
             const rect = canvas.current.getBoundingClientRect(), v = viewRef.current;
             document.dispatchEvent(new CustomEvent('lc-select-open', { detail: 'canvas-context' }));
-            setCanvasMenu({ kind: 'image', x: e.clientX, y: e.clientY, worldX: (e.clientX - rect.left - v.x) / v.zoom, worldY: (e.clientY - rect.top - v.y) / v.zoom });
+            setCanvasMenu({ kind: 'image', imageId: n.id, x: e.clientX, y: e.clientY, worldX: (e.clientX - rect.left - v.x) / v.zoom, worldY: (e.clientY - rect.top - v.y) / v.zoom });
           }}>
+          <CanvasMediaFilename name={n.name} url={n.url} />
+          {n.projectCover && isProjectCoverCandidate(n) && <CanvasProjectCoverBadge locale={locale} />}
           <Button hidden={!!canvasReference || !!n.generation} variant="tonal" className="image-preview-button nodrag nopan" aria-label={`${t.viewFull} · ${n.name}`} title={t.viewFull} data-overlay onClick={event => { event.stopPropagation(); if (!n.generation) setPreviewImage(n); }}><Icon name="viewFull" size={20} /></Button>
           {n.generation ? <CanvasGenerationPlaceholder locale={locale} failed={n.generation.status === 'failed'} />
             : <ProgressiveImage src={n.url} alt={n.name} width={n.width} height={n.height} fit="contain" />}
@@ -933,7 +962,7 @@ export default function App() {
         width: shownSelection.value.bounds.width * view.zoom, height: shownSelection.value.bounds.height * view.zoom,
       }}>
         {shownSelection.value.count > 1 && <div className="group-selection-frame" data-selection-count={shownSelection.value.count} />}
-        {shownSelection.value.showToolbar && <div className="media-toolbar-anchor" data-overlay inert={shownSelection.phase === 'exit'}>
+        {shownSelection.value.showToolbar && <div className="media-toolbar-anchor" data-overlay inert={shownSelection.phase === 'exit'} style={{ bottom: `calc(100% + ${16 + 24 * view.zoom}px)` }}>
           <SelectionToolbar locale={locale} multiple={shownSelection.value.count > 1} onAction={action => action === 'batchEdit' ? openBatchEdit() : action === 'multiFlat' ? openMerge(true) : action === 'fusion' || action === 'lingerie' || action === 'directed' || action === 'flat' ? openFusion(action) : action === 'cutout' ? setCutoutImage(imageRef.current.find(n => !n.generation && selectedRef.current.includes(n.id)) ?? null) : action === 'removeBackground' ? removeSelectedBackgrounds() : action === 'mergeImages' ? openMerge() : announce(t.noBackend)} onDownload={() => void downloadSelected()} />
         </div>}
       </div>}
@@ -1009,6 +1038,8 @@ export default function App() {
       onDownload={() => { closeCanvasMenu(); void downloadSelected(); }}
       onCopy={() => { void copySelectedFromMenu(); }}
       onDuplicate={() => { duplicateSelected(); closeCanvasMenu(); }}
+      onSetCover={contextCoverTarget && isProjectCoverCandidate(contextCoverTarget) ? setCoverFromMenu : undefined}
+      isProjectCover={contextCoverTarget?.projectCover}
       onDelete={() => { removeSelected(); closeCanvasMenu(); }}
       onUpload={() => { if (!canvasMenu) return; openUpload({ x: canvasMenu.worldX, y: canvasMenu.worldY }); closeCanvasMenu(); }}
       onPaste={() => { if (canvasMenu) pasteCopiedItems({ x: canvasMenu.worldX, y: canvasMenu.worldY }); closeCanvasMenu(); }} />
@@ -1030,7 +1061,8 @@ export default function App() {
     {shownCutout.value && <CutoutEditor key={shownCutout.value.id} image={shownCutout.value} phase={shownCutout.phase} onClose={() => setCutoutImage(null)} onApply={url => {
       const source = shownCutout.value!;
       ownedUrls.current.add(url);
-      const result: CanvasImage = {...source, id: crypto.randomUUID(), name: `${source.name}-cutout.png`, sourceImageId: source.id, generatedByEditorId: undefined, generatedTaskId: undefined, generation: undefined, editorSourceId: undefined, url, x: source.x + source.width + 80, role: undefined, fusion: undefined, operation: undefined};
+      const output: CanvasImage = {...source, id: crypto.randomUUID(), name: `${source.name}-cutout.png`, sourceImageId: source.id, generatedByEditorId: undefined, generatedTaskId: undefined, generation: undefined, editorSourceId: undefined, url, x: source.x + source.width + 80, role: undefined, fusion: undefined, operation: undefined};
+      const [result] = fileNamer.assign([output], 'cutout', t.cutout, imageRef.current, 'png');
       remember(imageRef.current); setImages(previous => [...previous, result]); setSelectedIds([result.id]); setCutoutImage(null);
     }} />}
     {shownImprove.value && <ResultFeedbackPopover key={`${shownImprove.value.imageId}:${shownImprove.value.kind}`} kind={shownImprove.value.kind} anchor={shownImprove.value.anchor} locale={locale} phase={shownImprove.phase}
@@ -1098,7 +1130,7 @@ export default function App() {
       onClose={closeModal} onConfirm={image => { addBatchImages([image], uploadPoint.current); closeModal(); }} onConfirmBatch={items => { addBatchImages(items, uploadPoint.current); closeModal(); }} />}
     {shownModal.value && shownModal.value !== 'upload' && !activeTool && <Dialog title={t[shownModal.value as 'help' | 'support' | 'credits' | 'project']} onClose={closeModal} closeLabel={t.close} phase={shownModal.phase}>
       {shownModal.value === 'help' ? <div className="text-sm leading-6"><p className="font-medium mb-3">{t.helpIntro}</p><ul className="help-list space-y-3 text-muted"><li>{t.helpUpload}</li><li>{t.shortcutSelect}</li><li>{t.helpPan}</li><li>{t.helpZoom}</li><li>{t.helpKeys}</li></ul><p className="text-xs text-muted mt-6">{t.localNote}</p></div>
-        : shownModal.value === 'project' ? <><div className="project-summary p-4 rounded-xl mb-4"><p className="font-medium mb-1">{projectName}</p><p className="text-xs text-muted">{t.workspace} · {images.filter(n => !n.nodeOnly).length} {t.image}</p></div><p className="text-xs leading-5 text-muted">{t.localNote}</p><div className="flex justify-end mt-6"><Button variant="outline" size="m" onClick={closeModal}>{t.returnCanvas}</Button></div></>
+        : shownModal.value === 'project' ? <><div className="project-summary p-4 rounded-xl mb-4">{projectCover && <img className="project-summary-cover" src={projectCover.url} alt={projectCover.name} />}<p className="font-medium mb-1">{projectName}</p><p className="text-xs text-muted">{t.workspace} · {images.filter(n => !n.nodeOnly).length} {t.image}</p></div><p className="text-xs leading-5 text-muted">{t.localNote}</p><div className="flex justify-end mt-6"><Button variant="outline" size="m" onClick={closeModal}>{t.returnCanvas}</Button></div></>
         : <p className="text-sm leading-6 text-muted">{shownModal.value === 'support' ? t.supportNote : t.creditsNote}</p>}
     </Dialog>}
   </div></PromptLibraryProvider>;

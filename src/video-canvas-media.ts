@@ -25,7 +25,7 @@ export function copyVideoCanvasSelection(items: VideoCanvasMedia[], selected: st
   const originals = new Map(items.map(item => [item.id, item]));
   return copyCanvasSelection(items, selected).map(item => {
     const video = originals.get(item.id)?.video;
-    return { ...item, generatedTaskId: undefined, ...(video ? { video: { ...video } } : {}) };
+    return { ...item, projectCover: undefined, coverOrder: undefined, generatedTaskId: undefined, ...(video ? { video: { ...video } } : {}) };
   });
 }
 export { pasteCanvasSelection as pasteVideoCanvasSelection } from './canvas-clipboard';

@@ -96,6 +96,12 @@ export const assets = {
   contextDownload: '/assets/canvas/context-download.svg',
   contextCopy: '/assets/canvas/context-copy.svg',
   contextTrash: '/assets/canvas/context-trash.svg',
+  // v5.6 media context menu, Figma 5:4470; original 20px artwork.
+  mediaContextDownload: '/assets/canvas-media-context-menu/download.svg',
+  mediaContextCopy: '/assets/canvas-media-context-menu/copy.svg',
+  mediaContextDuplicate: '/assets/canvas-media-context-menu/duplicate.svg',
+  mediaContextCover: '/assets/canvas-media-context-menu/project-cover.svg',
+  mediaContextDelete: '/assets/canvas-media-context-menu/delete.svg',
   directedAdd: '/assets/canvas/directed-add.svg',
   directedReplace: '/assets/canvas/directed-replace.svg',
   directedChevron: '/assets/canvas/directed-chevron-right.svg',

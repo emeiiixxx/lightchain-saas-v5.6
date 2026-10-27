@@ -4,6 +4,8 @@ import type { Locale } from '../i18n';
 import { usePresence } from '../usePresence';
 import { Icon } from './ui';
 import { CanvasContextSubmenu } from './CanvasContextSubmenu';
+import { projectCoverMessages } from '../canvas-project-cover';
+import { useShowProjectCoverNew } from '../project-cover-onboarding';
 
 export type CanvasMenuGroup = {
   id: string;
@@ -30,11 +32,14 @@ type Props = {
   onDownload?: () => void;
   onCopy?: () => void;
   onDuplicate?: () => void;
+  onSetCover?: () => void;
+  isProjectCover?: boolean;
   onDelete?: () => void;
 };
 
-export function CanvasContextMenu({ point, canPaste, locale, uploadLabel, itemMenuLabel, groups, uploadIcon, pasteIcon, submenuIndicator, nodeId, onClose, onUpload, onPaste, onDownload, onCopy, onDuplicate, onDelete }: Props) {
+export function CanvasContextMenu({ point, canPaste, locale, uploadLabel, itemMenuLabel, groups, uploadIcon, pasteIcon, submenuIndicator, nodeId, onClose, onUpload, onPaste, onDownload, onCopy, onDuplicate, onSetCover, isProjectCover, onDelete }: Props) {
   const shown = usePresence(point);
+  const showCoverNew = useShowProjectCoverNew();
   const ref = useRef<HTMLDivElement>(null);
   const [activeGroup, setActiveGroup] = useState<{ point: Props['point']; id: string } | null>(null);
   const activeGroupId = point && activeGroup?.point === point ? activeGroup.id : null;
@@ -70,7 +75,7 @@ export function CanvasContextMenu({ point, canPaste, locale, uploadLabel, itemMe
     };
   }, [point, onClose]);
   if (!shown.value) return null;
-  return createPortal(<div ref={ref} popover="manual" lang={locale} data-canvas-context-menu data-node-id={!imageMenu ? nodeId : undefined} data-image-menu={imageMenu || undefined} data-grouped-menu={!imageMenu && Boolean(groups?.length) || undefined} data-overlay role="menu" aria-label={imageMenu ? itemMenuLabel ?? imageLabels[0] : labels[0]}
+  return createPortal(<div ref={ref} popover="manual" lang={locale} data-canvas-context-menu data-node-id={imageMenu ? '5:4470' : nodeId} data-image-menu={imageMenu || undefined} data-grouped-menu={!imageMenu && Boolean(groups?.length) || undefined} data-overlay role="menu" aria-label={imageMenu ? itemMenuLabel ?? imageLabels[0] : labels[0]}
     className="lc-select-popup canvas-context-menu" data-phase={shown.phase} inert={shown.phase === 'exit'}
     onContextMenu={event => event.preventDefault()}
     onScroll={event => { if (event.target === event.currentTarget) setActiveGroup(null); }}
@@ -93,11 +98,13 @@ export function CanvasContextMenu({ point, canPaste, locale, uploadLabel, itemMe
       if (event.key === 'Tab') onClose();
     }}>
     {imageMenu ? <>
-      {onDownload && <><button type="button" role="menuitem" className="lc-select-option" onClick={onDownload}><Icon name="contextDownload" size={20} /><span className="canvas-context-label">{imageLabels[1]}</span></button>
+      {onDownload && <><button type="button" role="menuitem" className="lc-select-option" onClick={onDownload}><Icon name="mediaContextDownload" size={20} /><span className="canvas-context-label">{imageLabels[1]}</span></button>
       <div className="canvas-context-divider" role="separator" /></>}
-      <button type="button" role="menuitem" className="lc-select-option" aria-keyshortcuts={isMac ? 'Meta+C' : 'Control+C'} onClick={onCopy}><Icon name="contextCopy" size={20} /><span className="canvas-context-label">{imageLabels[2]}</span><span className="canvas-context-shortcut">Ctrl/⌘ + C</span></button>
-      <button type="button" role="menuitem" className="lc-select-option" aria-keyshortcuts={isMac ? 'Meta+D' : 'Control+D'} onClick={onDuplicate}><Icon name="contextCopy" size={20} /><span className="canvas-context-label">{imageLabels[3]}</span><span className="canvas-context-shortcut">Ctrl/⌘ + D</span></button>
-      <button type="button" role="menuitem" className="lc-select-option" aria-keyshortcuts="Backspace Delete" onClick={onDelete}><Icon name="contextTrash" size={20} /><span className="canvas-context-label">{imageLabels[4]}</span><span className="canvas-context-shortcut">←/del</span></button>
+      <button type="button" role="menuitem" className="lc-select-option" aria-keyshortcuts={isMac ? 'Meta+C' : 'Control+C'} onClick={onCopy}><Icon name="mediaContextCopy" size={20} /><span className="canvas-context-label">{imageLabels[2]}</span><span className="canvas-context-shortcut">{isMac ? '⌘ + C' : 'Ctrl + C'}</span></button>
+      <button type="button" role="menuitem" className="lc-select-option" aria-keyshortcuts={isMac ? 'Meta+D' : 'Control+D'} onClick={onDuplicate}><Icon name="mediaContextDuplicate" size={20} /><span className="canvas-context-label">{imageLabels[3]}</span><span className="canvas-context-shortcut">{isMac ? '⌘ + D' : 'Ctrl + D'}</span></button>
+      {onSetCover && <button type="button" role="menuitem" className="lc-select-option" onClick={onSetCover}><Icon name="mediaContextCover" size={20} /><span className="canvas-context-label">{projectCoverMessages[locale][isProjectCover ? 'reset' : 'set']}</span>{showCoverNew && !isProjectCover && <span className="canvas-context-new">NEW</span>}</button>}
+      <div className="canvas-context-divider" role="separator" />
+      <button type="button" role="menuitem" className="lc-select-option" aria-keyshortcuts="Backspace Delete" onClick={onDelete}><Icon name="mediaContextDelete" size={20} /><span className="canvas-context-label">{imageLabels[4]}</span><span className="canvas-context-shortcut">←/del</span></button>
     </> : <>{groups?.map(group => <CanvasContextSubmenu key={group.id} group={group} parentRef={ref} indicator={submenuIndicator} open={activeGroupId === group.id}
       onOpen={() => setActiveGroup({ point, id: group.id })} onClose={() => setActiveGroup(previous => previous?.id === group.id ? null : previous)} onSelect={onClose} />)}
     {!!groups?.length && <div className="canvas-context-divider" role="separator" />}

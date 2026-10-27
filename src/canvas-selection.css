@@ -2,6 +2,12 @@
 :root { --selection-blue: #3a97f7; --selection-blue-fill: rgba(58, 151, 247, .2); }
 /* Keep media controls inside their image's stacking context, including when zoomed. */
 .canvas-image { position: absolute; isolation: isolate; pointer-events: auto; cursor: move; user-select: none; border-radius: var(--radius-xl); outline: none; }
+.canvas-media-filename { position: absolute; left: 0; bottom: calc(100% + 8px); display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0; height: 16px; color: var(--text-tertiary); font-size: 12px; font-weight: 400; line-height: 16px; pointer-events: none; }
+.canvas-media-filename-icon { display: block; flex: 0 0 16px; width: 16px; height: 16px; background-color: currentColor; -webkit-mask: var(--filename-icon) center / 16px 16px no-repeat; mask: var(--filename-icon) center / 16px 16px no-repeat; }
+.canvas-media-filename-text { display: block; flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Figma 5:7906: 32 × 20px for the Chinese label, with the same colors in both themes. */
+.canvas-project-cover-badge { position: absolute; z-index: 1; top: 8px; left: 8px; box-sizing: border-box; height: var(--height-l); max-width: calc(100% - 56px); padding: 2px var(--spacing-xs); overflow: hidden; border-radius: var(--radius-s, 4px); background: var(--surface-floating-strong); color: var(--text-on-brand-white); font-size: 12px; font-weight: 400; line-height: 16px; white-space: nowrap; text-overflow: ellipsis; pointer-events: none; }
+.project-summary-cover { display: block; width: 100%; height: 160px; margin-bottom: 12px; object-fit: cover; border-radius: 8px; }
 .is-panning .canvas-image { cursor: grab; }
 .canvas-image > .progressive-image { display: block; width: 100%; height: 100%; object-fit: contain; border-radius: inherit; background: var(--surface-default); }
 .canvas-image::after { content: ''; position: absolute; inset: 0; border: calc(2px * var(--canvas-inverse-scale, 1)) solid var(--border-brand); border-radius: inherit; opacity: 0; pointer-events: none; }
