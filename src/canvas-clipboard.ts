@@ -7,7 +7,7 @@ import { isMultiInputWorkflow, workflowHeight, workflowWidth, fusionPosition, fu
 // Batch shared reference images remain separate from those primary inputs.
 export function copyCanvasSelection(items: CanvasImage[], selected: string[]): CanvasImage[] {
   const ids = new Set(selected);
-  const imageIds = new Set(items.filter(item => !item.nodeOnly && ids.has(item.id)).map(item => item.id));
+  const imageIds = new Set(items.filter(item => !item.nodeOnly && !item.generation && ids.has(item.id)).map(item => item.id));
   const editorIds = new Set(items.filter(item => item.fusion && ids.has(`${item.id}:fusion`)).map(item => item.id));
   return items.flatMap(item => {
     const copies: CanvasImage[] = [];
@@ -44,6 +44,7 @@ export function copyCanvasSelection(items: CanvasImage[], selected: string[]): C
 }
 
 export function pasteCanvasSelection(items: CanvasImage[], dx: number, dy: number): CanvasImage[] {
+  items = items.filter(item => !item.generation);
   // Allocate all IDs first so forward edges, branches and repeated pastes map
   // exclusively to this batch, regardless of the order of snapshot records.
   const newIds = new Map(items.map(item => [item.id, crypto.randomUUID()]));
@@ -55,6 +56,7 @@ export function pasteCanvasSelection(items: CanvasImage[], dx: number, dy: numbe
     const position = { x: item.x + dx, y: item.y + dy };
     return {
       ...item, id: newIds.get(item.id)!, ...position,
+      generatedTaskId: undefined, generation: undefined,
       editorSourceId: isMultiInputWorkflow(item.fusion) ? undefined : remapImage(item.editorSourceId),
       sourceImageId: remapImage(item.sourceImageId),
       generatedFromReferenceId: remapImage(item.generatedFromReferenceId),

@@ -49,7 +49,7 @@ export function workflowHeight(settings?: FusionSettings) {
   const count = Math.min(MAX_DIRECTED_POINTS, settings.directedPoints?.length ?? 0);
   return 282 + count * 141 - (count === MAX_DIRECTED_POINTS ? 68 : 0);
 }
-export type CanvasImage = { id: string; name: string; url: string; x: number; y: number; width: number; height: number; naturalWidth?: number; naturalHeight?: number; role?: 'main'; layoutTaskId?: string; layoutOriginOrder?: number; nodeOnly?: boolean; editorSourceId?: string; generatedByEditorId?: string; generatedFromReferenceId?: string; sourceImageId?: string; fusion?: FusionSettings; operation?: 'cutout' | 'fusion' | 'directed' | 'lingerie' | 'flat' };
+export type CanvasImage = { id: string; name: string; url: string; x: number; y: number; width: number; height: number; naturalWidth?: number; naturalHeight?: number; role?: 'main'; layoutTaskId?: string; layoutOriginOrder?: number; nodeOnly?: boolean; editorSourceId?: string; generatedByEditorId?: string; generatedFromReferenceId?: string; generatedTaskId?: string; generation?: { taskId: string; status: 'running' | 'failed' }; sourceImageId?: string; fusion?: FusionSettings; operation?: 'cutout' | 'fusion' | 'directed' | 'lingerie' | 'flat' };
 export const CANVAS_GRID_SIZE = 32;
 
 export function workflowSources(items: CanvasImage[], editor: CanvasImage): CanvasImage[] {
@@ -325,7 +325,7 @@ export function relatedCanvasIds(items: CanvasImage[], selected: string[]): Set<
 
 // Separate editor records share one source image without copying its canvas media.
 export function createFusionEditor(items: CanvasImage[], sourceId: string, id: string, kind: WorkflowKind = 'fusion'): CanvasImage | null {
-  const source = items.find(n => n.id === sourceId && !n.nodeOnly);
+  const source = items.find(n => n.id === sourceId && !n.nodeOnly && !n.generation);
   if (!source) return null;
   const x = source.x + source.width + FUSION_GAP;
   const width = workflowWidth(defaultFusion(kind)), height = workflowHeight(defaultFusion(kind));
@@ -335,7 +335,7 @@ export function createFusionEditor(items: CanvasImage[], sourceId: string, id: s
 }
 
 export function createMergeEditor(items: CanvasImage[], selected: string[], id: string, batchFlat = false): CanvasImage | null {
-  const sources = items.filter(item => selected.includes(item.id) && !item.nodeOnly);
+  const sources = items.filter(item => selected.includes(item.id) && !item.nodeOnly && !item.generation);
   if (sources.length < 2 || sources.length > (batchFlat ? 20 : MAX_FUSION_REFERENCES)) return null;
   const bounds = boundsOf(sources)!;
   const fusion = { ...defaultFusion(batchFlat ? 'flat' : 'merge'), batchFlat, references: sources.map(source => ({ id: source.id, name: source.name, url: source.url, sourceImageId: source.id })) };
@@ -349,7 +349,7 @@ export function createMergeEditor(items: CanvasImage[], selected: string[], id: 
 // Batch edit has separate primary inputs and shared references. Keep the source
 // identity on every main image so cross-group inputs retain their original group.
 export function createBatchEditor(items: CanvasImage[], selected: string[], id: string): CanvasImage | null {
-  const sources = items.filter(item => selected.includes(item.id) && !item.nodeOnly);
+  const sources = items.filter(item => selected.includes(item.id) && !item.nodeOnly && !item.generation);
   if (sources.length < 2 || sources.length > MAX_BATCH_MAIN_IMAGES) return null;
   const bounds = boundsOf(sources)!;
   const fusion: FusionSettings = { ...defaultFusion('batch'), mainImages: sources.map(source => ({
