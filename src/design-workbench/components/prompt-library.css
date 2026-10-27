@@ -1,0 +1,126 @@
+/* Reuses the v5.3 prompt library and save popover with shared 5.1 Beta tokens. */
+.prompt-library, .prompt-save-popover, .prompt-card-menu { pointer-events: auto; }
+.prompt-library::backdrop { background: var(--overlay-scrim); backdrop-filter: blur(50px); }
+.prompt-library[data-phase='enter']::backdrop { animation: ui-enter var(--motion-duration) var(--motion-easing) backwards; }
+.prompt-library[data-phase='exit']::backdrop { animation: ui-exit var(--motion-duration) var(--motion-easing) both; }
+.prompt-library header>div,.prompt-library section>header,.prompt-save-popover header { display:flex;align-items:center;justify-content:space-between;gap:16px; }
+.prompt-library h2 {font-size:20px;font-weight:700;line-height:28px;margin:0;}
+.prompt-save-popover {position:fixed;inset:auto;margin:0;width:280px;max-width:calc(100vw - 16px);padding:16px;display:flex;flex-direction:column;gap:16px;border:1px solid var(--border-weak);border-radius:16px;background:var(--surface-floating);color:var(--text-primary);box-shadow:0 6px 14px var(--overlay-weak);}
+.prompt-save-popover h3 {font-size:16px;font-weight:500;line-height:24px;margin:0;}
+.prompt-name-input,.prompt-library-search {display:flex;align-items:center;gap:8px;height:32px;padding:0 8px;background:var(--state-default);border:1px solid var(--border-weak);border-radius:8px;font-size:12px;color:var(--text-tertiary);}
+.prompt-name-input:focus-within,.prompt-library-search:focus-within {border-color:var(--border-brand);}
+.prompt-name-input input,.prompt-library-search input {min-width:0;flex:1;width:100%;border:0;outline:none;background:transparent;color:var(--text-secondary);}
+.prompt-save-popover footer,.prompt-library footer {display:flex;justify-content:flex-end;gap:8px;}
+.prompt-library {width:min(1280px,calc(100vw - 32px));height:min(800px,calc(100dvh - 64px));max-width:none;max-height:none;top:min(80px,max(0px,calc(100dvh - 864px)));margin:auto;padding:0;display:flex;border:1px solid var(--border-weak);border-radius:24px;background:var(--surface-default);color:var(--text-primary);overflow:hidden;box-shadow:0 12px 28px -4px var(--overlay-weak);}
+.prompt-library aside {width:320px;flex-shrink:0;display:flex;flex-direction:column;background:var(--surface-secondary);border-right:1px solid var(--border-weak);}
+.prompt-library aside>header {padding:16px;display:flex;flex-direction:column;gap:16px;border-bottom:1px solid var(--border-weak);}
+.prompt-library aside>header>div {gap:24px;}
+.prompt-library aside>header h2 {flex:1;min-width:0;padding-inline:8px;}
+.prompt-library-search {padding-inline:12px;}
+.prompt-library nav {padding:12px;display:flex;flex-direction:column;gap:8px;overflow:auto;}
+.prompt-library nav .prompt-card-select {padding:var(--spacing-base);border:0;border-radius:12px;text-align:left;background:transparent;flex-shrink:0;}
+.prompt-library nav .prompt-list-card:is(:hover,:focus-within,:has(.prompt-card-more[aria-expanded='true'])) .prompt-card-select:not([aria-pressed='true']) {background:var(--state-hover);}
+.prompt-library nav .prompt-card-select[aria-pressed='true'] {background:var(--state-selected);}
+.prompt-library nav .prompt-list-card:is(:hover,:focus-within,:has(.prompt-card-more[aria-expanded='true'])) .prompt-card-select:not([aria-pressed='true']) p {color:var(--text-tertiary);}
+.prompt-library nav .prompt-card-select[aria-pressed='true'] p {color:var(--text-secondary);}
+.prompt-library nav strong {color:var(--text-primary);display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:14px;font-weight:500;line-height:20px;}
+.prompt-library nav p {font-weight:400;margin:0;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;line-height:20px;color:var(--text-placeholder);}
+.prompt-library > section {padding:var(--spacing-3xl);flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--spacing-3xl);}
+.prompt-library > section > header {padding:0;min-height:32px;flex-shrink:0;gap:10px;}
+.prompt-library > section > footer {padding:0;flex-shrink:0;}
+.prompt-library-body {flex:1;min-height:0;display:flex;flex-direction:column;gap:var(--spacing-3xl);padding:0;overflow:auto;}
+
+.prompt-library-body h3 {font-size:16px;font-weight:500;}.prompt-library-body p {white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:20px;margin:0;}
+.prompt-library-body label {display:flex;flex-direction:column;gap:8px;font-size:14px;}.prompt-content-edit {flex:1;min-height:150px;}
+/* 5.1 Beta Input M 133:1355 and TextArea M 325:2446, including state variants. */
+.prompt-library-body input,.prompt-library-body textarea {box-sizing:border-box;border:1px solid var(--border-weak);outline:none;color:var(--text-secondary);font-weight:400;}
+.prompt-library-body input {height:32px;padding:0 8px;border-radius:8px;background:var(--state-default);font-size:12px;line-height:16px;}
+.prompt-library-body textarea {flex:1;resize:none;padding:12px;border-radius:12px;background:var(--control-fill-default);font-size:14px;line-height:20px;}
+.prompt-library-body input:hover,.prompt-name-input:hover,.prompt-library-search:hover {background:var(--state-hover);}
+.prompt-library-body textarea:hover,.prompt-expanded-field:hover {background:var(--control-fill-hover);}
+.prompt-library-body input:focus,.prompt-library-body textarea:focus,.prompt-name-input:focus-within,.prompt-library-search:focus-within,.prompt-expanded-field:focus-within {background:var(--control-fill-focus);border-color:var(--brand-primary);outline:none;}
+.prompt-library-body input::placeholder,.prompt-library-body textarea::placeholder,.prompt-name-input input::placeholder,.prompt-library-search input::placeholder {color:var(--text-placeholder);opacity:1;}
+.prompt-empty {color:var(--text-tertiary);font-size:14px;padding:12px;}
+@media(max-width:680px){.prompt-library aside{width:38%;}.prompt-library h2{font-size:16px;}.prompt-library nav{padding:8px;}.prompt-library-search .icon{display:none;}}
+.prompt-library footer .prompt-delete {margin-right:auto;height:40px;padding-inline:24px;gap:4px;line-height:22px;}
+/* New prompt 43:19100: blank selected card, Input L, counters and required labels. */
+.prompt-library-body label {font-size:16px;font-weight:500;line-height:24px;}
+.prompt-required {color:var(--status-danger);font-style:normal;}
+.prompt-edit-title,.prompt-edit-content {display:flex;gap:8px;border:1px solid var(--border-weak);color:var(--text-tertiary);font-size:12px;font-weight:400;line-height:16px;}
+.prompt-edit-title {align-items:center;height:40px;padding:0 12px;border-radius:8px;background:var(--state-default);}
+.prompt-edit-content {flex:1;min-height:0;flex-direction:column;padding:12px;border-radius:16px;background:var(--control-fill-focus);}
+.prompt-edit-title input,.prompt-edit-content textarea {border:0!important;padding:0!important;min-width:0;min-height:0;width:100%;background:transparent!important;outline:none!important;font-size:14px;line-height:20px;}
+.prompt-edit-title input {flex:1;height:100%;}
+.prompt-edit-title > span {flex-shrink:0;}
+.prompt-edit-content > span {align-self:flex-end;}
+.prompt-edit-title:hover {background:var(--state-hover);}
+.prompt-edit-content textarea {border-radius:0;color:var(--text-primary);}
+.prompt-edit-title:focus-within,.prompt-edit-content:focus-within {background:var(--control-fill-focus);border-color:var(--brand-primary);}
+
+/* Figma 77:5993: title, optional original-ratio cover, then prompt content. */
+.prompt-detail-card {display:flex;flex-direction:column;gap:16px;flex:0 0 auto;min-height:0;max-height:100%;padding:16px 24px;border-radius:16px;background:var(--surface-secondary);overflow:auto;}
+.prompt-detail-card h3 {margin:0;font-size:16px;font-weight:500;line-height:24px;color:var(--text-primary);overflow-wrap:anywhere;flex-shrink:0;}
+.prompt-detail-card .prompt-detail-content {color:var(--text-primary);flex-shrink:0;}
+
+.prompt-list-card { position:relative;flex-shrink:0;min-width:0;border-radius:12px; }
+/* Figma 77:6944 / 77:7298: optional 3:4 cover with a flexible text column. */
+.prompt-library nav .prompt-card-select {display:flex;align-items:flex-start;gap:var(--spacing-xs);appearance:none;-webkit-appearance:none;width:100%;transition:background var(--motion-duration) var(--motion-easing);}
+.prompt-card-context {display:flex;flex:1;min-width:0;flex-direction:column;gap:var(--spacing-xs);padding-inline:var(--spacing-xs);}
+.prompt-card-context strong,.prompt-card-context p {width:100%;}
+/* Figma 77:5941: title-row XS action (20px) with an 8px title gap. */
+.prompt-list-card:is(:hover,:focus-within,:has(.prompt-card-more[aria-expanded='true'])) .prompt-card-context strong {padding-right:28px;}
+.prompt-library .prompt-list-cover {display:block;flex:0 0 63px;width:63px;height:84px;overflow:hidden;border-radius:6px;}
+.prompt-list-cover img {display:block;width:100%;height:100%;object-fit:cover;}
+
+.prompt-library nav strong {display:flex;align-items:center;gap:8px;}
+.prompt-library nav strong span {overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.prompt-library nav .prompt-card-more {position:absolute;right:12px;top:8px;width:20px;min-width:20px;height:20px;border-radius:6px;opacity:0;pointer-events:none;transition:opacity var(--motion-duration) var(--motion-easing);}
+.prompt-list-card:hover .prompt-card-more,.prompt-list-card:focus-within .prompt-card-more,.prompt-card-more[aria-expanded='true'] {opacity:1;pointer-events:auto;}
+.prompt-card-menu {position:fixed;inset:auto;margin:0;padding:8px;width:max-content;height:max-content;min-height:0;max-height:calc(100dvh - 16px);overflow-y:auto;align-self:start;border:1px solid var(--border-weak);border-radius:12px;background:var(--surface-secondary);box-shadow:0 6px 14px -2px var(--overlay-weak);color:var(--text-secondary);}
+.prompt-card-menu:popover-open {display:grid;grid-template-columns:max-content;grid-auto-rows:32px;align-content:start;gap:4px;}
+.prompt-card-menu button {display:flex;align-items:center;gap:8px;width:auto;min-width:128px;height:32px;padding:0 8px;border:0;border-radius:8px;background:transparent;color:var(--text-secondary);font-size:14px;line-height:20px;white-space:nowrap;}
+.prompt-card-menu button:hover,.prompt-card-menu button:focus-visible {background:var(--state-hover);}
+@media(hover:none){.prompt-library nav .prompt-card-more{opacity:1;pointer-events:auto;}.prompt-card-context strong{padding-right:28px;}}
+
+.prompt-card-menu button > .icon {flex-shrink:0;}
+
+.prompt-card-title {min-width:0;flex:1;}
+.prompt-library nav .prompt-pinned-tag {flex-shrink:0;display:inline-flex;align-items:center;height:20px;padding:0 4px;border-radius:4px;background:var(--status-warning);color:var(--fill-on-brand);font-size:12px;font-weight:500;line-height:16px;text-overflow:clip;}
+
+/* Prompt footer: outline edit, secondary append/cancel/save-as, primary save/replace. */
+.prompt-library > section > footer {flex-wrap:wrap;}
+.prompt-library > section > footer > .lc-button {padding-inline:24px;gap:4px;line-height:22px;white-space:nowrap;}
+
+/* Figma 171:4312 — library with no saved entries. */
+.prompt-library > .prompt-library-initial {padding:24px;gap:24px;overflow-y:auto;}
+.prompt-library > .prompt-library-initial > header {padding:0;justify-content:flex-end;}
+.prompt-library-initial .prompt-library-body {padding:0;align-items:center;justify-content:center;min-height:216px;overflow:visible;}
+.prompt-library-empty-state {display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;max-width:100%;}
+.prompt-library-empty-content {display:flex;flex-direction:column;align-items:center;}
+.prompt-library-empty-content img {display:block;width:128px;height:128px;object-fit:contain;flex-shrink:0;}
+.prompt-library-empty-content h3 {margin:0;color:var(--text-tertiary);font-size:16px;font-weight:500;line-height:24px;}
+.prompt-library-empty-content p {margin:4px 0 0;color:var(--text-placeholder);font-size:12px;line-height:16px;}
+
+/* 5.1 Beta Upload/ImageTile: 120px square, contained image and hover actions. */
+.prompt-library .prompt-cover-field {flex:none;display:flex;flex-direction:column;gap:var(--spacing-base);}
+.prompt-cover-field h3 {margin:0;font-size:16px;line-height:24px;font-weight:500;}
+.prompt-library .prompt-cover-label p,.prompt-library .prompt-cover-status {color:var(--text-placeholder);font-size:12px;line-height:16px;}
+.prompt-cover-upload {display:flex;align-items:center;gap:var(--spacing-base);}
+.prompt-cover-preview {position:relative;display:flex;flex:none;flex-direction:column;align-items:center;justify-content:center;gap:var(--spacing-xs);width:120px;height:120px;aspect-ratio:1;padding:0;overflow:hidden;border:1px dashed var(--border-weak);border-radius:var(--radius-l);background:var(--control-fill-hover);color:var(--text-tertiary);font-size:12px;line-height:20px;}
+.prompt-cover-preview[data-has-cover="true"] {border-style:solid;}
+button.prompt-cover-preview {padding:0 16px;border-style:solid;background:var(--state-default);color:var(--text-secondary);font-weight:400;line-height:16px;}
+button.prompt-cover-preview:hover:not(:disabled) {background:var(--state-hover);border-color:var(--border-strong);color:var(--text-primary);}
+.prompt-cover-upload.is-dragging .prompt-cover-preview {background:var(--alpha-brand-20);border-color:var(--border-brand);}
+.prompt-cover-preview img {display:block;width:100%;height:100%;object-fit:contain;}
+.prompt-cover-actions {position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:var(--spacing-base);border-radius:inherit;clip-path:inset(0 round var(--radius-l));background:var(--surface-media-overlay);backdrop-filter:blur(10px);opacity:0;pointer-events:none;transition:opacity var(--motion-duration) var(--motion-easing);}
+.prompt-cover-preview:hover .prompt-cover-actions,.prompt-cover-preview:focus-within .prompt-cover-actions {opacity:1;pointer-events:auto;}
+.prompt-cover-actions .lc-button {color:var(--text-on-brand-white);}
+.prompt-cover-actions .lc-button:hover:not(:disabled) {color:var(--text-on-brand-white);background:var(--surface-media-overlay);}
+@media(hover:none) {.prompt-cover-actions {opacity:1;pointer-events:auto;}}
+.prompt-library .prompt-detail-cover { display:block; align-self:flex-start; max-width:100%; max-height:320px; width:auto; height:auto; flex:none; object-fit:contain; border-radius:var(--radius-base); }
+@media(max-width:680px) {
+  .prompt-library > section {padding:16px;gap:16px;}
+  .prompt-library .prompt-list-cover {flex-basis:36px;width:36px;height:48px;}
+  .prompt-library aside { min-width:128px; }
+  .prompt-library > section > footer > .lc-button { padding-inline:12px; }
+}

@@ -1,0 +1,16 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import '@fontsource-variable/noto-sans-sc';
+import './tokens.css';
+import './styles.css';
+import './topbar.css';
+import './asset-picker.css';
+import './workbench.css';
+import './full-image-viewer.css';
+import './toast.css';
+import './tooltip.css';
+import './motion.css';
+import App from './App';
+import { TooltipHost } from './components/Tooltip';
+import { LocaleProvider } from './LocaleContext';
+createRoot(document.getElementById('root')!).render(<React.StrictMode><LocaleProvider><App /><TooltipHost /></LocaleProvider></React.StrictMode>);

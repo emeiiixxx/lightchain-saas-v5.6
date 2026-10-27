@@ -1,0 +1,69 @@
+/* Figma 68:27657. Full-viewport image interaction, independent of canvas view. */
+.full-image-viewer { position: fixed; inset: 0; margin: 0; padding: 0; width: 100dvw; height: 100dvh; max-width: none; max-height: none; border: 0; border-radius: 0; overflow: hidden; background: transparent; color: var(--text-on-brand-white); outline: none; }
+.full-image-viewer::backdrop { background: var(--overlay-scrim); backdrop-filter: blur(50px); }
+.full-image-viewer:not([inert]) { pointer-events: auto; }
+.full-image-viewer[data-phase='enter'] { animation-fill-mode: backwards; }
+.full-image-viewer[data-phase='enter']::backdrop { animation: ui-enter var(--motion-duration) var(--motion-easing) backwards; }
+.full-image-viewer[data-phase='exit']::backdrop { animation: ui-exit var(--motion-duration) var(--motion-easing) both; }
+.full-image-stage { position: absolute; inset: 0; touch-action: none; user-select: none; cursor: grab; }
+.full-image-stage.is-panning { cursor: grabbing; }
+.full-image-thumbnails { position: absolute; left: 32px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 8px; max-height: calc(100dvh - 160px); overflow-y: auto; padding: 4px; overscroll-behavior: contain; scrollbar-width: thin; }
+.full-image-thumbnails > button { flex: 0 0 auto; width: 80px; height: 80px; padding: 0; overflow: hidden; border: 1px solid var(--border-weak); border-radius: var(--radius-base); background: var(--surface-floating); background-clip: padding-box; cursor: pointer; }
+.full-image-thumbnails > button[aria-current='true'] { border-color: var(--border-brand); }
+.full-image-thumbnails > button:focus-visible { outline: 2px solid var(--border-brand); outline-offset: 2px; }
+.full-image-thumbnails .progressive-image { display: block; width: 100%; height: 100%; }
+.full-image-thumbnails .progressive-image, .full-image-thumbnails .progressive-image > img { border-radius: 0; }
+.full-image-center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+.full-image-content { display: block; width: 100%; height: 100%; object-fit: contain; transform-origin: center; }
+.full-image-stage.is-panning .full-image-content { transition-duration: 0ms; }
+/* Full-image guidance keeps its own surface; Toast variants live in toast.css. */
+.full-image-instructions { padding: 8px 16px; border: 1px solid var(--border-weak); border-radius: var(--radius-base); background: var(--overlay-toast); backdrop-filter: blur(10px); color: var(--text-on-brand-white); font-size: 14px; line-height: 20px; font-weight: 400; text-align: center; overflow-wrap: anywhere; pointer-events: none; }
+.full-image-instructions { position: absolute; top: 48px; left: 50%; transform: translateX(-50%); max-width: calc(100% - 192px); }
+.full-image-viewer .full-image-close { position: absolute; top: 24px; right: 24px; width: 32px; min-width: 32px; height: 32px; padding: 0; color: var(--text-on-brand-white); }
+.full-image-viewer .full-image-close:hover:not(:disabled) { background: rgba(255, 255, 255, .1); color: var(--text-on-brand-white); }
+@media (max-width: 680px) {
+  .full-image-thumbnails { left: 12px; }
+  .full-image-thumbnails > button { width: 64px; height: 64px; }
+  .full-image-instructions { top: 60px; max-width: calc(100% - 32px); width: max-content; font-size: 12px; line-height: 18px; padding: 8px 12px; }
+}
+
+/* Task detail panels: Figma 86:6002 (no prompt), 86:6503 (with prompt). */
+.full-image-viewer .task-detail-back { position: absolute; top: 40px; left: 40px; height: 40px; padding: 0 16px; gap: 4px; background: var(--control-fill-default); color: var(--text-secondary); }
+.task-detail-panel { position: absolute; top: 16px; right: 16px; bottom: 16px; width: 400px; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-weak); border-radius: var(--radius-xl); background: var(--surface-default); color: var(--text-secondary); box-shadow: var(--shadow-l); }
+.task-detail-info { display: flex; flex: 0 1 auto; flex-direction: column; gap: 16px; padding: 24px; min-width: 0; min-height: 0; }
+.task-detail-info > :not(.task-detail-prompt) { flex-shrink: 0; }
+.task-detail-info > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; min-width: 0; }
+.task-detail-heading-text { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 4px; }
+.task-detail-regenerate { flex: none; height: 32px; min-width: 32px; padding-inline: 12px; gap: 4px; }
+.task-detail-info h2 { margin: 0; font-size: 16px; line-height: 24px; font-weight: 500; overflow-wrap: anywhere; }
+.task-detail-info time { font-size: 12px; line-height: 16px; font-weight: 400; color: var(--text-tertiary); }
+.task-detail-thumbnails { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: start; gap: 8px; }
+.task-detail-thumbnails > button { display: block; width: 100%; padding: 0; overflow: hidden; border: 2px solid transparent; border-radius: var(--radius-l); background: var(--surface-default); }
+.task-detail-thumbnails > button[aria-current='true'] { border-color: var(--border-brand); }
+.task-detail-thumbnails .progressive-image { width: 100%; height: 100%; }
+.task-detail-thumbnails .progressive-image, .task-detail-thumbnails .progressive-image > img { border-radius: 0; }
+.task-detail-panel .generation-record-tag { min-height: 32px; border-radius: var(--radius-base); font-size: 14px; line-height: 22px; }
+.task-detail-panel .generation-record-tag--image { padding-left: 2px; }
+.task-detail-panel .generation-tag-thumb, .task-detail-panel .generation-tag-thumb img { width: 28px; height: 28px; border-radius: 6px; }
+.task-detail-prompt { flex: 0 1 auto; min-height: 0; }
+.task-detail-prompt > p { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; margin: 0; font-size: 14px; line-height: 20px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.task-detail-prompt .generation-record-actions { flex-shrink: 0; flex-wrap: nowrap; }
+.task-detail-actions { flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: var(--spacing-xl); padding: 8px 24px; border-top: 1px solid var(--border-weak); }
+.task-detail-actions > .lc-button, .task-detail-actions :is(.element-send-with-label, .task-download-control) > .lc-button { width: auto; height: 32px; min-width: 32px; padding: 0; border: 0; gap: 4px; font-size: 12px; line-height: 20px; font-weight: 500; color: var(--text-tertiary); }
+.task-detail-actions > :is(.element-send-with-label, .task-download-control, .task-record-more-anchor) { display: inline-flex; flex: none; }
+.task-detail-actions > .lc-button:is(:hover, :focus-visible, :active):not(:disabled),
+.task-detail-actions :is(.element-send-with-label, .task-download-control) > .lc-button:is(:hover, :focus-visible, :active, [aria-expanded='true']):not(:disabled) { background: transparent; color: var(--text-primary); }
+.task-detail-actions .divider--vertical { height: 16px; }
+@media (max-width: 1100px) {
+  .task-detail-panel { width: 320px; }
+  .task-detail-info { padding: 16px; }
+  .task-detail-actions { padding-inline: 16px; }
+  .full-image-viewer .task-detail-back { top: 24px; left: 24px; }
+}
+@media (max-width: 680px) {
+  .task-detail-panel { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; max-height: 40dvh; }
+  .task-detail-thumbnails { grid-template-columns: repeat(4, minmax(0, 64px)); }
+  .full-image-viewer .task-detail-back { top: 12px; left: 12px; }
+}
+
+.element-design-menu.download-format-menu { position: fixed; margin: 0; width: 144px; min-width: 144px; max-width: calc(100vw - 16px); }

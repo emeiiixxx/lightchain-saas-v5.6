@@ -1,0 +1,16 @@
+/* 5.1 Beta Tooltip 406:2959. Live CSS arrow preserves the Figma triangle and blurs the page behind it. */
+.lc-tooltip { position: fixed; inset: auto; margin: 0; border: 0; overflow: visible; background: transparent; z-index: 100; display: flex; align-items: center; width: max-content; max-width: calc(100vw - 16px); padding: 0 0 4px; pointer-events: none; color: var(--text-on-brand-white); }
+/* The tooltip and its top-layer backdrop never participate in hit testing. */
+.lc-tooltip::backdrop, .lc-tooltip * { pointer-events: none; }
+.lc-tooltip, .lc-tooltip::backdrop, .lc-tooltip * { transition: none; }
+/* Keep the outer container free of backdrop roots so blur samples the page.
+   Fade the bubble and arrow themselves, preserving the shared motion timing. */
+.lc-tooltip[data-phase] { animation-name: none; }
+.lc-tooltip[data-phase='enter'] > * { animation: ui-enter var(--motion-duration) var(--motion-easing) backwards; }
+.lc-tooltip[data-phase='exit'] > * { animation: ui-exit var(--motion-duration) var(--motion-easing) both; }
+.lc-tooltip-bubble { max-width: 336px; padding: 4px 8px; border-radius: 6px; background: var(--surface-media-overlay-strong); -webkit-backdrop-filter: blur(var(--background-blur-s)); backdrop-filter: blur(var(--background-blur-s)); box-shadow: 0 6px 7px var(--overlay-weak); font-size: 12px; font-weight: 400; line-height: 16px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.lc-tooltip-arrow { background: var(--surface-media-overlay-strong); -webkit-backdrop-filter: blur(var(--background-blur-s)); backdrop-filter: blur(var(--background-blur-s)); clip-path: polygon(50% 0, 100% 100%, 0 100%); position: absolute; width: 8px; height: 4px; left: var(--tooltip-arrow-x, 50%); bottom: 0; transform: translateX(-50%) rotate(180deg); }
+.lc-tooltip[data-side='bottom'] { padding: 4px 0 0; }
+.lc-tooltip[data-side='bottom'] .lc-tooltip-arrow { top: 0; bottom: auto; transform: translateX(-50%); }
+.lc-tooltip[data-side='right'] { padding: 0 0 0 4px; }
+.lc-tooltip[data-side='right'] .lc-tooltip-arrow { left: 0; top: 50%; bottom: auto; transform: translate(-2px, -50%) rotate(-90deg); }

@@ -1,5 +1,6 @@
 import { AiTryOnPage } from './components/AiTryOnPage';
 import { VideoWorkspace } from './components/VideoWorkspace';
+import { DesignWorkspace } from './components/DesignWorkspace';
 import { CanvasBackground } from './components/CanvasBackground';
 import { CanvasProjectPanel } from './components/CanvasProjectPanel';
 import { ProgressiveImage } from './components/ProgressiveImage';
@@ -46,8 +47,8 @@ import { getMotionDurationMs } from './motion';
 import { PromptLibraryProvider } from './PromptLibraryContext';
 
 type Theme = 'dark' | 'light' | 'system';
-type Page = 'canvas' | 'tryon' | 'video';
-const currentPage = (): Page => window.location.hash === '#/video-workspace' ? 'video' : window.location.hash === '#/ai-try-on' ? 'tryon' : 'canvas';
+type Page = 'canvas' | 'tryon' | 'video' | 'design';
+const currentPage = (): Page => window.location.hash === '#/design-workspace' ? 'design' : window.location.hash === '#/video-workspace' ? 'video' : window.location.hash === '#/ai-try-on' ? 'tryon' : 'canvas';
 type Tool = 'cutout' | 'fusion' | 'directed' | 'lingerie' | 'flat';
 type Modal = Tool | 'upload' | 'help' | 'support' | 'credits' | 'project' | null;
 type PendingImage = Omit<CanvasImage, 'x' | 'y'>;
@@ -827,6 +828,7 @@ export default function App() {
         </div>
         {page !== 'canvas' && <a className="demo-page-link canvas-return-link" href="#/canvas" aria-label={t.workspace}><Icon name="imgIcon1" size={16} /><span>{t.workspace}</span></a>}
         <a className="demo-page-link video-workspace-link" href="#/video-workspace" aria-current={page === 'video' ? 'page' : undefined}>{locale === 'en' ? 'Video workspace' : locale === 'ja' ? '動画ワークスペース' : '视频工作台'}</a>
+        <a className="demo-page-link design-workspace-link" href="#/design-workspace" aria-current={page === 'design' ? 'page' : undefined}>{locale === 'en' ? 'Design workspace' : locale === 'ja' ? 'デザインワークスペース' : '设计生产工作台'}</a>
         <div className="flex items-center gap-2">
         <div className="relative" data-menu>
           <button className="language-trigger flex items-center gap-2 h-8 px-2 rounded-lg" aria-label={t.language} aria-expanded={menu === 'language'} onClick={() => setMenu(menu === 'language' ? null : 'language')}>
@@ -1033,6 +1035,7 @@ export default function App() {
 
     <AiTryOnPage active={page === 'tryon'} locale={locale} uploads={uploads} onUpload={rememberUpload} />
     <VideoWorkspace active={page === 'video'} locale={locale} onBack={() => { window.location.hash = '#/canvas'; }} />
+    <DesignWorkspace active={page === 'design'} locale={locale} theme={resolvedTheme} />
 
     <CanvasContextMenu point={canvasMenu} canPaste={!!canvasClipboard.current} locale={locale} onClose={closeCanvasMenu}
       onDownload={() => { closeCanvasMenu(); void downloadSelected(); }}

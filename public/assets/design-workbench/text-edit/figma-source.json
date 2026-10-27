@@ -1,0 +1,28 @@
+{
+  "fileKey": "TG0pTkt8sYaCspV3ZWHdd4",
+  "editor": "299:7246",
+  "guideLayout": "420:5699",
+  "loading": {
+    "nodeId": "299:7521",
+    "componentId": "240:5237",
+    "file": "src/artwork/text-edit-loading.svg",
+    "format": "SVG_STRING",
+    "bounds": [20, 20]
+  },
+  "exports": {
+    "guide-1-wrong.png": "420:6332",
+    "guide-1-correct.png": "420:6344",
+    "guide-2-wrong.png": "420:6356",
+    "guide-2-correct.png": "420:6368",
+    "guide-3-wrong.png": "420:6380",
+    "guide-3-correct.png": "420:6392",
+    "tech-pack.png": "I299:7267;1157:8572",
+    "text-edit.svg": "299:7550",
+    "close.svg": "I299:7252;139:1701",
+    "zoom-out.svg": "I299:7269;1810:11275;299:7284;1825:62",
+    "zoom-in.svg": "I299:7269;1810:11275;299:7286;1825:62",
+    "reset.svg": "I299:7269;1810:11275;299:7288;1782:23760",
+    "guide.svg": "I420:6102;1782:23748",
+    "wrong.svg": "420:6445"
+  }
+}

@@ -1,0 +1,33 @@
+.lc-slider {
+  --slider-track: var(--border-medium); --slider-fill: var(--brand-primary);
+  --slider-thumb: var(--control-fill-white); --slider-border: var(--border-medium);
+  appearance: none; display: block; width: 220px; min-width: 0; height: 32px; margin: 0; padding: 0;
+  background: transparent; border: 0; cursor: pointer;
+}
+.lc-slider:not(:disabled):is(:hover, :focus-visible, :active) { --slider-border: var(--brand-primary-hover); }
+.lc-slider::-webkit-slider-runnable-track {
+  height: 6px; border-radius: var(--radius-max);
+  background: linear-gradient(to right, var(--slider-fill) var(--range-progress), var(--slider-track) var(--range-progress));
+}
+.lc-slider::-moz-range-track { height: 6px; border-radius: var(--radius-max); background: var(--slider-track); }
+.lc-slider::-moz-range-progress { height: 6px; border-radius: var(--radius-max); background: var(--slider-fill); }
+.lc-slider::-webkit-slider-thumb {
+  appearance: none; box-sizing: border-box; width: 18px; height: 18px; margin-top: -6px;
+  border: 2px solid var(--slider-border); border-radius: var(--radius-max); background: var(--slider-thumb);
+  box-shadow: 0 2px 4px var(--overlay-weak);
+  transition: border-color var(--motion-duration) var(--motion-easing), background-color var(--motion-duration) var(--motion-easing);
+}
+.lc-slider::-moz-range-thumb {
+  box-sizing: border-box; width: 18px; height: 18px;
+  border: 2px solid var(--slider-border); border-radius: var(--radius-max); background: var(--slider-thumb);
+  box-shadow: 0 2px 4px var(--overlay-weak);
+  transition: border-color var(--motion-duration) var(--motion-easing), background-color var(--motion-duration) var(--motion-easing);
+}
+.lc-slider:disabled {
+  --slider-track: var(--border-weak); --slider-fill: var(--brand-primary-disabled);
+  --slider-thumb: var(--control-fill-disabled); --slider-border: var(--border-weak); cursor: default;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lc-slider::-webkit-slider-thumb { transition: none; }
+  .lc-slider::-moz-range-thumb { transition: none; }
+}

@@ -1,0 +1,465 @@
+{
+  "figmaFileKey": "A3oI9FzDPseUH4ybk7mA3H",
+  "figmaFileName": "Lightchain-SaaS-v5.6.0",
+  "component": "Canvas/ToolInputMenu",
+  "scope": "设计生产工作台底部正文输入框随内容自动撑高；局部编辑及AI试衣正文模式适用",
+  "states": {
+    "normal": {
+      "nodeId": "6:11797",
+      "url": "https://www.figma.com/design/A3oI9FzDPseUH4ybk7mA3H/Lightchain-SaaS-v5.6.0?node-id=6-11797",
+      "outer": {
+        "width": 800,
+        "height": 276
+      },
+      "header": {
+        "width": 784,
+        "height": 40
+      },
+      "input": {
+        "width": 784,
+        "height": 212
+      },
+      "text": {
+        "width": 760,
+        "height": 64
+      },
+      "referenceUsage": "最小尺寸与视觉来源",
+      "figmaSourceToggle": "expand",
+      "renderToggle": false
+    },
+    "expanded": {
+      "nodeId": "6:11904",
+      "url": "https://www.figma.com/design/A3oI9FzDPseUH4ybk7mA3H/Lightchain-SaaS-v5.6.0?node-id=6-11904",
+      "outer": {
+        "width": 800,
+        "height": 400
+      },
+      "header": {
+        "width": 784,
+        "height": 40
+      },
+      "input": {
+        "width": 784,
+        "height": 336
+      },
+      "text": {
+        "width": 760,
+        "height": 188
+      },
+      "referenceUsage": "最大尺寸与视觉来源",
+      "figmaSourceToggle": "collapse",
+      "renderToggle": false
+    }
+  },
+  "sharedGeometry": {
+    "unit": "px",
+    "anchor": "底部位置和面板宽度保持不变，随正文内容向上撑高或回缩",
+    "outer": {
+      "padding": 8,
+      "gap": 8,
+      "radius": 32
+    },
+    "input": {
+      "padding": 12,
+      "gap": 12,
+      "radius": 24
+    },
+    "media": {
+      "width": 64,
+      "height": 64,
+      "gap": 16,
+      "radius": 12
+    },
+    "footer": {
+      "width": 760,
+      "height": 40
+    },
+    "generationButton": {
+      "width": 40,
+      "height": 40,
+      "icon": 24,
+      "radius": 999
+    },
+    "figmaToggleReference": {
+      "width": 32,
+      "height": 32,
+      "icon": 20,
+      "top": 12,
+      "right": 12,
+      "usedByCurrentInteraction": false
+    }
+  },
+  "semanticTokens": {
+    "outerBackground": "Surface/secondary",
+    "outerBorder": "Border/weak",
+    "inputBackground": "Control/fill/default",
+    "inputBorder": "Border/weak",
+    "title": "Text/primary",
+    "inputText": "Text/secondary",
+    "credits": "Text/placeholder",
+    "generateBackground": "Brand/primary"
+  },
+  "assetPolicy": "保留两份Figma返回的全部原始SVG及来源映射，不改写SVG内容；当前仅使用普通态9个控件SVG，其余原始设计资产保留。手动放大／还原按钮已由自动撑高规则覆盖。参考图片为用户动态素材，不以设计稿示例PNG替换。",
+  "assets": [
+    {
+      "state": "normal",
+      "sourceNodeId": "6:11797",
+      "sourceSymbol": "imgIcon",
+      "slot": "Header / Close",
+      "name": "close",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/788a7b69-af9c-4c3e-8699-0a1d5943c764.svg",
+      "file": "public/assets/design-workbench/input-expand/close.svg",
+      "displaySize": 20,
+      "svgRoot": {
+        "width": "20",
+        "height": "20"
+      },
+      "publicUrl": "/assets/design-workbench/input-expand/close.svg",
+      "usedByCurrentInteraction": true
+    },
+    {
+      "state": "normal",
+      "sourceNodeId": "6:11797",
+      "sourceSymbol": "imgIconSystem",
+      "slot": "Media row / Add reference image",
+      "name": "add-image",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/99ea3a7a-bfdc-466f-92da-ded7032d6803.svg",
+      "file": "public/assets/design-workbench/input-expand/add-image.svg",
+      "displaySize": 24,
+      "svgRoot": {
+        "width": "24",
+        "height": "24"
+      },
+      "publicUrl": "/assets/design-workbench/input-expand/add-image.svg",
+      "usedByCurrentInteraction": true
+    },
+    {
+      "state": "normal",
+      "sourceNodeId": "6:11797",
+      "sourceSymbol": "imgIconImageEditingTool",
+      "slot": "Footer / Draw edit region",
+      "name": "inpaint",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/f35c8bc0-69f3-4a58-ba0b-ec9284575cf3.svg",
+      "file": "public/assets/design-workbench/input-expand/inpaint.svg",
+      "displaySize": 16,
+      "svgRoot": {
+        "width": "16",
+        "height": "16"
+      },
+      "publicUrl": "/assets/design-workbench/input-expand/inpaint.svg",
+      "usedByCurrentInteraction": true
+    },
+    {
+      "state": "normal",
+      "sourceNodeId": "6:11797",
+      "sourceSymbol": "imgIconAspectRatio",
+      "slot": "Footer / Generation settings / Auto ratio",
+      "name": "ratio-auto",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/c470e395-42fa-445e-8edf-649402cdc348.svg",
+      "file": "public/assets/design-workbench/input-expand/ratio-auto.svg",
+      "displaySize": 20,
+      "svgRoot": {
+        "width": "20",
+        "height": "20"
+      },
+      "publicUrl": "/assets/design-workbench/input-expand/ratio-auto.svg",
+      "usedByCurrentInteraction": true
+    },
+    {
+      "state": "normal",
+      "sourceNodeId": "6:11797",
+      "sourceSymbol": "imgChevron",
+      "slot": "Footer / Generation settings / Chevron",
+      "name": "chevron-down",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/849eb39d-c343-4260-89ca-7f54c84c0fb6.svg",
+      "file": "public/assets/design-workbench/input-expand/chevron-down.svg",
+      "displaySize": 16,
+      "svgRoot": {
+        "width": "16",
+        "height": "16"
+      },
+      "publicUrl": "/assets/design-workbench/input-expand/chevron-down.svg",
+      "usedByCurrentInteraction": true
+    },
+    {
+      "state": "normal",
+      "sourceNodeId": "6:11797",
+      "sourceSymbol": "imgIconSystem1",
+      "slot": "Footer / Save prompt",
+      "name": "save-prompt",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/cf0d3bf5-40cb-48cb-9253-3e36156b4460.svg",
+      "file": "public/assets/design-workbench/input-expand/save-prompt.svg",
+      "displaySize": 16,
+      "svgRoot": {
+        "width": "16",
+        "height": "16"
+      },
+      "publicUrl": "/assets/design-workbench/input-expand/save-prompt.svg",
+      "usedByCurrentInteraction": true
+    },
+    {
+      "state": "normal",
+      "sourceNodeId": "6:11797",
+      "sourceSymbol": "imgIconSystem2",
+      "slot": "Footer / Prompt library",
+      "name": "prompt-library",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/bd81f0d2-2bd9-420c-bb2c-0efcdadea406.svg",
+      "file": "public/assets/design-workbench/input-expand/prompt-library.svg",
+      "displaySize": 16,
+      "svgRoot": {
+        "width": "16",
+        "height": "16"
+      },
+      "publicUrl": "/assets/design-workbench/input-expand/prompt-library.svg",
+      "usedByCurrentInteraction": true
+    },
+    {
+      "state": "normal",
+      "sourceNodeId": "6:11797",
+      "sourceSymbol": "imgIconSystem3",
+      "slot": "Footer / Credits",
+      "name": "credits",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/9a105132-8e2d-49a2-b5b5-22abaeaf971f.svg",
+      "file": "public/assets/design-workbench/input-expand/credits.svg",
+      "displaySize": 16,
+      "svgRoot": {
+        "width": "16",
+        "height": "16"
+      },
+      "publicUrl": "/assets/design-workbench/input-expand/credits.svg",
+      "usedByCurrentInteraction": true
+    },
+    {
+      "state": "normal",
+      "sourceNodeId": "6:11797",
+      "sourceSymbol": "imgIconGenerateStar",
+      "slot": "Footer / Generate",
+      "name": "generate-arrow",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/acdaffbe-6a7c-4088-9440-13cb821a02b8.svg",
+      "file": "public/assets/design-workbench/input-expand/generate-arrow.svg",
+      "displaySize": 24,
+      "svgRoot": {
+        "width": "24",
+        "height": "24"
+      },
+      "publicUrl": "/assets/design-workbench/input-expand/generate-arrow.svg",
+      "usedByCurrentInteraction": true
+    },
+    {
+      "state": "normal",
+      "sourceNodeId": "6:11797",
+      "sourceSymbol": "imgIcon1",
+      "slot": "Input area / Expand or restore",
+      "name": "expand",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/7a4b2141-d619-4c6a-96df-39abe9a2f048.svg",
+      "displaySize": 20,
+      "svgRoot": {
+        "width": "20",
+        "height": "20"
+      },
+      "usage": "保留原始Figma来源资产，当前自动撑高交互不使用",
+      "file": "public/assets/design-workbench/input-expand/expand.svg",
+      "publicUrl": "/assets/design-workbench/input-expand/expand.svg",
+      "usedByCurrentInteraction": false
+    },
+    {
+      "state": "expanded",
+      "sourceNodeId": "6:11904",
+      "sourceSymbol": "imgIcon",
+      "slot": "Header / Close",
+      "name": "close",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/e6d20ac8-30de-4484-9cd2-8af3d7881036.svg",
+      "file": "public/assets/design-workbench/input-expand/close-expanded.svg",
+      "displaySize": 20,
+      "svgRoot": {
+        "width": "20",
+        "height": "20"
+      },
+      "publicUrl": "/assets/design-workbench/input-expand/close-expanded.svg",
+      "usedByCurrentInteraction": false,
+      "usage": "保留原始Figma来源资产，当前自动撑高交互不使用"
+    },
+    {
+      "state": "expanded",
+      "sourceNodeId": "6:11904",
+      "sourceSymbol": "imgIconSystem",
+      "slot": "Media row / Add reference image",
+      "name": "add-image",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/1963b0c5-c50a-4254-92dd-5c9c9c74dcb5.svg",
+      "file": "public/assets/design-workbench/input-expand/add-image-expanded.svg",
+      "displaySize": 24,
+      "svgRoot": {
+        "width": "24",
+        "height": "24"
+      },
+      "publicUrl": "/assets/design-workbench/input-expand/add-image-expanded.svg",
+      "usedByCurrentInteraction": false,
+      "usage": "保留原始Figma来源资产，当前自动撑高交互不使用"
+    },
+    {
+      "state": "expanded",
+      "sourceNodeId": "6:11904",
+      "sourceSymbol": "imgIconImageEditingTool",
+      "slot": "Footer / Draw edit region",
+      "name": "inpaint",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/21f56467-e585-45ce-813c-0a2cb7f3154c.svg",
+      "file": "public/assets/design-workbench/input-expand/inpaint-expanded.svg",
+      "displaySize": 16,
+      "svgRoot": {
+        "width": "16",
+        "height": "16"
+      },
+      "publicUrl": "/assets/design-workbench/input-expand/inpaint-expanded.svg",
+      "usedByCurrentInteraction": false,
+      "usage": "保留原始Figma来源资产，当前自动撑高交互不使用"
+    },
+    {
+      "state": "expanded",
+      "sourceNodeId": "6:11904",
+      "sourceSymbol": "imgIconAspectRatio",
+      "slot": "Footer / Generation settings / Auto ratio",
+      "name": "ratio-auto",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/57329c84-4b91-4de7-b21b-689980ff22ce.svg",
+      "file": "public/assets/design-workbench/input-expand/ratio-auto-expanded.svg",
+      "displaySize": 20,
+      "svgRoot": {
+        "width": "20",
+        "height": "20"
+      },
+      "publicUrl": "/assets/design-workbench/input-expand/ratio-auto-expanded.svg",
+      "usedByCurrentInteraction": false,
+      "usage": "保留原始Figma来源资产，当前自动撑高交互不使用"
+    },
+    {
+      "state": "expanded",
+      "sourceNodeId": "6:11904",
+      "sourceSymbol": "imgChevron",
+      "slot": "Footer / Generation settings / Chevron",
+      "name": "chevron-down",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/31fe4e6e-ef6a-4036-965e-b43c807d44fc.svg",
+      "file": "public/assets/design-workbench/input-expand/chevron-down-expanded.svg",
+      "displaySize": 16,
+      "svgRoot": {
+        "width": "16",
+        "height": "16"
+      },
+      "publicUrl": "/assets/design-workbench/input-expand/chevron-down-expanded.svg",
+      "usedByCurrentInteraction": false,
+      "usage": "保留原始Figma来源资产，当前自动撑高交互不使用"
+    },
+    {
+      "state": "expanded",
+      "sourceNodeId": "6:11904",
+      "sourceSymbol": "imgIconSystem1",
+      "slot": "Footer / Save prompt",
+      "name": "save-prompt",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/d724f7db-1225-4dcb-8c92-9f80d7f82686.svg",
+      "file": "public/assets/design-workbench/input-expand/save-prompt-expanded.svg",
+      "displaySize": 16,
+      "svgRoot": {
+        "width": "16",
+        "height": "16"
+      },
+      "publicUrl": "/assets/design-workbench/input-expand/save-prompt-expanded.svg",
+      "usedByCurrentInteraction": false,
+      "usage": "保留原始Figma来源资产，当前自动撑高交互不使用"
+    },
+    {
+      "state": "expanded",
+      "sourceNodeId": "6:11904",
+      "sourceSymbol": "imgIconSystem2",
+      "slot": "Footer / Prompt library",
+      "name": "prompt-library",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/a8c8b8ce-516c-43a7-ae4a-77597551ad6c.svg",
+      "file": "public/assets/design-workbench/input-expand/prompt-library-expanded.svg",
+      "displaySize": 16,
+      "svgRoot": {
+        "width": "16",
+        "height": "16"
+      },
+      "publicUrl": "/assets/design-workbench/input-expand/prompt-library-expanded.svg",
+      "usedByCurrentInteraction": false,
+      "usage": "保留原始Figma来源资产，当前自动撑高交互不使用"
+    },
+    {
+      "state": "expanded",
+      "sourceNodeId": "6:11904",
+      "sourceSymbol": "imgIconSystem3",
+      "slot": "Footer / Credits",
+      "name": "credits",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/2e820efa-a66a-4d2f-919b-9e9dc8dd5aee.svg",
+      "file": "public/assets/design-workbench/input-expand/credits-expanded.svg",
+      "displaySize": 16,
+      "svgRoot": {
+        "width": "16",
+        "height": "16"
+      },
+      "publicUrl": "/assets/design-workbench/input-expand/credits-expanded.svg",
+      "usedByCurrentInteraction": false,
+      "usage": "保留原始Figma来源资产，当前自动撑高交互不使用"
+    },
+    {
+      "state": "expanded",
+      "sourceNodeId": "6:11904",
+      "sourceSymbol": "imgIconGenerateStar",
+      "slot": "Footer / Generate",
+      "name": "generate-arrow",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/247fb5e0-8e5e-4539-9f96-3b5db9cd990d.svg",
+      "file": "public/assets/design-workbench/input-expand/generate-arrow-expanded.svg",
+      "displaySize": 24,
+      "svgRoot": {
+        "width": "24",
+        "height": "24"
+      },
+      "publicUrl": "/assets/design-workbench/input-expand/generate-arrow-expanded.svg",
+      "usedByCurrentInteraction": false,
+      "usage": "保留原始Figma来源资产，当前自动撑高交互不使用"
+    },
+    {
+      "state": "expanded",
+      "sourceNodeId": "6:11904",
+      "sourceSymbol": "imgIcon1",
+      "slot": "Input area / Expand or restore",
+      "name": "collapse",
+      "sourceUrl": "https://www.figma.com/api/mcp/asset/d218171e-5f0e-4185-b8c3-177abfea7e84.svg",
+      "displaySize": 20,
+      "svgRoot": {
+        "width": "20",
+        "height": "20"
+      },
+      "usage": "保留原始Figma来源资产，当前自动撑高交互不使用",
+      "file": "public/assets/design-workbench/input-expand/collapse.svg",
+      "publicUrl": "/assets/design-workbench/input-expand/collapse.svg",
+      "usedByCurrentInteraction": false
+    }
+  ],
+  "interactionOverride": {
+    "source": "2026-10-27 用户确认",
+    "rule": "自动撑高覆盖设计稿中的手动放大／还原交互，两份稿保留为视觉及最小／最大尺寸来源。",
+    "mode": "content-auto-height",
+    "showExpandCollapseButton": false,
+    "triggers": [
+      "输入",
+      "粘贴",
+      "应用提示词",
+      "删除内容"
+    ],
+    "outerWidth": 800,
+    "outerMinHeight": 276,
+    "outerMaxHeight": 400,
+    "textMinHeight": 64,
+    "textMaxHeight": 188,
+    "overflow": "正文超过最大高度后内部滚动",
+    "shrink": "删除内容后自动回缩，最低为默认高度",
+    "preserve": [
+      "底部位置",
+      "面板宽度",
+      "画布视图",
+      "正文",
+      "参考素材及顺序",
+      "参数",
+      "原生成规则"
+    ],
+    "escape": "先关闭子浮层，否则关闭工具；不调整高度"
+  }
+}

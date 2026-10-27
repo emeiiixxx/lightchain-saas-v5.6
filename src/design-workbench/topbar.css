@@ -1,0 +1,55 @@
+/* Copied from the v5.3 topbar; scoped to this component. */
+[data-theme='dark'] { --purchase-base: #171c1c; --purchase-hover: #0a0b0b; }
+[data-theme='light'] { --purchase-base: #effefb; --purchase-hover: #c9fef6; }
+
+.topbar { height: 48px; position: relative; z-index: 30; border-bottom: 1px solid var(--border-weak); background: var(--fill-on-brand); backdrop-filter: blur(30px); font-size: 12px; line-height: 16px; }
+.brand { color: var(--text-primary); }
+.brand img { width: 24px; height: 24px; }
+.wordmark { height: 10px !important; }
+.language-trigger { color: var(--text-primary); white-space: nowrap; }
+.language-trigger:hover, .zoom-value:hover { background: var(--state-hover); }
+
+.purchase-button { position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; gap: 8px; height: 32px; padding: 4px 16px; border: 0; border-radius: var(--radius-base); font-size: 12px; font-weight: 500; line-height: 16px; white-space: nowrap; color: var(--brand-primary); background-color: var(--purchase-base); }
+.purchase-button::before, .purchase-button::after { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; border: 1px solid var(--border-weak); border-radius: inherit; background-size: 100% 100%; background-origin: border-box; background-repeat: no-repeat; }
+.purchase-button::before { background-image: url('/assets/design-workbench/purchase-dark-brand.svg'), url('/assets/design-workbench/purchase-dark-blue.svg'); opacity: 1; }
+.purchase-button::after { background-image: url('/assets/design-workbench/purchase-light-brand.svg'), url('/assets/design-workbench/purchase-light-blue.svg'); opacity: 0; }
+.purchase-button:hover { background-color: var(--purchase-hover); }
+[data-theme='dark'] .purchase-button:hover { color: var(--brand-primary-hover); }
+/* Master 160:992: the outer stroke turns brand-colored; the divider stays weak. */
+[data-theme='dark'] .purchase-button:hover::before { border-color: var(--border-brand); }
+[data-theme='light'] .purchase-button::before { opacity: 0; }
+[data-theme='light'] .purchase-button::after { opacity: 1; }
+[data-theme='light'] .purchase-button { color: var(--text-secondary); }
+[data-theme='light'] .purchase-button:hover { color: var(--text-primary); }
+.purchase-button .divider { height: 16px; }
+.purchase-cost { display: flex; align-items: center; gap: 4px; height: 18px; overflow: hidden; flex-shrink: 0; }
+.purchase-balance { min-width: 35px; }
+.avatar { display: block; width: 32px; height: 32px; border-radius: var(--radius-max); overflow: hidden; }
+.avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.popover { position: absolute; top: calc(100% + 12px); min-width: 180px; padding: 4px; background: var(--surface-secondary); border: 1px solid var(--border-weak); border-radius: var(--radius-l); box-shadow: 0 12px 28px -4px var(--overlay-weak); }
+.language-menu { left: 0; display: flex; flex-direction: column; gap: 4px; }
+.menu-option { width: 100%; min-height: 36px; display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; gap: 8px; border-radius: var(--radius-base); text-align: left; white-space: nowrap; }
+.menu-option:hover { background: var(--state-hover); }
+.menu-option[aria-pressed='true'] { background: var(--state-selected); }
+.option-check { opacity: 0; scale: .9; }
+.option-check.is-selected { opacity: 1; scale: 1; }
+
+.topbar { flex-shrink: 0; }
+.topbar .lc-button { padding: 0 12px; }
+.topbar .theme-toggle { padding: 0; }
+.topbar .brand { height: auto; }
+.topbar .avatar { margin: 0; border: 0; }
+@media (max-width: 900px) {
+ .topbar { padding-inline: 16px; }
+ .topbar-actions { gap: 8px; }
+ .topbar .header-action-label { display: none; }
+ .topbar .help-button, .topbar .support-button { padding-inline: 8px; }
+}
+@media (max-width: 680px) {
+ .topbar { padding-inline: 12px; }
+ .topbar > div:first-child { gap: 12px; }
+ .topbar .wordmark, .topbar .support-button, .topbar .language-label { display: none; }
+ .topbar .purchase-button { padding-inline: 8px; }
+ .topbar-actions { gap: 4px; }
+}

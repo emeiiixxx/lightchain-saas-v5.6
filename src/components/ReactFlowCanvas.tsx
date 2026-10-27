@@ -337,7 +337,10 @@ export function ReactFlowCanvas(props: Props) {
       elevateNodesOnSelect={false} elevateEdgesOnSelect={false}
       autoPanOnNodeDrag={false} autoPanOnSelection={false} autoPanOnConnect={false} disableKeyboardA11y
       onPaneClick={() => {
-        if (!latest.current.referenceMode && !latest.current.hand) {
+        // Tasks can select results while the hand tool is active. React Flow
+        // skips its own reset when elementsSelectable is false, so clear the
+        // controlled selection here in either tool; panning still suppresses clicks.
+        if (!latest.current.referenceMode) {
           setSelection([]);
           if (latest.current.onConnect) setConnectionSelection([]);
         }

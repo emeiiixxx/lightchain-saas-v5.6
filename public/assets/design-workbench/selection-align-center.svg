@@ -1,0 +1,5 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Icon/Tool">
+<path id="Union" fill-rule="evenodd" clip-rule="evenodd" d="M8 1C8.27614 1 8.5 1.22386 8.5 1.5V2.5H11C11.5523 2.5 12 2.94772 12 3.5V6C12 6.55228 11.5523 7 11 7H8.5V9H13.5C14.0523 9 14.5 9.44772 14.5 10V12.5C14.5 13.0523 14.0523 13.5 13.5 13.5H8.5V14.5C8.5 14.7761 8.27614 15 8 15C7.72386 15 7.5 14.7761 7.5 14.5V13.5H2.5C1.94772 13.5 1.5 13.0523 1.5 12.5V10C1.5 9.44772 1.94772 9 2.5 9H7.5V7H5C4.44772 7 4 6.55228 4 6V3.5C4 2.94772 4.44772 2.5 5 2.5H7.5V1.5C7.5 1.22386 7.72386 1 8 1ZM2.5 12.5H13.5V10H2.5V12.5ZM5 6H11V3.5H5V6Z" fill="white"/>
+</g>
+</svg>

@@ -47,6 +47,7 @@ export function workflowHeight(settings?: FusionSettings) {
     return 401 + Math.min(208, rows * 64 - 8);
   }
   if (settings?.kind === 'flat') return 430;
+  if (!settings?.kind || settings.kind === 'fusion') return FUSION_HEIGHT - 64 + Math.min(160, referenceGridRows(settings) * 64 - 8);
   if (settings?.kind !== 'directed') return FUSION_HEIGHT + (referenceGridRows(settings) - 1) * 72;
   const count = Math.min(MAX_DIRECTED_POINTS, settings.directedPoints?.length ?? 0);
   return 282 + count * 141 - (count === MAX_DIRECTED_POINTS ? 68 : 0);

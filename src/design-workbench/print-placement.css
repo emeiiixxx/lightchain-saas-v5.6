@@ -1,0 +1,71 @@
+/* Fullscreen editor shell using the project's 5.1 Beta semantic tokens. */
+.lc-dialog.print-placement-dialog {
+  width: calc(100vw - 48px); height: calc(100dvh - 64px);
+  max-width: none; max-height: none; padding: 0; overflow: hidden;
+  border-radius: var(--radius-xl); background: var(--surface-default);
+}
+.print-placement-dialog > .dialog-header {
+  height: 64px; margin: 0; padding: 0 var(--spacing-3xl);
+  border-bottom: 1px solid var(--border-weak);
+}
+.print-placement-dialog > .dialog-header h2 {
+  display: flex; align-items: center; gap: var(--spacing-base);
+  font-size: 16px; line-height: 24px; font-weight: 500;
+}
+.print-placement-demo-note { margin-left: var(--spacing-base); color: var(--text-tertiary); font-size: 12px; line-height: 16px; font-weight: 400; white-space: nowrap; }
+.print-placement-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 360px; height: calc(100% - 64px); min-height: 0; }
+.print-placement-stage { position: relative; min-width: 0; min-height: 0; overflow: hidden; border-right: 1px solid var(--border-weak); }
+.print-placement-checker {
+  position: absolute; inset: 0; background-color: var(--media-checker-light);
+  background-image: conic-gradient(from 90deg, var(--media-checker-dark) 25%, var(--media-checker-light) 0 50%, var(--media-checker-dark) 0 75%, var(--media-checker-light) 0);
+  background-size: 24px 24px;
+}
+.print-placement-label { position: absolute; left: var(--spacing-2xl); top: var(--spacing-2xl); z-index: 1; padding: var(--spacing-xs) var(--spacing-base); border-radius: var(--radius-base); background: var(--surface-floating); color: var(--text-secondary); font-size: 12px; line-height: 16px; }
+.print-placement-media { position: absolute; inset: 64px 32px 80px; display: grid; place-items: center; }
+.print-placement-pattern { display: block; width: auto; height: auto; max-width: 100%; max-height: 100%; object-fit: contain; }
+.print-placement-garment { position: relative; width: fit-content; max-width: 100%; }
+.print-placement-garment > img { display: block; width: auto; height: auto; max-width: 100%; max-height: calc(100dvh - 274px); object-fit: contain; }
+.print-placement-overlay { position: absolute; top: 40%; left: 35%; width: 30%; border: 1px solid var(--border-brand); pointer-events: none; }
+.print-placement-overlay > img { display: block; width: 100%; max-height: 100%; }
+.print-placement-overlay > .selection-handle { pointer-events: none; }
+.print-placement-tools { position: absolute; bottom: var(--spacing-2xl); left: 50%; translate: -50% 0; display: flex; align-items: center; gap: var(--spacing-xs); padding: var(--spacing-xs); border: 1px solid var(--border-weak); border-radius: var(--radius-l); background: var(--surface-floating); box-shadow: var(--shadow-m); }
+.print-placement-tools > .divider { height: var(--height-l); }
+.print-placement-sidebar { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--surface-default); }
+.print-placement-instructions { flex: 1; overflow-y: auto; padding: var(--spacing-3xl); }
+.print-placement-instructions h3 { margin: 0 0 var(--spacing-base); font-size: 14px; line-height: 22px; font-weight: 500; color: var(--text-primary); }
+.print-placement-instructions ol { margin: 0; padding-left: var(--spacing-2xl); list-style: decimal; font-size: 12px; line-height: 20px; color: var(--text-tertiary); }
+.print-placement-instructions li + li { margin-top: var(--spacing-xs); }
+.print-placement-footer { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: var(--spacing-base); padding: var(--spacing-2xl); border-top: 1px solid var(--border-weak); }
+.print-placement-settings { margin-right: auto; gap: var(--spacing-xs); }
+@media (max-width: 1100px) {
+  .print-placement-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 280px; }
+  .print-placement-media { left: var(--spacing-2xl); right: var(--spacing-2xl); }
+}
+@media (max-width: 760px) {
+  .lc-dialog.print-placement-dialog { width: calc(100vw - 24px); height: calc(100dvh - 24px); }
+  .print-placement-demo-note { max-width: 180px; white-space: normal; }
+  .print-placement-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  .print-placement-sidebar { grid-column: 1 / -1; max-height: 200px; }
+  .print-placement-instructions { padding: var(--spacing-xl); }
+  .print-placement-garment > img { max-height: calc(100dvh - 440px); }
+}
+
+/* Beta foreground/surface roles; the reference checker stays light in both themes. */
+.print-placement-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 400px; }
+.print-placement-instructions h3 { font-size: 16px; line-height: 24px; }
+.print-placement-instructions ol { color: var(--text-secondary); font-size: 14px; line-height: 20px; }
+.print-placement-instructions li + li { margin-top: var(--spacing-base); }
+.print-placement-footer { padding: var(--spacing-3xl); }
+.print-tool-cost { display: inline-flex; align-items: center; gap: var(--spacing-xs); background: var(--state-default); padding: 2px var(--spacing-xs); border-radius: var(--radius-base); color: var(--text-tertiary); }
+.print-mask-tools { width: max-content; height: 48px; padding: calc(var(--spacing-xs) - 1px); flex-wrap: nowrap; justify-content: center; }
+.print-mask-region { position: absolute; bottom: calc(100% + 8px); left: 0; display: flex; align-items: center; gap: var(--spacing-xs); padding: var(--spacing-base); background: var(--surface-floating); border: 1px solid var(--border-weak); border-radius: var(--radius-base); color: var(--text-secondary); font-size: 12px; line-height: 16px; }
+.print-mask-region > .icon { color: var(--brand-primary); }
+.print-demo-mask { position: absolute; inset: 0; mask: url('/assets/design-workbench/print-demo-mask.png') center / 100% 100% no-repeat; mask-mode: luminance; pointer-events: none; }
+.print-demo-mask--selected { background: var(--brand-primary); opacity: .65; }
+.print-demo-pattern { background-repeat: repeat; background-position: center; }
+.print-preview-scrim { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--spacing-base); padding: var(--spacing-2xl); background: var(--surface-media-overlay-strong); color: var(--text-on-brand-white); text-align: center; font-size: 14px; line-height: 20px; }
+.print-preview-scrim > .lc-spinner { color: var(--brand-primary); }
+.print-scale-tools { width: max-content; max-width: calc(100% - 24px); height: 48px; padding: 3px 3px 3px var(--spacing-2xl); gap: var(--spacing-xl); font-size: 14px; line-height: 20px; white-space: nowrap; }
+.print-scale-tools > .lc-slider { width: clamp(72px, 12vw, 220px); flex: 1 1 220px; min-width: 48px; }
+@media (max-width: 1100px) { .print-placement-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 280px; } }
+@media (max-width: 760px) { .print-placement-body { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }

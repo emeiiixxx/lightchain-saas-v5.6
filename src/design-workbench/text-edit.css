@@ -1,0 +1,69 @@
+.lc-dialog.text-edit-dialog { width: calc(100vw - 80px); height: calc(100dvh - 80px); max-width: none; max-height: none; padding: 0; overflow: hidden; border-radius: var(--radius-2xl, 24px); }
+.text-edit-dialog > .dialog-header { height: 56px; margin: 0; padding: 0 24px; border-bottom: 1px solid var(--border-weak); }
+.text-edit-dialog > .dialog-header h2 { display: flex; align-items: center; gap: 8px; font-size: 16px; line-height: 24px; font-weight: 500; }
+.text-edit-body { display: flex; height: calc(100% - 56px); min-height: 0; }
+.text-edit-sidebar { width: 400px; flex: 0 0 400px; min-height: 0; display: flex; flex-direction: column; border-right: 1px solid var(--border-weak); }
+.text-edit-recognition { display: flex; flex-direction: column; gap: 16px; padding: 24px; flex: 0 1 auto; min-height: 0; max-height: 44%; border-bottom: 1px solid var(--border-weak); }
+.text-edit-recognition h3, .text-edit-input > label { margin: 0; font-size: 16px; line-height: 24px; font-weight: 500; flex-shrink: 0; }
+.text-edit-recognized { min-height: 120px; height: 240px; max-height: 320px; flex-shrink: 1; padding: 12px; border: 1px solid var(--border-weak); border-radius: 12px; overflow: auto; background: var(--surface-secondary); color: var(--text-secondary); font-size: 14px; line-height: 20px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.text-edit-recognized:has(.text-edit-status) { color: var(--text-tertiary); }
+.text-edit-recognized.has-error { border-color: var(--status-danger); color: var(--status-danger); }
+.text-edit-recognized.has-error button { display: flex; margin-top: 8px; }
+.text-edit-status { display: flex; align-items: center; gap: 4px; }
+/* Figma 299:7521: retain its 20px viewBox and 15px artwork. The angular gradient
+   stays in the live SVG document so it is not rasterized as a CSS image mask. */
+.text-edit-loading { display: inline-flex; flex: 0 0 20px; width: 20px; height: 20px; line-height: 0; color: var(--text-primary); pointer-events: none; }
+.text-edit-loading > svg { display: block; flex: none; transform-box: view-box; transform-origin: 50% 50%; animation: text-edit-loading-turn .8s linear infinite; }
+.text-edit-loading foreignObject > div { background: conic-gradient(from 90deg, currentColor 0deg, transparent 360deg) !important; }
+@keyframes text-edit-loading-turn { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .text-edit-loading > svg { animation: none; } }
+.text-edit-input { padding: 24px; display: flex; flex: 1; flex-direction: column; gap: 8px; min-height: 0; }
+.text-edit-textarea { flex: 1; min-height: 80px; display: flex; flex-direction: column; padding: 12px; gap: 8px; border: 1px solid var(--border-weak); border-radius: 16px; background: var(--surface-secondary); }
+.text-edit-textarea:focus-within { background: var(--control-fill-focus); border-color: var(--border-brand); }
+.text-edit-textarea textarea { width: 100%; flex: 1; min-height: 0; padding: 0; border: 0; border-radius: 0; outline: 0; resize: none; background: transparent; color: var(--text-primary); font-size: 14px; line-height: 20px; }
+.text-edit-textarea textarea::placeholder { color: var(--text-placeholder); }
+.text-edit-counter { text-align: right; color: var(--text-tertiary); font-size: 12px; line-height: 16px; }
+.text-edit-input > .lc-generate-task { flex-shrink: 0; margin-top: 16px; width: 100%; }
+.text-edit-error { margin: 0; color: var(--status-danger); font-size: 12px; }
+.text-edit-stage { position: relative; flex: 1; min-width: 0; min-height: 0; overflow: hidden; background: var(--background-canvas); touch-action: none; user-select: none; cursor: crosshair; }
+.text-edit-stage:focus { outline: none; }
+.text-edit-image { position: absolute; transition-property: left, top, width, height; }
+.text-edit-stage[data-gesture='true'] .text-edit-image, .text-edit-stage[data-wheel='true'] .text-edit-image { transition-property: opacity; }
+.text-edit-image > img { display: block; width: 100%; height: 100%; pointer-events: none; }
+.text-edit-stage[data-pan='true'] { cursor: grab; }
+.text-edit-stage[data-pan='true'][data-gesture='true'] { cursor: grabbing; }
+.text-edit-stage[data-pan='true'] .text-edit-selection, .text-edit-stage[data-pan='true'] .text-edit-handle { cursor: inherit; }
+.text-edit-selection { position: absolute; border: 1px solid var(--border-brand); background: var(--alpha-brand-20); cursor: move; }
+.text-edit-handle { position: absolute; width: 8px; height: 8px; padding: 0; background: white; border: 1px solid var(--border-brand); border-radius: 50%; translate: -50% -50%; }
+.text-edit-handle--nw { left: 0; top: 0; cursor: nwse-resize; }
+.text-edit-handle--n { left: 50%; top: 0; cursor: ns-resize; }
+.text-edit-handle--ne { left: 100%; top: 0; cursor: nesw-resize; }
+.text-edit-handle--w { left: 0; top: 50%; cursor: ew-resize; }
+.text-edit-handle--e { left: 100%; top: 50%; cursor: ew-resize; }
+.text-edit-handle--sw { left: 0; top: 100%; cursor: nesw-resize; }
+.text-edit-handle--s { left: 50%; top: 100%; cursor: ns-resize; }
+.text-edit-handle--se { left: 100%; top: 100%; cursor: nwse-resize; }
+.text-edit-hint { position: absolute; z-index: 2; top: 24px; left: 50%; translate: -50% 0; padding: 8px 16px; margin: 0; border: 1px solid var(--border-weak); border-radius: 8px; background: var(--overlay-toast); color: var(--text-on-brand-white); backdrop-filter: blur(10px); font-size: 14px; line-height: 20px; white-space: nowrap; pointer-events: none; }
+/* Figma 420:6102: outlined control with an opaque, theme-aware fill. */
+.lc-button.text-edit-guide-trigger { position: absolute; z-index: 3; right: 16px; top: 16px; padding-inline: 12px; background: var(--control-fill-default); }
+.lc-button.text-edit-guide-trigger:hover:not(:disabled) { background: var(--control-fill-hover); }
+.lc-button.text-edit-guide-trigger:active:not(:disabled) { background: var(--control-fill-hover); box-shadow: inset 0 0 0 999px var(--state-selected); }
+.text-edit-zoom { position: absolute; z-index: 2; left: 50%; bottom: 24px; translate: -50% 0; display: flex; align-items: center; padding: 4px; background: var(--surface-default); border: 1px solid var(--border-weak); border-radius: 8px; box-shadow: var(--shadow-l); cursor: default; }
+.text-edit-zoom > span:not(.divider) { min-width: 56px; text-align: center; font-size: 14px; }
+.text-edit-zoom > .divider { height: 24px; }
+.text-edit-guide { position: absolute; inset: 80px 24px 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; overflow-y: auto; cursor: default; }
+/* Reserve the same card height on every step; keep pagination outside its scroll area. */
+.text-edit-guide-card { width: min(960px, 100%); height: 600px; max-height: calc(100% - 56px); min-height: 0; flex: none; padding: 24px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; border-radius: 16px; border: 1px solid var(--border-weak); background: var(--surface-floating); box-shadow: var(--shadow-l); }
+.text-edit-guide-card > h3 { margin: 0 0 24px; font-size: 20px; line-height: 28px; font-weight: 700; }
+.text-edit-guide-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.text-edit-guide-example { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+.text-edit-guide-media { padding: 16px; border-radius: 16px; background: var(--background-default); display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.text-edit-guide-media > img { width: 100%; height: auto; aspect-ratio: 418 / 326; object-fit: contain; display: block; }
+.text-edit-guide-badge { display: inline-flex; gap: 2px; align-items: center; padding: 4px 8px; border-radius: 8px; color: var(--text-on-brand-white); font-size: 14px; line-height: 20px; font-weight: 500; }
+.text-edit-guide-badge.is-wrong { background: var(--status-danger); }
+.text-edit-guide-badge.is-correct { background: var(--status-success, #36d183); }
+.text-edit-guide-example > p { padding: 0 4px; margin: 0; font-size: 14px; line-height: 20px; color: var(--text-secondary); }
+.text-edit-guide-pagination { display: flex; align-items: center; gap: 16px; font-size: 14px; flex-shrink: 0; }
+@media (max-width: 1400px) { .text-edit-sidebar { width: 320px; flex-basis: 320px; } .text-edit-hint { top: 64px; } }
+@media (max-height: 850px) { .text-edit-recognition { padding: 20px 24px; gap: 12px; } .text-edit-recognized { height: 180px; min-height: 80px; } .text-edit-guide { justify-content: flex-start; } .text-edit-guide-card { max-width: 760px; padding: 20px; } .text-edit-guide-media { padding: 12px; } .text-edit-guide-media > img { max-height: 240px; } }
+@media (max-width: 900px) { .lc-dialog.text-edit-dialog { width: calc(100vw - 24px); height: calc(100dvh - 24px); } .text-edit-sidebar { flex-basis: 280px; width: 280px; } .text-edit-recognition, .text-edit-input { padding: 16px; } .text-edit-guide { inset: 80px 12px 16px; } .text-edit-guide-columns { grid-template-columns: 1fr; } .text-edit-guide-card { padding: 16px; } .text-edit-guide-media > img { max-height: 180px; } .text-edit-hint { max-width: calc(100% - 24px); white-space: normal; width: max-content; font-size: 12px; padding: 8px; } }

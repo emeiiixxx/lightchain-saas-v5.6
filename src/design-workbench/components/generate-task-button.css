@@ -1,0 +1,16 @@
+.lc-button.lc-generate-task {
+  position: relative; isolation: isolate; overflow: hidden;
+  height: 40px; padding-inline: 20px; gap: 4px; border: 0;
+  border-radius: var(--radius-base); background: var(--brand-primary);
+  color: var(--text-on-brand-black); font-size: 14px; line-height: 20px; font-weight: 500;
+}
+.lc-generate-task::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  background: var(--brand-gradient); opacity: 0; pointer-events: none;
+  transition: opacity var(--motion-duration) var(--motion-easing);
+}
+.lc-generate-task:not(:disabled):is(:hover, :focus-visible, :active)::before { opacity: 1; }
+.lc-button.lc-generate-task:not(:disabled):is(:hover, :focus-visible, :active) { background: var(--brand-primary); color: var(--text-on-brand-black); }
+.lc-button.lc-generate-task:disabled {
+  opacity: 1; background: var(--brand-primary-disabled); color: var(--text-on-brand-disabled);
+}

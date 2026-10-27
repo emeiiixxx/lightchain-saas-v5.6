@@ -11,12 +11,15 @@
   "dependencies": {
     "@antv/hierarchy": "0.7.1",
     "@fontsource-variable/noto-sans-sc": "^5.2.0",
+    "@paddleocr/paddleocr-js": "0.4.2",
     "@xyflow/react": "^12.11.6",
+    "onnxruntime-web": "1.24.3",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
+    "@types/node": "22.20.5",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^5.0.0",

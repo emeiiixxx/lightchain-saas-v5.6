@@ -1,0 +1,44 @@
+/* Shared with v5.3: all UI state transitions use 200ms ease-out. */
+:root { --motion-duration: 200ms; --motion-easing: ease-out; }
+*, *::before, *::after {
+  transition-property: background-color, border-color, outline-color, box-shadow, opacity, transform, translate, scale, filter;
+  transition-duration: var(--motion-duration);
+  transition-timing-function: var(--motion-easing);
+}
+/* Controls own color interpolation; inherited text and masks follow once. */
+:where(button, a, input, textarea, select, [role='button'], [role='menuitem']) {
+  transition-property: color, background-color, border-color, outline-color, box-shadow, opacity, transform;
+}
+.icon { pointer-events: none; transition-property: opacity, transform, rotate; }
+/* A non-modal popover's invisible backdrop must not steal hover from its anchor. */
+[popover]::backdrop { pointer-events: none; }
+/* Entry/exit keyframes are the sole owner of overlay opacity. */
+[data-phase] { transition-property: color, background-color, border-color, outline-color, box-shadow; }
+[data-phase='enter'] { animation: ui-enter var(--motion-duration) var(--motion-easing) backwards; }
+[data-phase='exit'] { animation: ui-exit var(--motion-duration) var(--motion-easing) both; pointer-events: none; }
+.popover[data-phase='enter'], .lc-dialog[data-phase='enter'], .canvas-toolbar[data-phase='enter'], .toast[data-phase='enter'] { animation-name: panel-enter; }
+.popover[data-phase='exit'], .lc-dialog[data-phase='exit'], .canvas-toolbar[data-phase='exit'], .toast[data-phase='exit'] { animation-name: panel-exit; }
+.asset-panel[data-phase='enter'] { animation-name: sidebar-enter; }
+.asset-panel[data-phase='exit'] { animation-name: sidebar-exit; }
+.lc-dialog[data-phase='enter']::backdrop { animation: ui-enter var(--motion-duration) var(--motion-easing) backwards; }
+.lc-dialog[data-phase='exit']::backdrop { animation: ui-exit var(--motion-duration) var(--motion-easing) both; }
+.language-trigger[aria-expanded='true'] > .icon:last-child { rotate: 180deg; }
+.language-trigger > .icon:last-child { transition-property: background-color, rotate; }
+/* Canvas gestures follow the pointer immediately; only UI state changes ease. */
+.canvas-stage > canvas { transition: none; }
+@keyframes ui-enter { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ui-exit { from { opacity: 1; } to { opacity: 0; } }
+@keyframes panel-enter { from { opacity: 0; translate: 0 -4px; } to { opacity: 1; translate: 0 0; } }
+@keyframes panel-exit { from { opacity: 1; translate: 0 0; } to { opacity: 0; translate: 0 -4px; } }
+@keyframes sidebar-enter { from { opacity: 0; translate: 8px 0; } to { opacity: 1; translate: 0 0; } }
+@keyframes sidebar-exit { from { opacity: 1; translate: 0 0; } to { opacity: 0; translate: 8px 0; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+.progressive-image > .progressive-image-full { transition: opacity var(--motion-duration) var(--motion-easing); }
+.progressive-image > :is(.progressive-image-preview, .progressive-image-placeholder) { transition: opacity var(--motion-duration) var(--motion-easing), visibility 0s linear var(--motion-duration); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+/* The bottom tool appears immediately; only the canvas camera animates its focus. */
+.local-edit-composer[data-phase='enter'] { animation-name: ui-enter; }

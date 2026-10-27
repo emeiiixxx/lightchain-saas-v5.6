@@ -19,12 +19,31 @@
 .fusion-references { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: 64px; align-items: center; gap: 8px; min-height: 64px; }
 .fusion-references > * { min-width: 0; width: 100%; aspect-ratio: 1; }
 .fusion-reference-count { margin-left: auto; font-size: 12px; color: var(--text-tertiary); }
+.fusion-label .fusion-reference-help { flex: 0 0 16px; width: 16px; min-width: 16px; height: 16px; min-height: 16px; padding: 0; border: 0; border-radius: 999px; color: var(--text-tertiary); background: transparent; }
+.fusion-label > .divider--vertical { flex: 0 0 1px; height: 12px; margin: 0; }
+.fusion-reference-summary { color: var(--text-tertiary); font-size: 12px; line-height: 16px; white-space: nowrap; }
+.fusion-reference-current { color: var(--text-brand); }
 .fusion-reference-wrap { position: relative; min-width: 0; aspect-ratio: 1; }
 .fusion-reference { display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 1; border: 1px solid var(--border-weak); background: var(--state-default); color: var(--text-secondary); border-radius: 12px; overflow: hidden; }
 .fusion-reference:is(button):hover { background: var(--state-hover); color: var(--text-primary); }
 .fusion-reference img { width: 100%; height: 100%; object-fit: cover; }
 .fusion-reference-wrap .fusion-reference-remove { position: absolute; top: 2px; right: 2px; width: 20px; min-width: 20px; height: 20px; padding: 0; border-radius: 999px; opacity: 0; }
 .fusion-reference-wrap:hover .fusion-reference-remove, .fusion-reference-wrap:focus-within .fusion-reference-remove { opacity: 1; }
+/* Figma 6:13063: 56px tiles and 160px visible content; the extra inset protects the floating remove buttons. */
+.fusion-references--sortable { grid-template-columns: repeat(4, 56px); grid-auto-rows: 56px; align-items: start; align-content: start; width: calc(100% + 8px); min-height: 64px; max-height: 168px; margin-top: -8px; padding: 8px 8px 0 0; overflow-x: hidden; overflow-y: auto; scrollbar-width: none; overscroll-behavior: contain; }
+.fusion-references--sortable::-webkit-scrollbar { display: none; }
+.fusion-references--sortable > * { width: 56px; height: 56px; }
+.fusion-references--sortable .fusion-reference-wrap .fusion-reference { background: var(--control-fill-hover); }
+.fusion-references--sortable .fusion-reference-wrap { isolation: isolate; overflow: visible; border-radius: 12px; cursor: grab; transition: opacity 200ms ease-out; }
+.fusion-references--sortable .fusion-reference-wrap .fusion-reference-remove { position: absolute; z-index: 2; top: -8px; right: -8px; width: 24px; min-width: 24px; height: 24px; min-height: 24px; padding: 0; border: 0; border-radius: 999px; -webkit-backdrop-filter: blur(var(--background-blur-s)); backdrop-filter: blur(var(--background-blur-s)); opacity: 0; pointer-events: none; transition: opacity 200ms ease-out, background-color 200ms ease-out; }
+.fusion-references--sortable .fusion-reference-wrap:is(:hover, :focus-within) .fusion-reference-remove { opacity: 1; pointer-events: auto; }
+.fusion-references--sortable .fusion-reference-wrap::after { content: ''; position: absolute; inset: 0; border: 2px solid var(--brand-primary); border-radius: inherit; opacity: 0; pointer-events: none; transition: opacity 200ms ease-out; }
+.fusion-references--sortable .fusion-reference-wrap[data-dragging='true'] { opacity: .45; }
+.fusion-references--sortable .fusion-reference-wrap[data-dragging='true']::after { opacity: 1; }
+.fusion-references--sortable[data-reference-sorting='true'] { cursor: grabbing; }
+.fusion-references--sortable[data-reference-sorting='true'] .fusion-reference-wrap .fusion-reference-remove { opacity: 0; pointer-events: none; }
+.fusion-reference-number { position: absolute; left: 4px; bottom: 4px; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 999px; background: var(--brand-primary); color: var(--text-on-brand-black); font-size: 12px; line-height: 16px; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .fusion-references--sortable .fusion-reference-wrap, .fusion-references--sortable .fusion-reference-wrap::after, .fusion-references--sortable .fusion-reference-wrap .fusion-reference-remove { transition: none; } }
 .fusion-textarea { display: flex; flex-direction: column; gap: 8px; height: 160px; padding: 8px; border: 1px solid var(--border-weak); border-radius: 12px; background: var(--control-fill-default); }
 .fusion-textarea:hover { border-color: var(--border-strong); }
 .fusion-textarea:focus-within { border-color: var(--border-brand); background: var(--control-fill-focus); }
@@ -66,7 +85,7 @@
 .fusion-add-main { width: 100%; height: 56px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 4px; padding: 0 8px; border: 0; border-radius: 16px; background: var(--state-default); color: var(--text-primary); font-size: 12px; }
 .fusion-add-main:hover { background: var(--state-hover); }
 .fusion-node.is-empty .fusion-reference-count { display: none; }
-.fusion-node.is-empty .fusion-references { grid-template-columns: repeat(4, 1fr); }
+.fusion-node.is-empty .fusion-references:not(.fusion-references--sortable) { grid-template-columns: repeat(4, 1fr); }
 .fusion-node.is-empty .fusion-reference-wrap:only-child { width: 64px; }
 .fusion-node.is-empty .fusion-textarea { background: var(--control-fill-default); }
 

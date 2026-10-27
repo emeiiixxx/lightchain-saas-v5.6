@@ -1,0 +1,7 @@
+.lc-spinner {
+  display: inline-block; flex: none; background: currentColor; pointer-events: none;
+  mask: url('/assets/design-workbench/loading-spinner.png') center / contain no-repeat;
+}
+.lc-spinner[data-active='true'] { animation: lc-spinner-turn .8s linear infinite; }
+@keyframes lc-spinner-turn { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .lc-spinner[data-active='true'] { animation: none; } }

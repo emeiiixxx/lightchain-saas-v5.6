@@ -1,0 +1,27 @@
+.task-result-placeholder { position: relative; display: flex; width: 100%; height: 100%; min-height: 0; align-items: center; justify-content: center; padding: 10px; overflow: hidden; background: var(--surface-secondary); color: var(--text-tertiary); }
+.task-result-state-message { position: relative; display: flex; flex-direction: column; align-items: center; gap: var(--spacing-xs); pointer-events: none; }
+.task-result-state-content { display: flex; flex-direction: column; align-items: center; width: 56px; }
+.task-failure-artwork { position: relative; display: block; width: 56px; height: 56px; flex: none; }
+.task-failure-shadow { position: absolute; inset: 85.16% 10.16% 5.47% 8.59%; }
+.task-failure-shadow > span { position: absolute; inset: -83.33% -9.62%; background: url('/assets/design-workbench/task-failure/shadow.svg') center / 100% 100% no-repeat; }
+.task-failure-glass { position: absolute; top: 8.33%; bottom: 0; left: 50%; transform: translateX(-50%); height: 91.67%; width: auto; max-width: none; aspect-ratio: 1; object-fit: cover; object-position: bottom; }
+.task-failure-light { position: absolute; inset: 18.75% 8.33% 18.75% 18.75%; }
+.task-failure-light-front { position: absolute; inset: 0 0 0 2.86%; mix-blend-mode: plus-lighter; }
+.task-failure-light-front > span { position: absolute; inset: -13.33% -11.76%; background: url('/assets/design-workbench/task-failure/light-front.svg') center / 100% 100% no-repeat; }
+.task-failure-light-back { position: absolute; inset: 0 5.71% 3.33% 0; mix-blend-mode: plus-lighter; }
+.task-failure-light-back > span { position: absolute; inset: -27.59% -24.24%; background: url('/assets/design-workbench/task-failure/light-back.svg') center / 100% 100% no-repeat; }
+.task-result-state-message > .task-result-retry { flex: none; min-width: 24px; min-height: 24px; height: auto; padding: 2px var(--spacing-base); border-radius: var(--radius-m); font-size: 12px; font-weight: 500; line-height: 20px; pointer-events: auto; }
+.task-result-placeholder--large .task-result-state-message { gap: var(--spacing-xl); }
+.task-result-failure-title { color: var(--text-tertiary); font-size: 14px; line-height: 20px; font-weight: 500; text-align: center; white-space: nowrap; }
+.task-result-placeholder--large .task-result-retry { min-width: 32px; min-height: 32px; padding: 6px var(--spacing-xl); }
+.task-result-placeholder .generating-placeholder { pointer-events: none; }
+.task-result-placeholder .generating-placeholder-status { gap: 6px; padding: 4px; text-align: center; }
+.task-result-placeholder .generating-placeholder-progress { height: 4px; }
+.generation-record-images > .generation-record-result { position: relative; flex: none; width: 92px; overflow: hidden; background: var(--surface-secondary); }
+.generation-record-images--four > .generation-record-result { width: 100%; }
+.generation-record-result-open { display: block; width: 100%; height: 100%; border: 0; padding: 0; background: transparent; }
+.generation-record-result-open:focus-visible { outline-offset: -2px; }
+.task-detail-panel button:disabled { cursor: not-allowed; opacity: .4; }
+
+/* Camera values already provide gesture tracking and animated zoom steps. */
+.canvas-failed-result, .canvas-failed-result-content { transition-property: background-color, border-color, outline-color, box-shadow, opacity; }

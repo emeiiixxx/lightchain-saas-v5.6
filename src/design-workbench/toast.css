@@ -1,0 +1,31 @@
+/* Lightchain 5.1 Beta Toast: Success 153:4594, Error 77:6004. */
+.toast[popover] {
+  position: fixed;
+  z-index: 80;
+  top: 64px;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  margin: 0;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: calc(100dvw - 32px);
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-base);
+  border: 1px solid var(--border-weak);
+  border-radius: var(--radius-base);
+  background: var(--overlay-toast);
+  backdrop-filter: blur(var(--background-blur-s));
+  color: var(--text-on-brand-white);
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 400;
+  text-align: left;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+.toast[data-tone='error'] { background: var(--surface-danger); color: var(--status-danger); }
+.toast-content { display: flex; align-items: center; gap: 4px; min-width: 0; padding-inline: var(--spacing-base); }
+.toast-icon { display: flex; flex: none; align-items: center; justify-content: center; width: 16px; height: 16px; overflow: hidden; }
+.toast-message { min-width: 0; overflow-wrap: anywhere; }

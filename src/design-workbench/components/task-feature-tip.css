@@ -1,0 +1,6 @@
+.task-feature-tip { position: fixed; z-index: 24; display: flex; align-items: center; width: max-content; max-width: calc(100vw - 16px); filter: drop-shadow(0 12px 14px var(--overlay-weak)); }
+.task-feature-tip-arrow { display: flex; justify-content: flex-end; align-items: center; flex: 0 0 6px; height: 20px; transform: scaleY(-1); }
+.task-feature-tip-arrow img { display: block; max-width: none; }
+.task-feature-tip-body { display: grid; grid-template-columns: minmax(0, 1fr) max-content; align-items: start; flex: none; width: max-content; max-width: calc(100vw - 22px); min-width: 0; gap: var(--spacing-base); padding: var(--spacing-base); border-radius: var(--radius-l); background: var(--primitive-brand-300); color: var(--text-on-brand-black); }
+.task-feature-tip-body p { min-width: 0; margin: 0; padding-inline: var(--spacing-xs); font-size: 14px; font-weight: 500; line-height: 20px; white-space: normal; overflow-wrap: break-word; word-break: normal; text-shadow: 2px 4px 20px rgba(0,119,255,.2); }
+.task-feature-tip-body > .lc-icon-button { color: var(--text-on-brand-black); }

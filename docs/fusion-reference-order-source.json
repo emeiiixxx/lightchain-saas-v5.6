@@ -1,0 +1,36 @@
+{
+  "fileKey": "A3oI9FzDPseUH4ybk7mA3H",
+  "referenceArea": "6:13063",
+  "tooltip": "6:13204",
+  "workflowContext": "6:12568",
+  "designUrl": "https://www.figma.com/design/A3oI9FzDPseUH4ybk7mA3H/Lightchain-SaaS-v5.6.0?node-id=6-13063&m=dev",
+  "assets": {
+    "information": {
+      "nodeId": "6:13066",
+      "path": "public/assets/fusion-reference-order/info.svg",
+      "size": 16
+    },
+    "addReference": {
+      "nodeId": "I6:13080;1579:4104",
+      "path": "public/assets/fusion-reference-order/add.svg",
+      "size": 20
+    }
+  },
+  "tooltipText": "支持拖拽素材调整顺序",
+  "tooltipComponent": "src/components/Tooltip.tsx",
+  "tooltipPlacement": "right",
+  "counterText": "最多9张，已添加 n/9",
+  "wordingOverride": "素材统一使用添加，覆盖设计稿中的上传",
+  "tileSize": 56,
+  "columns": 4,
+  "gap": 8,
+  "maxContentHeight": 160,
+  "removeButton": {
+    "size": 24,
+    "iconSize": 12,
+    "top": -8,
+    "right": -8,
+    "source": "视频工作台参考素材删除按钮"
+  },
+  "referenceImages": "使用用户实际添加的素材，不固定为设计稿示例图片"
+}

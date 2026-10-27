@@ -84,7 +84,7 @@ export function useVideoReferenceSort(node: VideoWorkflow, onChange: (patch: Par
     const gap = Number.parseFloat(style.columnGap) || 0;
     const localX = (clientX - bounds.left) / scale + row.scrollLeft - (Number.parseFloat(style.paddingLeft) || 0);
     const localY = (clientY - bounds.top) / scale + row.scrollTop - (Number.parseFloat(style.paddingTop) || 0);
-    const height = (first ? tiles.current.get(first.id)?.offsetHeight : undefined) ?? 64;
+    const height = Number.parseFloat(style.gridAutoRows) || (first ? tiles.current.get(first.id)?.offsetHeight : undefined) || 64;
     const rowGap = Number.parseFloat(style.rowGap) || 0;
     const column = Math.max(0, Math.min(3, Math.round((localX - width / 2) / (width + gap))));
     const rowIndex = Math.max(0, Math.round((localY - height / 2) / (height + rowGap)));
@@ -115,11 +115,13 @@ export function useVideoReferenceSort(node: VideoWorkflow, onChange: (patch: Par
       const scale = bounds.width / row.offsetWidth || 1;
       const edge = 28 * scale;
       const inside = point.y >= bounds.top && point.y <= bounds.bottom && point.x >= bounds.left && point.x <= bounds.right;
-      const velocity = !inside ? 0 : point.x < bounds.left + edge ? -1 : point.x > bounds.right - edge ? 1 : 0;
+      const velocityX = !inside || row.scrollWidth <= row.clientWidth ? 0 : point.x < bounds.left + edge ? -1 : point.x > bounds.right - edge ? 1 : 0;
+      const velocityY = !inside || row.scrollHeight <= row.clientHeight ? 0 : point.y < bounds.top + edge ? -1 : point.y > bounds.bottom - edge ? 1 : 0;
       const delta = Math.min(32, now - last);
       last = now;
-      if (velocity) {
-        row.scrollLeft += velocity * delta * .45;
+      if (velocityX || velocityY) {
+        row.scrollLeft += velocityX * delta * .45;
+        row.scrollTop += velocityY * delta * .45;
         previewAt(row, point.kind, point.x, point.y);
       }
       scrollFrame.current = requestAnimationFrame(tick);
@@ -144,7 +146,7 @@ export function useVideoReferenceSort(node: VideoWorkflow, onChange: (patch: Par
     event.dataTransfer.dropEffect = 'move';
     pointer.current = { kind, x: event.clientX, y: event.clientY };
     previewAt(event.currentTarget, kind, event.clientX, event.clientY);
-    if (event.currentTarget.scrollWidth > event.currentTarget.clientWidth) startScroll();
+    if (event.currentTarget.scrollWidth > event.currentTarget.clientWidth || event.currentTarget.scrollHeight > event.currentTarget.clientHeight) startScroll();
   }
 
   function leave(event: DragEvent<HTMLDivElement>) {

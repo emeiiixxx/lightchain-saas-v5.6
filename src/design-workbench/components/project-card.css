@@ -1,0 +1,16 @@
+.project-card { position: relative; width: 225.3333px; max-width: 100%; display: flex; flex-direction: column; overflow: hidden; border-radius: var(--radius-l); background: var(--control-fill-default); }
+.project-card:is(:hover, :focus-within, [data-menu-open='true']) { background: var(--control-fill-hover); }
+.project-card-more { position: absolute; top: 8px; right: 8px; opacity: 0; pointer-events: none; }
+.project-card:is(:hover, :focus-within, [data-menu-open='true']) .project-card-more { opacity: 1; pointer-events: auto; }
+.project-card-menu { inset: auto; margin: 0; width: max-content; min-width: 160px; }
+.project-card-menu > .lc-button { justify-content: flex-start; text-align: left; }
+@media (hover: none) { .project-card-more { opacity: 1; pointer-events: auto; } }
+.project-card-preview { display: grid; place-items: center; width: 100%; aspect-ratio: 225.3333 / 136; flex: none; padding: 0; border: 0; overflow: hidden; background: var(--surface-secondary); cursor: pointer; }
+.project-card-default-cover { display: block; width: 72px; height: 72px; object-fit: contain; }
+.project-card-preview:focus-visible { outline-offset: -3px; }
+.project-card-info { display: flex; flex-direction: column; align-items: stretch; flex: none; gap: var(--spacing-xs); height: 64px; padding: var(--spacing-base); overflow: hidden; background: var(--state-default); }
+.project-card:is(:hover, :focus-within, [data-menu-open='true']) .project-card-info { background: var(--state-hover); }
+.project-card-name { width: 100%; min-width: 0; height: 24px; flex: none; padding: 0 var(--spacing-base); border: 0; border-radius: var(--radius-m); background: transparent; color: var(--text-secondary); font-size: 14px; font-weight: 400; line-height: 20px; text-overflow: ellipsis; }
+.project-card-name:focus { background: var(--control-fill-focus); outline: 1px solid var(--border-brand); outline-offset: -1px; }
+.project-card-updated { padding-inline: var(--spacing-base); color: var(--text-placeholder); font-size: 12px; font-weight: 400; line-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.project-card-preview-area { display: flex; justify-content: center; margin-bottom: 16px; padding: 16px; border-radius: var(--radius-l); background: var(--background-canvas); }
