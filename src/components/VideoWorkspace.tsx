@@ -4,6 +4,7 @@ import { prepareMainImage, type LibraryImage } from '../asset-library';
 import type { SnapGuides } from '../canvas-snapping';
 import { messages, type Locale } from '../i18n';
 import { usePresence } from '../usePresence';
+import { getMotionDurationMs } from '../motion';
 import { videoAssets } from '../video-assets';
 import { exportImage, ImageExportError, type DownloadFormat } from '../download-image';
 import { downloadImages } from '../download-images';
@@ -125,11 +126,14 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   }, [stopCamera]);
   const animateView = useCallback((target: Viewport) => {
     stopCamera();
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setView(target); return; }
-    const from = viewRef.current, started = performance.now();
-    const duration = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--motion-duration')) || 200;
+    const duration = getMotionDurationMs();
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || duration === 0) { setView(target); return; }
+    const from = viewRef.current;
+    let started: number | null = null;
     // Match the image canvas and CSS ease-out: cubic-bezier(0, 0, .58, 1).
     const frame = (now: number) => {
+      // Selecting results can render a large canvas before the first frame.
+      started ??= now;
       const progress = Math.min(1, (now - started) / duration);
       let low = 0, high = 1;
       for (let index = 0; index < 20; index++) {
