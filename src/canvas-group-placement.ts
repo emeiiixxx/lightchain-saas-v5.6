@@ -18,18 +18,16 @@ export function placeConnectedGroupStages(
   const positions: ConnectedGroupLayout['positions'] = new Map();
   const occupied = new Map<string, Bounds>();
   const planned = stages.map(stage => {
-    const rows: { groups: readonly ConnectedLayoutGroup[]; height: number; width: number }[] = [];
+    const rows: { groups: readonly ConnectedLayoutGroup[]; height: number }[] = [];
     for (let offset = 0; offset < stage.length; offset += groupsPerRow) {
       const groups = stage.slice(offset, offset + groupsPerRow);
       rows.push({
         groups,
         height: Math.max(0, ...groups.map(group => group.layout.height)),
-        width: groups.reduce((sum, group) => sum + group.layout.width, 0) + Math.max(0, groups.length - 1) * groupGap,
       });
     }
     return {
       rows,
-      width: Math.max(0, ...rows.map(row => row.width)),
       height: rows.reduce((sum, row) => sum + row.height, 0) + Math.max(0, rows.length - 1) * groupGap,
     };
   });
@@ -39,7 +37,7 @@ export function placeConnectedGroupStages(
     const stageTop = options.centerStages === false ? 0 : (tallestStage - stage.height) / 2;
     let defaultRowY = stageTop;
     let rowFloor = -Infinity;
-    let stageRight = stageX + stage.width;
+    let stageRight = -Infinity;
     for (const row of stage.rows) {
       let x = stageX;
       let rowBottom = -Infinity;
@@ -83,9 +81,10 @@ export function placeConnectedGroupStages(
           for (const interval of blocked) if (offset > interval.top && offset < interval.bottom) offset = interval.bottom;
           if (offset) placed = new Map([...placed].map(([id, point]) => [id, { x: point.x, y: point.y + offset }]));
         }
-        // Referenced materials stay in the occupied map at their original
-        // positions. Only this group's own vertices contribute to its bounds.
-        let groupRight = x + layout.width;
+        // Cross-group inputs can move into an earlier column. Measure only the
+        // placed vertices: the baseline width would retain that now-empty column
+        // and push following groups (and later stages) too far to the right.
+        let groupRight = -Infinity;
         for (const vertex of vertices) {
           const point = placed.get(vertex.id)!;
           positions.set(vertex.id, point);
@@ -99,7 +98,7 @@ export function placeConnectedGroupStages(
       rowFloor = rowBottom + groupGap;
       defaultRowY = Math.max(defaultRowY + row.height + groupGap, rowFloor);
     }
-    stageX = stageRight + groupGap;
+    if (Number.isFinite(stageRight)) stageX = stageRight + groupGap;
   }
   if (!positions.size) return { positions, width: 0, height: 0 };
   const bounds = [...occupied.values()];
