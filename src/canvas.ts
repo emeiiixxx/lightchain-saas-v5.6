@@ -5,6 +5,7 @@ import type { DrawingGuide } from './drawing-guide';
 import { mergeGroupStages } from './canvas-merge-layout';
 import { layoutConnectedGroup, type FlowLayoutVertex } from './canvas-connected-layout';
 import { placeConnectedGroupStages, type ConnectedLayoutGroup } from './canvas-group-placement';
+import { packStandaloneRows } from './canvas-standalone-layout';
 export type Viewport = { x: number; y: number; zoom: number };
 export type FusionReference = { id: string; name: string; url: string; sourceImageId?: string };
 export const MAX_FUSION_REFERENCES = 9;
@@ -123,7 +124,7 @@ export function boundsOf(images: CanvasImage[]): Bounds | null {
   const x = Math.min(...images.map(n => n.x)), y = Math.min(...images.map(n => n.y));
   return { x, y, width: Math.max(...images.map(n => n.x + n.width)) - x, height: Math.max(...images.map(n => n.y + n.height)) - y };
 }
-export function arrangeImages(items: CanvasImage[], startX = 0, _viewport = { width: 1440, height: 852 }, options: { independentGap?: number } = {}): CanvasImage[] {
+export function arrangeImages(items: CanvasImage[], startX = 0, viewport = { width: 1440, height: 852 }, options: { independentGap?: number; independentColumns?: number; zoom?: number } = {}): CanvasImage[] {
   if (!items.length) return [];
   // Layout the visible graph: an image and its editor are separate vertices.
   type Vertex = { id: string; width: number; height: number; editor: boolean; children: string[] };
@@ -237,23 +238,18 @@ export function arrangeImages(items: CanvasImage[], startX = 0, _viewport = { wi
       connected: { layout, vertices: members },
     };
   });
-  function pack(blocks: Block[], columns: number, gap = GROUP_GAP, centerGroups = true): Block {
-    const nodes: Placement[] = [];
-    let width = 0, y = 0;
-    for (let row=0;row<blocks.length;row+=columns) {
-      const rowBlocks = blocks.slice(row,row+columns);
-      const rowHeight = Math.max(...rowBlocks.map(block => block.height));
-      let x=0;
-      for (const block of rowBlocks) {
-        const groupY = y + (centerGroups ? (rowHeight - block.height) / 2 : 0);
-        nodes.push(...moved(block,x,groupY)); x += block.width+gap;
-      }
-      width=Math.max(width,x-gap); y+=rowHeight+gap;
-    }
-    return {nodes, width, height:Math.max(0,y-gap)};
-  }
-  // Keep complete groups together and wrap after five, regardless of viewport.
-  const bottom = pack(independent, GROUPS_PER_ROW, options.independentGap ?? 40, false);
+  const zoom = options.zoom && Number.isFinite(options.zoom) && options.zoom > 0 ? options.zoom : 1;
+  // Uploads can retain their initial column count; Arrange fills the visible width.
+  const independentLayout = packStandaloneRows(
+    independent,
+    options.independentColumns ? Infinity : canvasSafeArea(viewport.width, viewport.height).width / zoom,
+    options.independentGap ?? 40,
+    options.independentColumns,
+  );
+  const bottom: Block = {
+    nodes: independentLayout.placements.flatMap(({ item, x, y }) => moved(item, x, y)),
+    width: independentLayout.width, height: independentLayout.height,
+  };
   const connectedGroups = new Map<Block, ConnectedLayoutGroup>(groups.map(group => [group, group.connected]));
   const relatedLayout = placeConnectedGroupStages(
     mergeGroupStages(items, groups).map(blocks => blocks.map(block => connectedGroups.get(block)!)),

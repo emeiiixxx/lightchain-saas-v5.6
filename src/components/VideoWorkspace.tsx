@@ -955,8 +955,11 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     } catch { notify(t.uploadError, 'error'); }
   }
   function arrangeScene() {
+    const rect = canvas.current?.getBoundingClientRect();
+    if (!rect) return;
     const previous = current.current;
-    const positions = arrangeVideoWorkflowMedia(previous.images, previous.workflows, previous.materialWorkflows, previous.upscaleWorkflows, previous.layout);
+    const positions = arrangeVideoWorkflowMedia(previous.images, previous.workflows, previous.materialWorkflows, previous.upscaleWorkflows, previous.layout,
+      { width: rect.width, height: rect.height, zoom: viewRef.current.zoom });
     commit({ ...previous, images: previous.images.map(image => ({ ...image, ...positions.get(image.id)! })), workflows: previous.workflows.map(node => ({ ...node, ...positions.get(node.id)! })),
       materialWorkflows: (previous.materialWorkflows ?? []).map(node => ({ ...node, ...positions.get(node.id)! })),
       upscaleWorkflows: (previous.upscaleWorkflows ?? []).map(node => ({ ...node, ...positions.get(node.id)! })) });

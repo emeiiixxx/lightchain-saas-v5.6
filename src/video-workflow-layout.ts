@@ -6,10 +6,11 @@ import { reconcileVideoLayout, type VideoLayoutState, type VideoLayoutVertex } f
 import { orderedLayoutStages } from './canvas-layout-stages';
 import { layoutConnectedGroup } from './canvas-connected-layout';
 import { placeConnectedGroupStages } from './canvas-group-placement';
+import { canvasSafeArea } from './canvas';
+import { packStandaloneRows } from './canvas-standalone-layout';
 
 export type { VideoLayoutState } from './video-layout-groups';
 type Position = { x: number; y: number };
-type LayoutGroup = { positions: Map<string, Position>; width: number; height: number };
 const GROUP_GAP = 240;
 const GROUPS_PER_ROW = 5;
 
@@ -33,29 +34,9 @@ export function videoLayoutVertices(images: VideoCanvasMedia[], videoWorkflows: 
 export function reconcileVideoWorkflowLayout(images: VideoCanvasMedia[], workflows: VideoWorkflow[], materialWorkflows: MaterialWorkflow[] = [], upscaleWorkflows: VideoUpscaleWorkflow[] = [], saved?: VideoLayoutState): VideoLayoutState {
   return reconcileVideoLayout(videoLayoutVertices(images, workflows, materialWorkflows, upscaleWorkflows), saved);
 }
-
-
-function packGroups(groups: LayoutGroup[], centerGroups = true, gap = GROUP_GAP): LayoutGroup {
-  const positions = new Map<string, Position>();
-  let y = 0, width = 0;
-  for (let offset = 0; offset < groups.length; offset += GROUPS_PER_ROW) {
-    const row = groups.slice(offset, offset + GROUPS_PER_ROW);
-    const rowHeight = Math.max(...row.map(group => group.height));
-    let x = 0;
-    for (const group of row) {
-      const groupY = y + (centerGroups ? (rowHeight - group.height) / 2 : 0);
-      for (const [id, position] of group.positions) positions.set(id, { x: x + position.x, y: groupY + position.y });
-      x += group.width + gap;
-    }
-    width = Math.max(width, x - gap);
-    y += rowHeight + gap;
-  }
-  return { positions, width, height: Math.max(0, y - gap) };
-}
-
 // Groups retain their own assets. Cross-group references order whole groups
 // into downstream stages instead of joining them into a connected component.
-export function arrangeVideoWorkflowMedia(images: VideoCanvasMedia[], workflows: VideoWorkflow[], materialWorkflows: MaterialWorkflow[] = [], upscaleWorkflows: VideoUpscaleWorkflow[] = [], saved?: VideoLayoutState): Map<string, Position> {
+export function arrangeVideoWorkflowMedia(images: VideoCanvasMedia[], workflows: VideoWorkflow[], materialWorkflows: MaterialWorkflow[] = [], upscaleWorkflows: VideoUpscaleWorkflow[] = [], saved?: VideoLayoutState, viewport = { width: 1440, height: 852, zoom: 1 }): Map<string, Position> {
   const vertices = videoLayoutVertices(images, workflows, materialWorkflows, upscaleWorkflows);
   const state = reconcileVideoLayout(vertices, saved);
   const members = new Map<string, VideoLayoutVertex[]>();
@@ -82,7 +63,9 @@ export function arrangeVideoWorkflowMedia(images: VideoCanvasMedia[], workflows:
   }))), state.order, { groupGap: GROUP_GAP, groupsPerRow: GROUPS_PER_ROW, centerStages: false });
   const positions = new Map(related.positions);
   const standalone = vertices.filter(vertex => !state.owners[vertex.id]).sort((a, b) => state.order[a.id] - state.order[b.id]);
-  const free = packGroups(standalone.map(vertex => ({ positions: new Map([[vertex.id, { x: 0, y: 0 }]]), width: vertex.width, height: vertex.height })), false, 40);
-  for (const [id, position] of free.positions) positions.set(id, { x: position.x, y: position.y + (members.size ? related.height + GROUP_GAP : 0) });
+  const zoom = Number.isFinite(viewport.zoom) && viewport.zoom > 0 ? viewport.zoom : 1;
+  const rowWidth = canvasSafeArea(viewport.width, viewport.height).width / zoom;
+  const free = packStandaloneRows(standalone, rowWidth);
+  for (const { item, x, y } of free.placements) positions.set(item.id, { x, y: y + (members.size ? related.height + GROUP_GAP : 0) });
   return positions;
 }

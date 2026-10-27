@@ -437,7 +437,7 @@ export default function App() {
     const rect = canvas.current!.getBoundingClientRect();
     const previous = imageRef.current;
     const startX = point?.x ?? (previous.length ? Math.max(...canvasNodes(previous).map(item => item.x + item.width)) + GROUP_GAP : 0);
-    const created = arrangeImages(items.map(item => ({ ...item, role: undefined, operation: undefined, x: 0, y: 0 })), startX, rect, { independentGap: 40 })
+    const created = arrangeImages(items.map(item => ({ ...item, role: undefined, operation: undefined, x: 0, y: 0 })), startX, rect, { independentGap: 40, independentColumns: 5 })
       .map(item => ({ ...item, y: item.y + (point?.y ?? 0) }));
     const next = [...previous, ...created];
     remember(previous); setImages(next); setSelectedIds(created.map(n => n.id));
@@ -446,7 +446,7 @@ export default function App() {
   }
   function arrange() {
     const rect = canvas.current!.getBoundingClientRect();
-    const next = arrangeImages(imageRef.current, 0, rect);
+    const next = arrangeImages(imageRef.current, 0, rect, { zoom: viewRef.current.zoom });
     if (!next.length) return;
     remember(imageRef.current); setImages(next);
     setView(fitImages(canvasNodes(next), rect.width, rect.height));
