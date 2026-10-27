@@ -35,7 +35,7 @@ export function reconcileVideoWorkflowLayout(images: VideoCanvasMedia[], workflo
 }
 
 
-function packGroups(groups: LayoutGroup[], centerGroups = true): LayoutGroup {
+function packGroups(groups: LayoutGroup[], centerGroups = true, gap = GROUP_GAP): LayoutGroup {
   const positions = new Map<string, Position>();
   let y = 0, width = 0;
   for (let offset = 0; offset < groups.length; offset += GROUPS_PER_ROW) {
@@ -45,12 +45,12 @@ function packGroups(groups: LayoutGroup[], centerGroups = true): LayoutGroup {
     for (const group of row) {
       const groupY = y + (centerGroups ? (rowHeight - group.height) / 2 : 0);
       for (const [id, position] of group.positions) positions.set(id, { x: x + position.x, y: groupY + position.y });
-      x += group.width + GROUP_GAP;
+      x += group.width + gap;
     }
-    width = Math.max(width, x - GROUP_GAP);
-    y += rowHeight + GROUP_GAP;
+    width = Math.max(width, x - gap);
+    y += rowHeight + gap;
   }
-  return { positions, width, height: Math.max(0, y - GROUP_GAP) };
+  return { positions, width, height: Math.max(0, y - gap) };
 }
 
 // Groups retain their own assets. Cross-group references order whole groups
@@ -82,7 +82,7 @@ export function arrangeVideoWorkflowMedia(images: VideoCanvasMedia[], workflows:
   }))), state.order, { groupGap: GROUP_GAP, groupsPerRow: GROUPS_PER_ROW, centerStages: false });
   const positions = new Map(related.positions);
   const standalone = vertices.filter(vertex => !state.owners[vertex.id]).sort((a, b) => state.order[a.id] - state.order[b.id]);
-  const free = packGroups(standalone.map(vertex => ({ positions: new Map([[vertex.id, { x: 0, y: 0 }]]), width: vertex.width, height: vertex.height })), false);
+  const free = packGroups(standalone.map(vertex => ({ positions: new Map([[vertex.id, { x: 0, y: 0 }]]), width: vertex.width, height: vertex.height })), false, 40);
   for (const [id, position] of free.positions) positions.set(id, { x: position.x, y: position.y + (members.size ? related.height + GROUP_GAP : 0) });
   return positions;
 }

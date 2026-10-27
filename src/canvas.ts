@@ -253,7 +253,7 @@ export function arrangeImages(items: CanvasImage[], startX = 0, _viewport = { wi
     return {nodes, width, height:Math.max(0,y-gap)};
   }
   // Keep complete groups together and wrap after five, regardless of viewport.
-  const bottom = pack(independent, GROUPS_PER_ROW, options.independentGap ?? GROUP_GAP, false);
+  const bottom = pack(independent, GROUPS_PER_ROW, options.independentGap ?? 40, false);
   const connectedGroups = new Map<Block, ConnectedLayoutGroup>(groups.map(group => [group, group.connected]));
   const relatedLayout = placeConnectedGroupStages(
     mergeGroupStages(items, groups).map(blocks => blocks.map(block => connectedGroups.get(block)!)),
