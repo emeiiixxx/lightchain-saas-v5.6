@@ -1,18 +1,20 @@
 import type { CanvasImage } from './canvas';
 import type { Locale } from './i18n';
 
-export function isProjectCoverCandidate(image: CanvasImage): boolean {
+type ProjectCoverMedia = Pick<CanvasImage, 'id' | 'url' | 'nodeOnly' | 'generation' | 'projectCover' | 'coverOrder'>;
+
+export function isProjectCoverCandidate(image: ProjectCoverMedia): boolean {
   // Video canvas media already use their existing poster frame as image.url.
   return !image.nodeOnly && !image.generation && Boolean(image.url);
 }
 
-function hasCoverOrder(image: CanvasImage): boolean {
+function hasCoverOrder(image: ProjectCoverMedia): boolean {
   return typeof image.coverOrder === 'number' && Number.isFinite(image.coverOrder) && image.coverOrder > 0;
 }
 
 // Assign when an image or video first becomes available. Existing values belong to the
 // canvas snapshot, so undo/redo preserves the original appearance order.
-export function withProjectCoverOrder<T extends CanvasImage>(next: T[], previous: readonly T[]): T[] {
+export function withProjectCoverOrder<T extends ProjectCoverMedia>(next: T[], previous: readonly ProjectCoverMedia[]): T[] {
   const previousById = new Map(previous.map(image => [image.id, image]));
   let order = [...previous, ...next].reduce((latest, image) => hasCoverOrder(image) ? Math.max(latest, image.coverOrder!) : latest, 0);
   return next.map(image => {
@@ -24,7 +26,7 @@ export function withProjectCoverOrder<T extends CanvasImage>(next: T[], previous
   });
 }
 
-export function resolveProjectCover<T extends CanvasImage>(items: readonly T[]): T | null {
+export function resolveProjectCover<T extends ProjectCoverMedia>(items: readonly T[]): T | null {
   let latest: T | null = null;
   for (const image of items) {
     if (!isProjectCoverCandidate(image)) continue;
@@ -34,7 +36,7 @@ export function resolveProjectCover<T extends CanvasImage>(items: readonly T[]):
   return latest;
 }
 
-export function toggleProjectCover<T extends CanvasImage>(images: T[], id: string): T[] {
+export function toggleProjectCover<T extends ProjectCoverMedia>(images: T[], id: string): T[] {
   const target = images.find(image => image.id === id);
   if (!target || !isProjectCoverCandidate(target)) return images;
   const manualId = target.projectCover ? null : id;
