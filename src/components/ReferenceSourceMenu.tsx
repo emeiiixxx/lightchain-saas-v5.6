@@ -1,9 +1,9 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { usePresence } from '../usePresence';
 import { Icon } from './ui';
 
-export function ReferenceSourceMenu({ addLabel, canvasLabel, onChoose, className = 'fusion-reference', children }: { addLabel: string; canvasLabel: string; onChoose: (source: 'upload' | 'canvas') => void; className?: string; children?: ReactNode }) {
+export function ReferenceSourceMenu({ addLabel, uploadLabel = addLabel, canvasLabel, onChoose, className = 'fusion-reference', style, children }: { addLabel: string; uploadLabel?: string; canvasLabel: string; onChoose: (source: 'upload' | 'canvas') => void; className?: string; style?: CSSProperties; children?: ReactNode }) {
   const [open, setOpen] = useState(false);
   const shown = usePresence(open ? true : null);
   const trigger = useRef<HTMLButtonElement>(null), popup = useRef<HTMLDivElement>(null);
@@ -39,7 +39,7 @@ export function ReferenceSourceMenu({ addLabel, canvasLabel, onChoose, className
   }, [shown.value, open]);
   const expand = (keys: boolean) => { keyboard.current = keys; document.dispatchEvent(new CustomEvent('lc-select-open', { detail: id })); setOpen(true); };
   return <>
-    <button ref={trigger} type="button" className={className} aria-label={addLabel} data-tooltip={addLabel} aria-haspopup="menu" aria-controls={id} aria-expanded={open}
+    <button ref={trigger} type="button" className={className} style={style} aria-label={addLabel} data-tooltip={addLabel} aria-haspopup="menu" aria-controls={id} aria-expanded={open}
       onClick={() => open ? setOpen(false) : expand(false)} onKeyDown={e => { if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); expand(true); } if (e.key === 'Escape') setOpen(false); }}>{children ?? <Icon name="fusionAddImage" size={20} />}</button>
     {shown.value && createPortal(<div ref={popup} popover="manual" role="menu" id={id} aria-label={addLabel} className="lc-select-popup" data-select-popup data-overlay data-phase={shown.phase} inert={shown.phase === 'exit'}
       onKeyDown={e => {
@@ -49,7 +49,7 @@ export function ReferenceSourceMenu({ addLabel, canvasLabel, onChoose, className
         if (next >= 0) { e.preventDefault(); e.stopPropagation(); buttons[next].focus(); }
         if (e.key === 'Escape' || e.key === 'Tab') { e.stopPropagation(); setOpen(false); trigger.current?.focus(); }
       }}>
-      {(['upload', 'canvas'] as const).map(source => <button type="button" role="menuitem" className="lc-select-option" key={source} onClick={() => { setOpen(false); onChoose(source); }}>{source === 'upload' ? addLabel : canvasLabel}</button>)}
+      {(['upload', 'canvas'] as const).map(source => <button type="button" role="menuitem" className="lc-select-option" key={source} onClick={() => { setOpen(false); onChoose(source); }}>{source === 'upload' ? uploadLabel : canvasLabel}</button>)}
     </div>, document.body)}
   </>;
 }

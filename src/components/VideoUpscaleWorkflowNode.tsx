@@ -8,12 +8,13 @@ import { ChoiceChip } from './ChoiceChip';
 import { GenerateTaskButton } from './GenerateTaskButton';
 import { ProgressiveImage } from './ProgressiveImage';
 import { VideoIcon } from './VideoIcon';
+import { ReferenceSourceMenu } from './ReferenceSourceMenu';
 import '../video-upscale-workflow.css';
 
 const copy = {
-  'zh-CN': { tip: '功能介绍描述', video: '视频素材', add: '上传视频', preview: '播放', remove: '删除', resolution: '清晰度配置', generate: '开始 AI 生成' },
-  en: { tip: 'Feature description', video: 'Video asset', add: 'Upload video', preview: 'Play', remove: 'Delete', resolution: 'Resolution', generate: 'Start AI generation' },
-  ja: { tip: '機能の説明', video: '動画素材', add: '動画をアップロード', preview: '再生', remove: '削除', resolution: '解像度設定', generate: 'AI 生成を開始' },
+  'zh-CN': { tip: '功能介绍描述', video: '视频素材', add: '上传视频', uploadReference: '上传参考视频', fromCanvas: '从画布中选择', preview: '播放', remove: '删除', resolution: '清晰度配置', generate: '开始 AI 生成' },
+  en: { tip: 'Feature description', video: 'Video asset', add: 'Upload video', uploadReference: 'Upload reference video', fromCanvas: 'Choose from canvas', preview: 'Play', remove: 'Delete', resolution: 'Resolution', generate: 'Start AI generation' },
+  ja: { tip: '機能の説明', video: '動画素材', add: '動画をアップロード', uploadReference: '参考動画をアップロード', fromCanvas: 'キャンバスから選択', preview: '再生', remove: '削除', resolution: '解像度設定', generate: 'AI 生成を開始' },
 };
 
 const uploadIcon = `${import.meta.env.BASE_URL}assets/video-upscale/add.svg`;
@@ -22,7 +23,7 @@ type Props = {
   node: VideoUpscaleWorkflow;
   locale: Locale;
   onChange: (patch: Partial<VideoUpscaleWorkflow>) => void;
-  onUpload: () => void;
+  onUpload: (source: 'upload' | 'canvas') => void;
   onPreview: (video: UploadedVideo) => void;
   onGenerate: () => void;
 };
@@ -65,9 +66,9 @@ export function VideoUpscaleWorkflowNode({ node, locale, onChange, onUpload, onP
             </button>
             <Button variant="tonal" className="video-upscale-remove nodrag nopan" title={t.remove} aria-label={`${t.remove} ${node.video.name}`}
               onClick={() => onChange({ video: undefined })}><Icon name="close" size={12} /></Button>
-          </> : <button type="button" className="video-upscale-empty nodrag nopan" onClick={onUpload}>
+          </> : <ReferenceSourceMenu className="video-upscale-empty nodrag nopan" addLabel={t.add} uploadLabel={t.uploadReference} canvasLabel={t.fromCanvas} onChoose={onUpload}>
             <span className="icon video-upscale-upload-icon" aria-hidden="true" style={{ width: 24, height: 24, '--icon-url': `url("${uploadIcon}")` } as CSSProperties} /><span>{t.add}</span>
-          </button>}
+          </ReferenceSourceMenu>}
         </div>
       </div>
       <div className="fusion-field video-upscale-resolution-field">

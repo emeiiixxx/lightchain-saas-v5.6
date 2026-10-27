@@ -9,6 +9,7 @@ import { PromptTools } from './PromptTools';
 import { VideoGenerationSettings } from './VideoGenerationSettings';
 import { useVideoReferenceSort } from './useVideoReferenceSort';
 import { Switch } from './Switch';
+import { ReferenceSourceMenu } from './ReferenceSourceMenu';
 import '../video-workflow-node.css';
 
 const promptLimit = 5000;
@@ -21,6 +22,7 @@ const copy = {
     endTip: '建议上传同一模特/背景/服装的连贯动作图', media: '参考素材', mediaTip: '支持拖拽素材调整顺序',
     image: '图片', video: '视频', imageCount: '最多9张，已上传', videoCount: '最多3个，已上传',
     addImage: '添加图片', addVideo: '添加视频', remove: '删除', preview: '预览', reorder: '按住 Alt 和左右方向键调整顺序',
+    uploadImage: '上传参考图', uploadVideo: '上传参考视频', fromCanvas: '从画布中选择',
     prompt: '视频描述', placeholder: '举例:持久定格模特正面,女模特表情自信冷静,发丝与裙摆同步飘动,同时背景中的直升机起飞,随后模特转身,动作丝滑,画面流畅切换到模特上半身特写',
     expand: '展开编辑', save: '保存指令', library: '提示词库', clear: '清空', close: '关闭', count: '字数',
     smartExpand: '智能扩写',
@@ -33,6 +35,7 @@ const copy = {
     endTip: 'Use continuous poses with the same model, background and clothing', media: 'Reference media', mediaTip: 'Drag media to reorder',
     image: 'Images', video: 'Videos', imageCount: 'Up to 9, uploaded ', videoCount: 'Up to 3, uploaded ',
     addImage: 'Add image', addVideo: 'Add video', remove: 'Delete', preview: 'Preview', reorder: 'Hold Alt and use left or right arrow to reorder',
+    uploadImage: 'Upload reference image', uploadVideo: 'Upload reference video', fromCanvas: 'Choose from canvas',
     prompt: 'Video description', placeholder: 'Example: Hold a front view of the model with a confident, calm expression. Her hair and skirt move in the breeze as a helicopter takes off behind her. She turns smoothly, then the shot transitions to a close-up of her upper body.',
     expand: 'Expand editor', save: 'Save prompt', library: 'Prompt library', clear: 'Clear', close: 'Close', count: 'Characters',
     smartExpand: 'Smart expansion',
@@ -45,6 +48,7 @@ const copy = {
     endTip: '同じモデル・背景・服装で連続した動作の画像を推奨', media: '参考素材', mediaTip: 'ドラッグで素材の順序を変更できます',
     image: '画像', video: '動画', imageCount: '最大9枚、追加済み ', videoCount: '最大3本、追加済み ',
     addImage: '画像を追加', addVideo: '動画を追加', remove: '削除', preview: 'プレビュー', reorder: 'Alt と左右矢印キーで順序を変更',
+    uploadImage: '参考画像をアップロード', uploadVideo: '参考動画をアップロード', fromCanvas: 'キャンバスから選択',
     prompt: '動画の説明', placeholder: '例：自信に満ちた落ち着いた表情のモデルを正面から捉えます。髪とスカートが風になびき、背景のヘリコプターが離陸します。モデルが滑らかに振り返り、上半身のクローズアップに切り替わります。',
     expand: '拡大編集', save: '指示を保存', library: 'プロンプト集', clear: 'クリア', close: '閉じる', count: '文字数',
     smartExpand: 'スマート拡張',
@@ -56,8 +60,8 @@ type Props = {
   node: VideoWorkflow;
   locale: Locale;
   onChange: (patch: Partial<VideoWorkflow>) => void;
-  onMain: () => void;
-  onReference: (kind: VideoReference['kind']) => void;
+  onMain: (source: 'upload' | 'canvas') => void;
+  onReference: (kind: VideoReference['kind'], source: 'upload' | 'canvas') => void;
   onPreview: (reference: VideoReference) => void;
   onGenerate: () => void;
 };
@@ -138,7 +142,8 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
         onDragOver={event => sorting.over(event, kind)} onDragLeave={sorting.leave}
         onDrop={event => { sorting.drop(event, kind); suppressPreviewUntil.current = Date.now() + 200; }}>
         {items.map(reference => thumbnail(reference, () => removeReference(reference), visualOrder.indexOf(reference.id)))}
-        {items.length < videoReferenceLimits[kind] && <button type="button" className="fusion-reference video-workflow-reference-add" style={{ order: items.length }} aria-label={addLabel} data-tooltip={addLabel} onClick={() => onReference(kind)}><NodeIcon src={referenceAssets.addReference} size={20} /></button>}
+        {items.length < videoReferenceLimits[kind] && <ReferenceSourceMenu className="fusion-reference video-workflow-reference-add nodrag nopan" style={{ order: items.length }} addLabel={addLabel}
+          uploadLabel={kind === 'image' ? t.uploadImage : t.uploadVideo} canvasLabel={t.fromCanvas} onChoose={source => onReference(kind, source)}><NodeIcon src={referenceAssets.addReference} size={20} /></ReferenceSourceMenu>}
       </div>
     </div>;
   }
@@ -150,12 +155,12 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
         <div className="fusion-field video-workflow-frame-field">
           <div className="fusion-label">{t.main}<span className="fusion-required">*</span></div>
           {node.main ? <div className="video-frame-upload">{thumbnail({ ...node.main, kind: 'image' }, () => onChange({ main: undefined }))}<span>{t.mainFrame}</span></div>
-            : <button type="button" className="video-frame-upload video-frame-upload-empty" onClick={onMain}><NodeIcon src={frameAssets.addImage} size={20} /><span>{t.addMain}</span></button>}
+            : <ReferenceSourceMenu className="video-frame-upload video-frame-upload-empty nodrag nopan" addLabel={t.addMain} uploadLabel={t.uploadImage} canvasLabel={t.fromCanvas} onChoose={onMain}><NodeIcon src={frameAssets.addImage} size={20} /><span>{t.addMain}</span></ReferenceSourceMenu>}
         </div>
         <div className="fusion-field video-workflow-frame-field">
           <div className="fusion-label">{t.endFrame}<Button className="video-reference-info" aria-label={t.endTip} title={t.endTip} data-tooltip-side="right"><NodeIcon src={assets.info} /></Button></div>
           {node.endFrame ? <div className="video-frame-upload">{thumbnail(node.endFrame, () => onChange({ endFrame: undefined }))}<span>{t.endFrame}</span></div>
-            : <button type="button" className="video-frame-upload video-frame-upload-empty" onClick={() => onReference('image')}><NodeIcon src={frameAssets.addImage} size={20} /><span>{t.addEnd}</span></button>}
+            : <ReferenceSourceMenu className="video-frame-upload video-frame-upload-empty nodrag nopan" addLabel={t.addEnd} uploadLabel={t.uploadImage} canvasLabel={t.fromCanvas} onChoose={source => onReference('image', source)}><NodeIcon src={frameAssets.addImage} size={20} /><span>{t.addEnd}</span></ReferenceSourceMenu>}
         </div>
       </> : <div className="fusion-field video-workflow-materials">
         <div className="fusion-label">{t.media}<span className="fusion-required">*</span><Button className="video-reference-info" aria-label={t.mediaTip} title={t.mediaTip} data-tooltip-side="right"><NodeIcon src={assets.info} /></Button></div>

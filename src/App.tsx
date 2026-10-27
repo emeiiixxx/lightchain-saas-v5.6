@@ -191,6 +191,7 @@ export default function App() {
   }, [setView]);
   const imageRef = useRef(images); imageRef.current = images;
   const uploadEpoch = useRef(0);
+  const uploadPoint = useRef<{ x: number; y: number } | null>(null);
   const shownMenu = usePresence(menu);
   const shownModal = usePresence(modal);
   const shownPreview = usePresence(previewImage);
@@ -224,6 +225,7 @@ export default function App() {
 
   useEffect(() => {
     const route = () => {
+      uploadPoint.current = null;
       setPage(currentPage());
       setMenu(null); setCanvasMenu(null); setDirectedTarget(null); setSpaceDown(false); setDragging(false); setSelecting(false); setSnapGuide(null); setCanvasReference(null);
       setModal(null); setReferenceTarget(null); setMainTarget(null); setCutoutImage(null); setPreviewImage(null);
@@ -300,7 +302,7 @@ export default function App() {
     if (element) setView(current => ({ ...current, x: element.clientWidth / 2 - x * current.zoom, y: element.clientHeight / 2 - y * current.zoom }));
   }, []);
   const removeSelected = useCallback(() => { if (selectedIds.length) { remember(imageRef.current); setImages(items => deleteCanvasSelection(items, selectedIds)); setSelectedIds([]); } }, [selectedIds, remember]);
-  const closeModal = useCallback(() => { uploadEpoch.current++; setModal(null); setReading(false); }, []);
+  const closeModal = useCallback(() => { uploadEpoch.current++; uploadPoint.current = null; setModal(null); setReading(false); }, []);
 
   const pasteCopiedItems = useCallback((point?: { x: number; y: number }, sourceItems?: CanvasImage[]) => {
     const clipboard = sourceItems ? { items: sourceItems, pastes: 0 } : canvasClipboard.current;
@@ -404,15 +406,17 @@ export default function App() {
     if (created.fusion) revealFusion(created);
     else announce(t.mainImageReady);
   }
-  function addBatchImages(items: PendingImage[]) {
+  function addBatchImages(items: PendingImage[], point?: { x: number; y: number } | null) {
     if (!items.length || items.length > 20) return;
     const rect = canvas.current!.getBoundingClientRect();
     const previous = imageRef.current;
-    const startX = previous.length ? Math.max(...canvasNodes(previous).map(item => item.x + item.width)) + GROUP_GAP : 0;
-    const created = arrangeImages(items.map(item => ({ ...item, role: undefined, operation: undefined, x: 0, y: 0 })), startX, rect, { independentGap: 40 });
+    const startX = point?.x ?? (previous.length ? Math.max(...canvasNodes(previous).map(item => item.x + item.width)) + GROUP_GAP : 0);
+    const created = arrangeImages(items.map(item => ({ ...item, role: undefined, operation: undefined, x: 0, y: 0 })), startX, rect, { independentGap: 40 })
+      .map(item => ({ ...item, y: item.y + (point?.y ?? 0) }));
     const next = [...previous, ...created];
     remember(previous); setImages(next); setSelectedIds(created.map(n => n.id));
-    setView(fitImages(canvasNodes(next), rect.width, rect.height)); announce(t.ready);
+    if (!point) setView(fitImages(canvasNodes(next), rect.width, rect.height));
+    announce(t.ready);
   }
   function arrange() {
     const rect = canvas.current!.getBoundingClientRect();
@@ -458,7 +462,10 @@ export default function App() {
       canvas.current.focus({ preventScroll: true });
     }
   }
-  function openUpload() { uploadEpoch.current++; setReading(false); setMenu(null); setModal('upload'); }
+  function openUpload(point: { x: number; y: number } | null = null) {
+    uploadEpoch.current++; uploadPoint.current = point;
+    setReading(false); setMenu(null); setModal('upload');
+  }
   function rememberUpload(image: LibraryImage) { ownedUrls.current.add(image.url); setUploads(previous => [image, ...previous]); }
   async function loadFiles(files: FileList | File[]) {
     if (!files.length || reading) return;
@@ -476,6 +483,7 @@ export default function App() {
 
   }
   function openTool(id: Tool) {
+    uploadPoint.current = null;
     if (id === 'fusion' || id === 'directed' || id === 'lingerie' || id === 'flat') { void openWorkflowExample(id); return; }
     uploadEpoch.current++; setReading(false); setMenu(null); setModal(id);
   }
@@ -794,7 +802,7 @@ export default function App() {
           </Button>)}
         </div>
         <button type="button" className={`asset-upload empty-upload ${initialDropActive ? 'is-over' : ''}`} data-node-id="62:27018"
-          aria-label={t.addImagesPrompt} disabled={reading} onClick={openUpload}
+          aria-label={t.addImagesPrompt} disabled={reading} onClick={() => openUpload()}
           onDragOver={event => { event.preventDefault(); event.stopPropagation(); if (event.dataTransfer.types.includes('Files')) { setDropActive(false); setInitialDropActive(true); } }}
           onDragLeave={event => { event.stopPropagation(); if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setInitialDropActive(false); }}
           onDrop={event => { event.preventDefault(); event.stopPropagation(); setInitialDropActive(false); setDropActive(false); void loadFiles(event.dataTransfer.files); }}>
@@ -940,7 +948,7 @@ export default function App() {
       onCopy={() => { void copySelectedFromMenu(); }}
       onDuplicate={() => { duplicateSelected(); closeCanvasMenu(); }}
       onDelete={() => { removeSelected(); closeCanvasMenu(); }}
-      onUpload={() => { closeCanvasMenu(); openUpload(); }}
+      onUpload={() => { if (!canvasMenu) return; openUpload({ x: canvasMenu.worldX, y: canvasMenu.worldY }); closeCanvasMenu(); }}
       onPaste={() => { if (canvasMenu) pasteCopiedItems({ x: canvasMenu.worldX, y: canvasMenu.worldY }); closeCanvasMenu(); }} />
     <ToastHost />
 
@@ -1025,7 +1033,7 @@ export default function App() {
     {activeTool && <AssetPicker key={activeTool.id} locale={locale} phase={shownModal.phase} uploads={uploads} onUpload={rememberUpload}
       onClose={closeModal} onConfirm={image => { addImages([{ ...image, operation: activeTool.id }]); closeModal(); }} />}
     {shownModal.value === 'upload' && <AssetPicker key="upload" locale={locale} phase={shownModal.phase} uploads={uploads} onUpload={rememberUpload}
-      onClose={closeModal} onConfirm={image => { addImages([image]); closeModal(); }} onConfirmBatch={items => { addBatchImages(items); closeModal(); }} />}
+      onClose={closeModal} onConfirm={image => { addBatchImages([image], uploadPoint.current); closeModal(); }} onConfirmBatch={items => { addBatchImages(items, uploadPoint.current); closeModal(); }} />}
     {shownModal.value && shownModal.value !== 'upload' && !activeTool && <Dialog title={t[shownModal.value as 'help' | 'support' | 'credits' | 'project']} onClose={closeModal} closeLabel={t.close} phase={shownModal.phase}>
       {shownModal.value === 'help' ? <div className="text-sm leading-6"><p className="font-medium mb-3">{t.helpIntro}</p><ul className="help-list space-y-3 text-muted"><li>{t.helpUpload}</li><li>{t.shortcutSelect}</li><li>{t.helpPan}</li><li>{t.helpZoom}</li><li>{t.helpKeys}</li></ul><p className="text-xs text-muted mt-6">{t.localNote}</p></div>
         : shownModal.value === 'project' ? <><div className="project-summary p-4 rounded-xl mb-4"><p className="font-medium mb-1">{projectName}</p><p className="text-xs text-muted">{t.workspace} · {images.filter(n => !n.nodeOnly).length} {t.image}</p></div><p className="text-xs leading-5 text-muted">{t.localNote}</p><div className="flex justify-end mt-6"><Button variant="outline" size="m" onClick={closeModal}>{t.returnCanvas}</Button></div></>

@@ -11,6 +11,7 @@ import { MaterialGenerationSettings } from './MaterialGenerationSettings';
 import { ProgressiveImage } from './ProgressiveImage';
 import { PromptTools } from './PromptTools';
 import { Switch } from './Switch';
+import { ReferenceSourceMenu } from './ReferenceSourceMenu';
 import { useVideoReferenceSort } from './useVideoReferenceSort';
 import '../video-workflow-node.css';
 import '../material-workflow.css';
@@ -21,6 +22,7 @@ const copy = {
   'zh-CN': {
     quickTip: '上传参考图，输入描述快速生成素材', tip: '功能介绍描述', references: '参考图',
     referenceTip: '支持拖拽图片调整顺序', uploaded: '最多9张，已上传', add: '添加图片', addBack: '添加背面参考图',
+    uploadReference: '上传参考图', fromCanvas: '从画布中选择',
     remove: '删除', preview: '预览', reorder: '按住 Alt 和左右方向键调整顺序',
     view: '选择视角', front: '正面', left45: '左45°', left: '左侧', right45: '右45°', right: '右侧', back: '背面', backReference: '背面参考图',
     storyboard: '分镜配置', crop: '裁切配置', four: '四宫格', nine: '九宫格',
@@ -31,6 +33,7 @@ const copy = {
   en: {
     quickTip: 'Add references and a prompt to generate images', tip: 'Feature description', references: 'References',
     referenceTip: 'Drag images to reorder', uploaded: 'Up to 9, added ', add: 'Add image', addBack: 'Add back reference',
+    uploadReference: 'Upload reference image', fromCanvas: 'Choose from canvas',
     remove: 'Delete', preview: 'Preview', reorder: 'Hold Alt and use left or right arrow to reorder',
     view: 'Choose view', front: 'Front', left45: 'Left 45°', left: 'Left', right45: 'Right 45°', right: 'Right', back: 'Back', backReference: 'Back reference',
     storyboard: 'Storyboard layout', crop: 'Crop layout', four: '2 × 2 grid', nine: '3 × 3 grid',
@@ -41,6 +44,7 @@ const copy = {
   ja: {
     quickTip: '参考画像と説明から素材をすばやく生成', tip: '機能の説明', references: '参考画像',
     referenceTip: 'ドラッグで画像の順序を変更できます', uploaded: '最大9枚、追加済み', add: '画像を追加', addBack: '背面の参考画像を追加',
+    uploadReference: '参考画像をアップロード', fromCanvas: 'キャンバスから選択',
     remove: '削除', preview: 'プレビュー', reorder: 'Alt と左右矢印キーで順序を変更',
     view: 'アングルを選択', front: '正面', left45: '左45°', left: '左側', right45: '右45°', right: '右側', back: '背面', backReference: '背面の参考画像',
     storyboard: '絵コンテの構成', crop: '分割設定', four: '4分割', nine: '9分割',
@@ -54,7 +58,7 @@ type Props = {
   node: MaterialWorkflow;
   locale: Locale;
   onChange: (patch: Partial<MaterialWorkflow>) => void;
-  onReference: (field: 'references' | 'back') => void;
+  onReference: (field: 'references' | 'back', source: 'upload' | 'canvas') => void;
   onPreview: (reference: VideoReference) => void;
   onGenerate: () => void;
 };
@@ -177,8 +181,8 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
           onDrop={supportsReferenceSorting ? event => { sorting.drop(event, 'image'); suppressPreviewUntil.current = Date.now() + 200; } : undefined}
           onWheel={event => { if (event.ctrlKey || event.metaKey || event.altKey) return; event.stopPropagation(); if (!event.deltaX) event.currentTarget.scrollLeft += event.deltaY; }}>
           {references.map(reference => thumbnail(reference, 'references', sorting.order.indexOf(reference.id)))}
-          {references.length < materialReferenceLimit(node.kind) && <button type="button" className="fusion-reference video-workflow-reference-add nodrag nopan" style={{ order: references.length }}
-            aria-label={t.add} data-tooltip={t.add} onClick={() => onReference('references')}><NodeIcon src={assets.addReference} size={20} /></button>}
+          {references.length < materialReferenceLimit(node.kind) && <ReferenceSourceMenu className="fusion-reference video-workflow-reference-add nodrag nopan" style={{ order: references.length }}
+            addLabel={t.add} uploadLabel={t.uploadReference} canvasLabel={t.fromCanvas} onChoose={source => onReference('references', source)}><NodeIcon src={assets.addReference} size={20} /></ReferenceSourceMenu>}
         </div>
       </div>
       {node.kind === 'multiView' && <div className="fusion-field material-view-field">
@@ -189,8 +193,8 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
         {hasBackView && <div className="fusion-field material-back-field">
           <div className="fusion-label">{t.backReference}<span className="fusion-required">*</span></div>
           <div className="material-back-reference">
-            {node.back ? thumbnail(node.back, 'back') : <button type="button" className="fusion-reference video-workflow-reference-add nodrag nopan" aria-label={t.addBack}
-              data-tooltip={t.addBack} onClick={() => onReference('back')}><NodeIcon src={assets.addReference} size={20} /></button>}
+            {node.back ? thumbnail(node.back, 'back') : <ReferenceSourceMenu className="fusion-reference video-workflow-reference-add nodrag nopan" addLabel={t.addBack}
+              uploadLabel={t.uploadReference} canvasLabel={t.fromCanvas} onChoose={source => onReference('back', source)}><NodeIcon src={assets.addReference} size={20} /></ReferenceSourceMenu>}
           </div>
         </div>}
       </div>}
