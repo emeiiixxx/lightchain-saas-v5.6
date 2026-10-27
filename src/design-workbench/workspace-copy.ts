@@ -1,6 +1,5 @@
 // Workspace copy: Simplified Chinese key, English, Japanese.
 export const workspaceCopy: Record<string, readonly [string, string]> = {
-'局部编辑': ['Local edit', '部分編集'],
 '文字编辑': ['Edit text', 'テキスト編集'],
 '文字编辑 · 工艺单': ['Text editing · Tech pack', 'テキスト編集・仕様書'],
 '待修改文字': ['Detected text', '編集対象のテキスト'],
