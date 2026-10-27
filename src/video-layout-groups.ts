@@ -4,6 +4,9 @@ export type VideoLayoutState = {
   nextOrder: number;
   owners: Record<string, string>;
   groupOrder: Record<string, number>;
+  // Frozen placement key: a new cross-group flow starts after every source
+  // group; later reference edits never reorder an existing group.
+  groupSortOrder?: Record<string, number>;
   // Media provenance is frozen when each canvas instance first appears.
   originOrder?: Record<string, number>;
   // Version 1 groupOrder values use original upload order rather than the
@@ -154,5 +157,33 @@ export function reconcileVideoLayout(vertices: VideoLayoutVertex[], saved?: Vide
     const parent = vertex.sources.find(id => owners[id]);
     if (parent) owners[vertex.id] = owners[parent];
   }
-  return { order, nextOrder, owners, groupOrder, originOrder, originVersion: 1, groupCreatedOrder };
+  const dependencies = new Map<string, Set<string>>();
+  for (const vertex of vertices) {
+    const group = owners[vertex.id];
+    if (!group) continue;
+    const parents = dependencies.get(group) ?? new Set<string>();
+    for (const source of vertex.sources) {
+      const parent = owners[source];
+      if (parent && parent !== group) parents.add(parent);
+    }
+    dependencies.set(group, parents);
+  }
+  const groupSortOrder: Record<string, number> = {};
+  const resolvingGroups = new Set<string>();
+  function resolveGroupSortOrder(group: string): number {
+    if (validOrder(groupSortOrder[group])) return groupSortOrder[group];
+    const recorded = saved?.groupSortOrder?.[group];
+    if (validOrder(recorded)) return groupSortOrder[group] = recorded;
+    // Existing snapshots without this key are migrated once from their live
+    // references. A legacy cycle cannot define a strict dependency order.
+    if (resolvingGroups.has(group)) return groupOrder[group];
+    resolvingGroups.add(group);
+    const parents = [...(dependencies.get(group) ?? [])].map(resolveGroupSortOrder);
+    const value = Math.max(groupOrder[group], ...parents);
+    resolvingGroups.delete(group);
+    groupSortOrder[group] = value;
+    return value;
+  }
+  Object.keys(groupOrder).forEach(resolveGroupSortOrder);
+  return { order, nextOrder, owners, groupOrder, groupSortOrder, originOrder, originVersion: 1, groupCreatedOrder };
 }

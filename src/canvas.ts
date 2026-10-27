@@ -7,6 +7,7 @@ import { layoutConnectedGroup, type FlowLayoutVertex } from './canvas-connected-
 import { placeConnectedGroupStages, type ConnectedLayoutGroup } from './canvas-group-placement';
 import { packStandaloneRows } from './canvas-standalone-layout';
 import type { GeneratedMediaFile } from './canvas-media-filename';
+import type { CanvasLayoutMetadata } from './canvas-layout-groups';
 export type Viewport = { x: number; y: number; zoom: number };
 export type FusionReference = { id: string; name: string; url: string; sourceImageId?: string };
 export const MAX_FUSION_REFERENCES = 9;
@@ -52,7 +53,7 @@ export function workflowHeight(settings?: FusionSettings) {
   const count = Math.min(MAX_DIRECTED_POINTS, settings.directedPoints?.length ?? 0);
   return 282 + count * 141 - (count === MAX_DIRECTED_POINTS ? 68 : 0);
 }
-export type CanvasImage = { id: string; name: string; url: string; generatedFile?: GeneratedMediaFile; projectCover?: boolean; coverOrder?: number; x: number; y: number; width: number; height: number; naturalWidth?: number; naturalHeight?: number; role?: 'main'; layoutTaskId?: string; layoutOriginOrder?: number; nodeOnly?: boolean; editorSourceId?: string; generatedByEditorId?: string; generatedFromReferenceId?: string; generatedTaskId?: string; generation?: { taskId: string; status: 'running' | 'failed' }; sourceImageId?: string; fusion?: FusionSettings; operation?: 'cutout' | 'fusion' | 'directed' | 'lingerie' | 'flat' };
+export type CanvasImage = { id: string; name: string; url: string; generatedFile?: GeneratedMediaFile; projectCover?: boolean; coverOrder?: number; x: number; y: number; width: number; height: number; naturalWidth?: number; naturalHeight?: number; role?: 'main'; layoutTaskId?: string; layoutOriginOrder?: number; layoutMeta?: CanvasLayoutMetadata; nodeOnly?: boolean; editorSourceId?: string; generatedByEditorId?: string; generatedFromReferenceId?: string; generatedTaskId?: string; generation?: { taskId: string; status: 'running' | 'failed' }; sourceImageId?: string; fusion?: FusionSettings; operation?: 'cutout' | 'fusion' | 'directed' | 'lingerie' | 'flat' };
 export const CANVAS_GRID_SIZE = 32;
 
 export function workflowSources(items: CanvasImage[], editor: CanvasImage): CanvasImage[] {
@@ -330,6 +331,21 @@ export function createFusionEditor(items: CanvasImage[], sourceId: string, id: s
   const y = source.y + (source.height - height) / 2;
   return {id, name: source.name, url: '', x, y, width, height,
     nodeOnly: true, editorSourceId: source.id, fusion: {...defaultFusion(kind), position: {x,y}}};
+}
+
+// Refill the existing editor with a separate media instance. Results, selection
+// and layout membership continue to refer to the same editor ID.
+export function restoreWorkflowMain(items: CanvasImage[], editorId: string,
+  input: Pick<CanvasImage, 'name' | 'url' | 'width' | 'height' | 'naturalWidth' | 'naturalHeight' | 'generatedFile'>, imageId: string): CanvasImage[] {
+  const target = items.find(item => item.id === editorId && item.nodeOnly && item.fusion && !isMultiInputWorkflow(item.fusion));
+  if (!target?.fusion) return items;
+  const position = fusionPosition(target);
+  const main: CanvasImage = { id: imageId, name: input.name, url: input.url, width: input.width, height: input.height,
+    naturalWidth: input.naturalWidth, naturalHeight: input.naturalHeight, generatedFile: input.generatedFile,
+    x: position.x - input.width - FUSION_GAP,
+    y: position.y + (workflowHeight(target.fusion) - input.height) / 2 };
+  return [...items.map(item => item.id === target.id ? { ...item, editorSourceId: imageId,
+    fusion: item.fusion?.kind === 'flat' ? item.fusion : { ...item.fusion!, position, drawingGuide: undefined } } : item), main];
 }
 
 export function createMergeEditor(items: CanvasImage[], selected: string[], id: string, batchFlat = false): CanvasImage | null {

@@ -14,7 +14,7 @@ import { isMultiInputWorkflow, fusionReferences, batchMainImages, workflowInputs
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { assets } from './assets';
 import { Button, Dialog, Divider, Icon, type IconName } from './components/ui';
-import { DEFAULT_VIEW, createFusionEditor, relatedCanvasIds, deleteCanvasSelection, canvasSafeArea, GROUP_GAP, canvasNodes, defaultFusion, fusionPosition, arrangeImages, boundsOf, fitImages, readImage, zoomAt, type CanvasImage, type FusionSettings, type Viewport } from './canvas';
+import { DEFAULT_VIEW, createFusionEditor, restoreWorkflowMain, relatedCanvasIds, deleteCanvasSelection, canvasSafeArea, GROUP_GAP, canvasNodes, defaultFusion, fusionPosition, arrangeImages, boundsOf, fitImages, readImage, zoomAt, type CanvasImage, type FusionSettings, type Viewport } from './canvas';
 import { locales, messages, type Locale } from './i18n';
 import { usePresence } from './usePresence';
 import { type SnapGuides } from './canvas-snapping';
@@ -40,6 +40,7 @@ import { CanvasContextMenu } from './components/CanvasContextMenu';
 import { standaloneTaskInputs } from './canvas-task-layout';
 import { createImageResults } from './canvas-image-results';
 import { withCanvasOriginOrder } from './canvas-origin-order';
+import { withCanvasLayoutGroups } from './canvas-layout-groups';
 import { canvasImageTaskResults, resolveImageTaskSlots, type CanvasImageTaskRecord } from './canvas-image-tasks';
 import { createCanvasFileNamer } from './canvas-media-filename';
 import { isProjectCoverCandidate, projectCoverMessages, resolveProjectCover, toggleProjectCover, withProjectCoverOrder } from './canvas-project-cover';
@@ -97,9 +98,9 @@ export default function App() {
   useRememberProjectCoverUse(images);
   function setImages(update: CanvasImage[] | ((previous: CanvasImage[]) => CanvasImage[])) {
     commitImages(previous => {
-      const before = withCanvasOriginOrder(previous);
+      const before = withCanvasLayoutGroups(withCanvasOriginOrder(previous));
       const next = typeof update === 'function' ? update(before) : update;
-      return withProjectCoverOrder(withCanvasOriginOrder(resolveImageTaskSlots(next, imageTasks.current), before), previous);
+      return withProjectCoverOrder(withCanvasLayoutGroups(withCanvasOriginOrder(resolveImageTaskSlots(next, imageTasks.current), before), before), previous);
     });
   }
   const [referenceTarget, setReferenceTarget] = useState<ImagePickerTarget | null>(null);
@@ -307,7 +308,7 @@ export default function App() {
   }, [menu]);
 
   const announce = notify;
-  const remember = useCallback((previous: CanvasImage[], selection = selectedRef.current) => { history.current = [...history.current.slice(-39), {images: withCanvasOriginOrder(previous), selectedIds: selection}]; future.current = []; setCanUndo(true); setCanRedo(false); }, []);
+  const remember = useCallback((previous: CanvasImage[], selection = selectedRef.current) => { history.current = [...history.current.slice(-39), {images: withCanvasLayoutGroups(withCanvasOriginOrder(previous)), selectedIds: selection}]; future.current = []; setCanUndo(true); setCanRedo(false); }, []);
   const selectFlowNodes = useCallback((ids: string[]) => { selectedRef.current = ids; setSelectedIds(ids); }, []);
   const flowDragging = useRef(false);
   const flowDragRecorded = useRef(false);
@@ -1084,18 +1085,10 @@ export default function App() {
     {shownMainTarget.value && <AssetPicker key={`main:${shownMainTarget.value}`} locale={locale} phase={shownMainTarget.phase} uploads={uploads} onUpload={rememberUpload} onClose={() => setMainTarget(null)} onConfirm={item => {
       const target = imageRef.current.find(n => n.id === mainTarget && n.nodeOnly && n.fusion);
       if (!target) { setMainTarget(null); return; }
-      const position = fusionPosition(target);
-      const mainY = position.y + (workflowHeight(target.fusion) - item.height) / 2;
       const id = crypto.randomUUID();
       remember(imageRef.current);
-      if (target.fusion?.kind === 'flat') {
-        const main: CanvasImage = { ...item, id, x: position.x - item.width - 80, y: mainY };
-        setImages(previous => [...previous.map(n => n.id === target.id ? { ...n, editorSourceId: id } : n), main]);
-        setSelectedIds([`${target.id}:fusion`]); setMainTarget(null);
-        return;
-      }
-      setImages(previous => previous.map(n => n.id === target.id ? {...item, id, x: position.x - item.width - 80, y: mainY, fusion: {...target.fusion!, position, drawingGuide: undefined}, nodeOnly: false} : n));
-      setSelectedIds([`${id}:fusion`]); setMainTarget(null);
+      setImages(previous => restoreWorkflowMain(previous, target.id, item, id));
+      setSelectedIds([`${target.id}:fusion`]); setMainTarget(null);
     }} />}
     {shownReference.value && <AssetPicker key={`reference:${shownReference.value.target}:${shownReference.value.role ?? 'reference'}`} locale={locale} phase={shownReference.phase} uploads={uploads} onUpload={rememberUpload} onClose={() => setReferenceTarget(null)}
       maxCount={pickerLimit(images.find(n => n.id === shownReference.value!.target)?.fusion, shownReference.value.role) - pickerImages(images.find(n => n.id === shownReference.value!.target)?.fusion, shownReference.value.role).length}

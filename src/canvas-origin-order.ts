@@ -11,6 +11,11 @@ export function canvasImageOriginOrders(items: CanvasImage[], previous: CanvasIm
   const orders = new Map<string, number>();
   let nextOrder = 0;
   for (const order of previousOrders.values()) nextOrder = Math.max(nextOrder, order + 1);
+  // A group's original source may be gone while the group is still alive.
+  // Later uploads must remain after that frozen ordering boundary.
+  for (const item of [...previous, ...items]) for (const member of [item.layoutMeta?.image, item.layoutMeta?.editor]) {
+    if (member?.group) nextOrder = Math.max(nextOrder, member.group.order + 1, (member.group.sortOrder ?? member.group.order) + 1);
+  }
   for (const image of images) {
     const order = validOrder(image.layoutOriginOrder) ? image.layoutOriginOrder : previousOrders.get(image.id);
     if (order === undefined) continue;
