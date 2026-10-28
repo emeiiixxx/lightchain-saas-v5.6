@@ -14,7 +14,7 @@ import { isMultiInputWorkflow, fusionReferences, batchMainImages, workflowInputs
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { assets } from './assets';
 import { Button, Dialog, Divider, Icon, type IconName } from './components/ui';
-import { DEFAULT_VIEW, createFusionEditor, restoreWorkflowMain, relatedCanvasIds, deleteCanvasSelection, canvasSafeArea, GROUP_GAP, canvasNodes, defaultFusion, fusionPosition, arrangeImages, boundsOf, fitImages, readImage, zoomAt, type CanvasImage, type FusionSettings, type Viewport } from './canvas';
+import { DEFAULT_VIEW, createFusionEditor, restoreWorkflowMain, relatedCanvasIds, deleteCanvasSelection, canvasSafeArea, GROUP_GAP, canvasNodes, newFusionSettings, fusionPosition, arrangeImages, boundsOf, fitImages, readImage, zoomAt, type CanvasImage, type FusionSettings, type Viewport } from './canvas';
 import { locales, messages, type Locale } from './i18n';
 import { usePresence } from './usePresence';
 import { type SnapGuides } from './canvas-snapping';
@@ -41,6 +41,7 @@ import { standaloneTaskInputs } from './canvas-task-layout';
 import { createImageResults } from './canvas-image-results';
 import { withCanvasOriginOrder } from './canvas-origin-order';
 import { withCanvasLayoutGroups } from './canvas-layout-groups';
+import { rememberGenerationSettingsChange } from './generation-settings-memory';
 import { canvasImageTaskResults, resolveImageTaskSlots, type CanvasImageTaskRecord } from './canvas-image-tasks';
 import { createCanvasFileNamer } from './canvas-media-filename';
 import { isProjectCoverCandidate, projectCoverMessages, resolveProjectCover, toggleProjectCover, withProjectCoverOrder } from './canvas-project-cover';
@@ -445,7 +446,7 @@ export default function App() {
     if (!item) return;
     const rect = canvas.current!.getBoundingClientRect();
     const v = viewRef.current;
-    const created: CanvasImage = { ...item, fusion: item.operation === 'fusion' || item.operation === 'lingerie' || item.operation === 'directed' || item.operation === 'flat' ? defaultFusion(item.operation) : undefined, role: 'main', x: point?.x ?? (rect.width / 2 - v.x) / v.zoom - item.width / 2, y: point?.y ?? (rect.height / 2 - v.y) / v.zoom - item.height / 2 };
+    const created: CanvasImage = { ...item, fusion: item.operation === 'fusion' || item.operation === 'lingerie' || item.operation === 'directed' || item.operation === 'flat' ? newFusionSettings(item.operation) : undefined, role: 'main', x: point?.x ?? (rect.width / 2 - v.x) / v.zoom - item.width / 2, y: point?.y ?? (rect.height / 2 - v.y) / v.zoom - item.height / 2 };
     remember(imageRef.current); setImages(previous => [...previous.filter(n => n.role !== 'main' || n.nodeOnly), created]); setSelectedIds([created.id]);
     if (created.operation === 'cutout') setCutoutImage(created);
     if (created.fusion) revealFusion(created);
@@ -684,6 +685,7 @@ export default function App() {
   function updateFusion(id: string, patch: Partial<FusionSettings>) {
     if ('mainImages' in patch || 'references' in patch || 'directedPoints' in patch || 'drawingGuide' in patch || imageRef.current.find(n => n.id === id)?.fusion?.kind === 'flat') remember(imageRef.current);
     const owner = imageRef.current.find(item => item.id === id);
+    if (owner?.fusion) rememberGenerationSettingsChange(owner.fusion, patch);
     const batch = owner?.fusion?.kind === 'batch';
     const multiInputs = isMultiInputWorkflow(owner?.fusion) && (batch ? 'mainImages' in patch : 'references' in patch);
     const independent = multiInputs ? standaloneTaskInputs(imageRef.current) : new Set<string>();

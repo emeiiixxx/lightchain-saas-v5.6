@@ -8,6 +8,7 @@ import { placeConnectedGroupStages, type ConnectedLayoutGroup } from './canvas-g
 import { packStandaloneRows } from './canvas-standalone-layout';
 import type { GeneratedMediaFile } from './canvas-media-filename';
 import type { CanvasLayoutMetadata } from './canvas-layout-groups';
+import { demoGenerationSettingsMemory, rememberedWorkflowKind } from './generation-settings-memory';
 export type Viewport = { x: number; y: number; zoom: number };
 export type FusionReference = { id: string; name: string; url: string; sourceImageId?: string };
 export const MAX_FUSION_REFERENCES = 9;
@@ -24,6 +25,13 @@ export const workflowInputs = (settings?: FusionSettings): FusionReference[] => 
 export const isMultiInputWorkflow = (settings?: FusionSettings) => settings?.kind === 'batch' || settings?.kind === 'merge' || (settings?.kind === 'flat' && settings.batchFlat === true);
 export const workflowReferenceLimit = (settings?: FusionSettings) => settings?.batchFlat ? 20 : settings?.kind === 'lingerie' ? 1 : MAX_FUSION_REFERENCES;
 export const defaultFusion = (kind: WorkflowKind = 'fusion'): FusionSettings => ({ kind, prompt: '', ratio: 'auto', resolution: '2K', ...(kind === 'batch' ? { mainImages: [], references: [] } : {}), ...(kind === 'directed' ? { directedPoints: [] } : {}), ...(kind === 'flat' ? { flatRegion: 'top', flatFace: 'front' } : {}) });
+// Read preferences only for new nodes. Loading, copying, restoring and clearing
+// existing nodes must keep the settings that belong to their snapshot.
+export function newFusionSettings(kind: WorkflowKind = 'fusion'): FusionSettings {
+  const settings = defaultFusion(kind);
+  const memoryKind = rememberedWorkflowKind(kind);
+  return memoryKind ? { ...settings, ...demoGenerationSettingsMemory.read(memoryKind, settings) } : settings;
+}
 export const FUSION_GAP = 80;
 const BRANCH_GAP = 120;
 export const GROUP_GAP = 240;
@@ -37,7 +45,8 @@ function referenceGridRows(settings?: FusionSettings) {
   const slots = count + (count < workflowReferenceLimit(settings) ? 1 : 0);
   return Math.ceil(Math.max(1, slots) / 4);
 }
-// Directed: 282px including the action footer, plus 129px card + 12px gap per point.
+// Directed: 354px including generation settings and the action footer,
+// plus 129px card + 12px gap per point.
 // The 56px add entry and its 12px gap disappear at the three-point limit.
 export function workflowHeight(settings?: FusionSettings) {
   if (settings?.kind === 'batch') return 404;
@@ -51,7 +60,7 @@ export function workflowHeight(settings?: FusionSettings) {
   if (!settings?.kind || settings.kind === 'fusion') return FUSION_HEIGHT - 64 + Math.min(160, referenceGridRows(settings) * 64 - 8);
   if (settings?.kind !== 'directed') return FUSION_HEIGHT + (referenceGridRows(settings) - 1) * 72;
   const count = Math.min(MAX_DIRECTED_POINTS, settings.directedPoints?.length ?? 0);
-  return 282 + count * 141 - (count === MAX_DIRECTED_POINTS ? 68 : 0);
+  return 354 + count * 141 - (count === MAX_DIRECTED_POINTS ? 68 : 0);
 }
 export type CanvasImage = { id: string; name: string; url: string; generatedFile?: GeneratedMediaFile; projectCover?: boolean; coverOrder?: number; x: number; y: number; width: number; height: number; naturalWidth?: number; naturalHeight?: number; role?: 'main'; layoutTaskId?: string; layoutOriginOrder?: number; layoutMeta?: CanvasLayoutMetadata; nodeOnly?: boolean; editorSourceId?: string; generatedByEditorId?: string; generatedFromReferenceId?: string; generatedTaskId?: string; generation?: { taskId: string; status: 'running' | 'failed' }; sourceImageId?: string; fusion?: FusionSettings; operation?: 'cutout' | 'fusion' | 'directed' | 'lingerie' | 'flat' };
 export const CANVAS_GRID_SIZE = 32;
@@ -289,12 +298,14 @@ export function deleteCanvasSelection(items: CanvasImage[], selected: string[]):
       return [{ ...item, fusion: { ...item.fusion, ...(item.fusion.kind === 'batch' ? { mainImages: inputs } : { references: inputs }) } }];
     }
     if (item.editorSourceId && ids.has(item.editorSourceId) && item.fusion) {
-      return [{...item, editorSourceId: undefined, name: '', url: '', fusion: {...defaultFusion(item.fusion.kind), position: fusionPosition(item)}}];
+      return [{...item, editorSourceId: undefined, name: '', url: '', fusion: {...defaultFusion(item.fusion.kind),
+        ...(rememberedWorkflowKind(item.fusion.kind) ? { ratio: item.fusion.ratio, resolution: item.fusion.resolution } : {}), position: fusionPosition(item)}}];
     }
     if (deleteImage) {
       if (!item.fusion) return [];
       return [{...item, nodeOnly: true, name: '', url: '', role: undefined, sourceImageId: undefined,
-        operation: undefined, fusion: {...defaultFusion(item.fusion.kind), position: fusionPosition(item)}}];
+        operation: undefined, fusion: {...defaultFusion(item.fusion.kind),
+          ...(rememberedWorkflowKind(item.fusion.kind) ? { ratio: item.fusion.ratio, resolution: item.fusion.resolution } : {}), position: fusionPosition(item)}}];
     }
     return [deleteNode ? {...item, fusion: undefined} : item];
   });
@@ -327,10 +338,11 @@ export function createFusionEditor(items: CanvasImage[], sourceId: string, id: s
   const source = items.find(n => n.id === sourceId && !n.nodeOnly && !n.generation);
   if (!source) return null;
   const x = source.x + source.width + FUSION_GAP;
-  const width = workflowWidth(defaultFusion(kind)), height = workflowHeight(defaultFusion(kind));
+  const fusion = newFusionSettings(kind);
+  const width = workflowWidth(fusion), height = workflowHeight(fusion);
   const y = source.y + (source.height - height) / 2;
   return {id, name: source.name, url: '', x, y, width, height,
-    nodeOnly: true, editorSourceId: source.id, fusion: {...defaultFusion(kind), position: {x,y}}};
+    nodeOnly: true, editorSourceId: source.id, fusion: {...fusion, position: {x,y}}};
 }
 
 // Refill the existing editor with a separate media instance. Results, selection
@@ -352,7 +364,7 @@ export function createMergeEditor(items: CanvasImage[], selected: string[], id: 
   const sources = items.filter(item => selected.includes(item.id) && !item.nodeOnly && !item.generation);
   if (sources.length < 2 || sources.length > (batchFlat ? 20 : MAX_FUSION_REFERENCES)) return null;
   const bounds = boundsOf(sources)!;
-  const fusion = { ...defaultFusion(batchFlat ? 'flat' : 'merge'), batchFlat, references: sources.map(source => ({ id: source.id, name: source.name, url: source.url, sourceImageId: source.id })) };
+  const fusion = { ...newFusionSettings(batchFlat ? 'flat' : 'merge'), batchFlat, references: sources.map(source => ({ id: source.id, name: source.name, url: source.url, sourceImageId: source.id })) };
   const height = workflowHeight(fusion), x = bounds.x + bounds.width + FUSION_GAP;
   const y = bounds.y + (bounds.height - height) / 2;
   return { id, name: batchFlat ? '转3D平铺' : '合拼生图', url: '', x, y, width: FUSION_WIDTH, height, nodeOnly: true,
@@ -366,7 +378,7 @@ export function createBatchEditor(items: CanvasImage[], selected: string[], id: 
   const sources = items.filter(item => selected.includes(item.id) && !item.nodeOnly && !item.generation);
   if (sources.length < 2 || sources.length > MAX_BATCH_MAIN_IMAGES) return null;
   const bounds = boundsOf(sources)!;
-  const fusion: FusionSettings = { ...defaultFusion('batch'), mainImages: sources.map(source => ({
+  const fusion: FusionSettings = { ...newFusionSettings('batch'), mainImages: sources.map(source => ({
     id: source.id, name: source.name, url: source.url, sourceImageId: source.id,
   })), references: [] };
   const width = workflowWidth(fusion), height = workflowHeight(fusion);

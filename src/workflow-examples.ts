@@ -1,5 +1,5 @@
 import { prepareMainImage } from './asset-library';
-import { defaultFusion, FUSION_WIDTH, workflowHeight, type CanvasImage, type WorkflowKind } from './canvas';
+import { newFusionSettings, FUSION_WIDTH, workflowHeight, type CanvasImage, type WorkflowKind } from './canvas';
 
 // Local onboarding fixtures: the images illustrate a workflow, not a live AI run.
 const examples = {
@@ -49,7 +49,7 @@ export async function createWorkflowExample(kind: Exclude<WorkflowKind, 'merge' 
   const editorId = crypto.randomUUID();
   const referenceImage = reference ? { id: reference.id, name: reference.name, url: reference.url } : undefined;
   const fusion = {
-    ...defaultFusion(kind), prompt: example.prompt, position: { x: 440, y: 0 },
+    ...newFusionSettings(kind), prompt: example.prompt, position: { x: 440, y: 0 },
     ...(kind === 'flat' ? { flatRegion: 'full' as const } : {}),
     ...(kind === 'directed' && referenceImage
       ? { directedPoints: [{ id: crypto.randomUUID(), reference: referenceImage, maskPreviewUrl: '/assets/workflow-examples/directed-neckline-mask.png', maskSourceUrl: main.url }] }

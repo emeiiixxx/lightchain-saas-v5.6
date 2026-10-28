@@ -3,12 +3,13 @@ import { MAX_DIRECTED_POINTS, type CanvasImage, type FusionSettings } from '../c
 import type { Locale } from '../i18n';
 import { GenerateTaskButton } from './GenerateTaskButton';
 import { ProgressiveImage } from './ProgressiveImage';
+import { SettingSelect } from './SettingSelect';
 import { Button, Divider, Icon } from './ui';
 
 const copy = {
-  'zh-CN': { title: '定向融合', tip: '单张主图最多可以进行三处定向融合', main: '主图', addMain: '添加主图', point: '融合点', add: '添加融合点', replace: '替换融合点', remove: '删除融合点', mask: '调整蒙版', reference: '参考图', generate: '开始 AI 生成', required: '请先添加融合点', maskPending: '定向融合蒙版编辑暂未接入', generatePending: '定向融合生成暂未接入服务' },
-  en: { title: 'Directed fusion', tip: 'Up to three fusion points per main image', main: 'Main image', addMain: 'Add main image', point: 'Point ', add: 'Add fusion point', replace: 'Replace fusion point', remove: 'Delete fusion point', mask: 'Edit mask', reference: 'Reference', generate: 'Start AI generation', required: 'Add a fusion point first', maskPending: 'Directed fusion mask editing is not connected yet', generatePending: 'Directed fusion generation is not connected yet' },
-  ja: { title: '指定融合', tip: 'メイン画像1枚につき最大3か所まで融合可能', main: 'メイン画像', addMain: 'メイン画像を追加', point: '融合点', add: '融合点を追加', replace: '融合点を変更', remove: '融合点を削除', mask: 'マスク調整', reference: '参考画像', generate: 'AI 生成を開始', required: '先に融合点を追加してください', maskPending: '指定融合のマスク編集は未接続です', generatePending: '指定融合の生成サービスは未接続です' },
+  'zh-CN': { title: '定向融合', tip: '单张主图最多可以进行三处定向融合', main: '主图', addMain: '添加主图', point: '融合点', add: '添加融合点', replace: '替换融合点', remove: '删除融合点', mask: '调整蒙版', reference: '参考图', settings: '生成设置', ratio: '图片比例', auto: '自动', resolution: '分辨率', generate: '开始 AI 生成', required: '请先添加融合点', maskPending: '定向融合蒙版编辑暂未接入', generatePending: '定向融合生成暂未接入服务' },
+  en: { title: 'Directed fusion', tip: 'Up to three fusion points per main image', main: 'Main image', addMain: 'Add main image', point: 'Point ', add: 'Add fusion point', replace: 'Replace fusion point', remove: 'Delete fusion point', mask: 'Edit mask', reference: 'Reference', settings: 'Generation settings', ratio: 'Aspect ratio', auto: 'Auto', resolution: 'Resolution', generate: 'Start AI generation', required: 'Add a fusion point first', maskPending: 'Directed fusion mask editing is not connected yet', generatePending: 'Directed fusion generation is not connected yet' },
+  ja: { title: '指定融合', tip: 'メイン画像1枚につき最大3か所まで融合可能', main: 'メイン画像', addMain: 'メイン画像を追加', point: '融合点', add: '融合点を追加', replace: '融合点を変更', remove: '融合点を削除', mask: 'マスク調整', reference: '参考画像', settings: '生成設定', ratio: '画像比率', auto: '自動', resolution: '解像度', generate: 'AI 生成を開始', required: '先に融合点を追加してください', maskPending: '指定融合のマスク編集は未接続です', generatePending: '指定融合の生成サービスは未接続です' },
 };
 
 type Props = {
@@ -23,7 +24,8 @@ type Props = {
 
 export function DirectedFusionNode({ image, locale, onChange, onAddMain, onChoosePoint, onGenerate, onNotify }: Props) {
   const t = copy[locale];
-  const points = (image.fusion?.directedPoints ?? []).slice(0, MAX_DIRECTED_POINTS);
+  const settings = image.fusion!;
+  const points = (settings.directedPoints ?? []).slice(0, MAX_DIRECTED_POINTS);
   return <section className={`fusion-node directed-node${image.nodeOnly ? ' is-empty' : ''}`} data-overlay data-source-image={image.id}
     data-node-id={image.nodeOnly ? '136:18424' : points.length ? '136:17987' : '136:17846'} aria-label={t.title}>
     <header className="fusion-header"><h2>{t.title}</h2><div className="fusion-tip"><img src={assets.fusionTip} alt="" width={20} height={20} /><span>{t.tip}</span></div></header>
@@ -46,6 +48,13 @@ export function DirectedFusionNode({ image, locale, onChange, onAddMain, onChoos
         </div>
       </div>)}
       {points.length < MAX_DIRECTED_POINTS && <button type="button" className="fusion-add-main" onClick={() => image.nodeOnly ? onAddMain() : onChoosePoint()}><Icon name="directedAdd" size={20} />{t.add}</button>}
+      <div className="fusion-field">
+        <span className="fusion-label">{t.settings}</span>
+        <div className="fusion-settings">
+          <SettingSelect label={t.ratio} value={settings.ratio} icon="fusionRatio" options={['auto', '1:1', '3:4', '4:3', '9:16', '16:9'].map(value => ({ value, label: value === 'auto' ? t.auto : value }))} onChange={ratio => onChange({ ratio })} />
+          <SettingSelect label={t.resolution} value={settings.resolution} icon="fusionHd" options={['1K', '2K', '4K'].map(value => ({ value, label: value }))} onChange={resolution => onChange({ resolution })} />
+        </div>
+      </div>
     </div>
     <footer className="fusion-node-action">
       <GenerateTaskButton label={t.generate} cost="999" className="fusion-generate" disabled={points.length === 0} onClick={() => image.nodeOnly ? onAddMain() : onGenerate()} />
