@@ -16,9 +16,11 @@ type Frame = Bounds & { rotation?: number };
 type Drag = { items: CanvasImage[]; bounds: Bounds; x: number; y: number; handle: string; angle: number; zoom: number; cx: number; cy: number };
 const alignments: [Alignment, string][] = [['left', '左对齐'], ['center', '水平居中'], ['right', '右对齐'], ['top', '顶部对齐'], ['middle', '垂直居中'], ['bottom', '底部对齐']];
 
-export function MultiSelectionControls({ board, onNotify }: { board: Board; onNotify: Notify }) {
+export function MultiSelectionControls({ board, onNotify, onTechPack }: { board: Board; onNotify: Notify; onTechPack: () => void }) {
   const { t, locale } = useLocale();
   const items = board.images.filter(item => board.selectedIds.includes(item.id));
+  const showTechPack = items.length >= 2 && items.length <= 8
+    && items.every(item => !item.shape && !item.generating && !item.generationFailed);
   const bounds = selectionBounds(items);
   const [transformFrame, setTransformFrame] = useState<Frame | null>(null);
   const frame: Frame = transformFrame ?? bounds;
@@ -121,7 +123,11 @@ export function MultiSelectionControls({ board, onNotify }: { board: Board; onNo
           buttons[event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length]?.focus();
         }}>{alignments.map(([value, label]) => <Button key={value} role="menuitem" onClick={() => { board.alignSelection(value); setAlignOpen(false); }}><Icon name={`selection-align-${value}`} size={16} /><span>{t(label)}</span></Button>)}</div>}
       </div></>}
-      <Divider vertical /><DownloadFormatMenu withLabel={false} open={downloadOpen} disabled={downloading} onToggle={() => { setAlignOpen(false); setArrangeOpen(false); setDownloadOpen(value => !value); }} onClose={() => setDownloadOpen(false)} onSelect={format => void download(format)} />
+      <Divider vertical />
+      {showTechPack && <Button className="workbench-tool" aria-label={t('工艺单')} title={t('工艺单')} disabled={board.locked || !board.restored} onClick={() => {
+        setAlignOpen(false); setArrangeOpen(false); setDownloadOpen(false); onTechPack();
+      }}><Icon name="canvas-imgIconBusinessApparelDesign1" size={20} /></Button>}
+      <DownloadFormatMenu withLabel={false} open={downloadOpen} disabled={downloading} onToggle={() => { setAlignOpen(false); setArrangeOpen(false); setDownloadOpen(value => !value); }} onClose={() => setDownloadOpen(false)} onSelect={format => void download(format)} />
     </div>
   </>;
 }

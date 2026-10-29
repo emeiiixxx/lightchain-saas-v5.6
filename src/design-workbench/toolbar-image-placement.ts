@@ -1,14 +1,15 @@
 import { imageBounds, selectionBounds, type Bounds } from './canvas-selection';
-import { CANVAS_IMAGE_GAP, TOOLBAR_ROW_GAP } from './canvas-spacing';
+import { CANVAS_IMAGE_GAP } from './canvas-spacing';
+import { createGenerationPlacement } from './generation-placement';
 import type { CanvasImage } from './useCanvas';
 
-// Toolbar tasks reserve their complete result row below the current canvas.
-// The existing scene is only read for its bounds and is never repositioned.
+// Place the entire row below all current content, without moving anything.
 export function placeToolbarImageBatch(
   items: Omit<CanvasImage, 'x' | 'y'>[], existing: CanvasImage[], viewport: Bounds, filenameTopSpace: number,
+  _referenceIds: string[] = [],
 ): CanvasImage[] {
   if (!items.length) return [];
-  const topSpace = Number.isFinite(filenameTopSpace) ? Math.max(0, filenameTopSpace) : 0;
+  const scene = createGenerationPlacement(existing, filenameTopSpace);
   let right = 0;
   const row = items.map(item => {
     const bounds = imageBounds({ ...item, x: 0, y: 0 });
@@ -17,9 +18,6 @@ export function placeToolbarImageBatch(
     return positioned;
   });
   const bounds = selectionBounds(row);
-  const content = existing.length ? selectionBounds(existing) : null;
-  const left = content?.x ?? viewport.x + (viewport.width - bounds.width) / 2;
-  const top = content ? content.y + content.height + TOOLBAR_ROW_GAP + topSpace
-    : viewport.y + (viewport.height - bounds.height + topSpace) / 2;
-  return row.map(item => ({ ...item, x: item.x + left, y: item.y + top }));
+  const position = scene.position(bounds, viewport);
+  return row.map(item => ({ ...item, x: item.x + position.x, y: item.y + position.y }));
 }

@@ -37,6 +37,7 @@
 .minimap-image { position: absolute; background: var(--brand-secondary); pointer-events: none; transition: none; }
 .minimap-viewport { position: absolute; border: 1px solid var(--border-strong); border-radius: 2px; cursor: grab; transition: none; }
 .minimap-images.is-navigating, .minimap-images.is-navigating .minimap-viewport { cursor: grabbing; }
+.element-hover { position: absolute; box-sizing: border-box; border: 1px solid var(--border-brand); pointer-events: none; transform-origin: center; transition: none; z-index: 2; }
 .element-selection { position: absolute; border: 2px solid var(--border-brand); pointer-events: none; transform-origin: center; transition: none; z-index: 3; }
 .element-selection > span.selection-handle { pointer-events: none; }
 .canvas-marquee { position: absolute; border: 1px solid var(--border-brand); background: color-mix(in srgb, var(--brand-primary) 12%, transparent); pointer-events: none; transition: none; z-index: 4; }
@@ -227,6 +228,8 @@ body:has(.handle-rotate[data-rotating='true']), body:has(.handle-rotate[data-rot
 .workbench .lc-dialog { pointer-events: auto; }
 .canvas-stage > canvas.is-hand { cursor: grab; }
 .canvas-stage > canvas[data-movable]:not(.is-hand):not(.is-panning):not(.is-locked) { cursor: move; }
+/* Share the original Figma 54:17860 copy cursor with Flow. */
+.canvas-stage > canvas[data-copying]:not(.is-hand):not(.is-panning):not(.is-locked):not(.is-drawing-shape) { cursor: url('/assets/cursors/copy.svg') 4 7, copy; }
 
 /* Upload-type menu reused from v5.2; motion inherits 200ms ease-out. */
 .agent-attachment-anchor { position: relative; }

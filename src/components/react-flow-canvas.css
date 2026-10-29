@@ -1,4 +1,8 @@
 .lc-react-flow { position: absolute; inset: 0; }
+.lc-flow-copy-preview { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 10; }
+.lc-flow-copy-preview-node { position: absolute; outline: calc(2px * var(--canvas-inverse-scale)) solid var(--selection-blue); pointer-events: none; }
+/* Figma 54:17860: original 32px artwork, hotspot at the foreground arrow tip. */
+.lc-react-flow:is([data-copy-drag='true'], [data-copy-hint='true']), .lc-react-flow:is([data-copy-drag='true'], [data-copy-hint='true']) * { cursor: url('/assets/cursors/copy.svg') 4 7, copy !important; }
 .lc-react-flow .react-flow__pane { cursor: default; }
 .lc-react-flow[data-hand='true'] .react-flow__pane { cursor: grab; }
 .lc-react-flow .react-flow__pane.dragging { cursor: grabbing; }

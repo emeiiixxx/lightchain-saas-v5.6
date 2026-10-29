@@ -1,8 +1,15 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePresence } from '../usePresence';
+import type { Bounds } from '../canvas-selection';
 
-type Target = { anchor: HTMLElement; label: string; container: HTMLElement };
+type CanvasTooltip = { anchor: HTMLCanvasElement; label: string; bounds: Bounds };
+type Target = { anchor: HTMLElement; label: string; container: HTMLElement; bounds?: Bounds };
+const canvasTooltipEvent = 'lc-canvas-tooltip';
+// Canvas-painted labels share this host without adding pointer-blocking overlays.
+export function showCanvasTooltip(detail: CanvasTooltip | null) {
+  document.dispatchEvent(new CustomEvent(canvasTooltipEvent, { detail }));
+}
 const shouldShowTooltip = (anchor: HTMLElement) => {
   // innerText excludes labels hidden by responsive styles, keeping icon-only
   // buttons discoverable while visible button labels do not repeat in tooltips.
@@ -53,6 +60,14 @@ export function TooltipHost() {
     const focus = (e: FocusEvent) => { const anchor = anchorOf(e.target); if (keyboardNavigation && anchor?.matches(':focus-visible')) show(anchor); };
     const key = (e: KeyboardEvent) => { if (e.key === 'Tab' || e.key.startsWith('Arrow')) keyboardNavigation = true; if (e.key === 'Escape') hide(); };
     const pointerDown = () => { keyboardNavigation = false; hide(); };
+    const canvasTooltip = (event: Event) => {
+      const detail = (event as CustomEvent<CanvasTooltip | null>).detail;
+      if (!detail) { setTarget(current => current?.bounds ? null : current); return; }
+      hoveredToolbar = null;
+      setTarget(current => current?.anchor === detail.anchor && current.label === detail.label && current.bounds === detail.bounds
+        ? current : { ...detail, container: document.body });
+    };
+    document.addEventListener(canvasTooltipEvent, canvasTooltip);
     document.addEventListener('pointerover', over, true);
     document.addEventListener('pointerout', out, true);
     document.addEventListener('pointermove', move, true);
@@ -64,6 +79,7 @@ export function TooltipHost() {
     document.addEventListener('wheel', hide, true);
     window.addEventListener('blur', hide);
     return () => {
+      document.removeEventListener(canvasTooltipEvent, canvasTooltip);
       document.removeEventListener('pointerover', over, true);
       document.removeEventListener('pointerout', out, true);
       document.removeEventListener('pointermove', move, true);
@@ -92,7 +108,9 @@ export function TooltipHost() {
     let frame = 0;
     const position = () => {
       if (!anchor.isConnected || !shouldShowTooltip(anchor) || anchor.closest('[inert]') || (anchor.closest('dialog') && !anchor.closest('dialog')!.open)) { setTarget(null); return; }
-      const a = anchor.getBoundingClientRect();
+      const anchorRect = anchor.getBoundingClientRect();
+      const bounds = shown.value.bounds;
+      const a = bounds ? new DOMRect(anchorRect.left + bounds.x, anchorRect.top + bounds.y, bounds.width, bounds.height) : anchorRect;
       const w = window.innerWidth, h = window.innerHeight;
       const side = anchor.closest('.canvas-side-toolbar, .left-tools') && w - a.right > tip.offsetWidth + 16 ? 'right' : a.top >= tip.offsetHeight + 12 ? 'top' : 'bottom';
       if (tip.dataset.side !== side) tip.dataset.side = side;

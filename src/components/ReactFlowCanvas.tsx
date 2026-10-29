@@ -99,6 +99,7 @@ type Props = {
   onView: (view: Viewport) => void; onSelection: (ids: string[]) => void;
   onPositions: (positions: Map<string, { x: number; y: number }>) => void;
   onSelecting: (active: boolean) => void; onDragStart: () => void; onDragEnd: () => void; onGuides: (guides: SnapGuides | null) => void;
+  onPrepareCopyDrag?: (ids: string[]) => { ids: string[]; commit: (offset: { x: number; y: number }) => void } | null;
   connections?: CanvasConnection[]; selectedConnectionIds?: string[];
   connectionNodes?: CanvasConnectionNodes;
   locale?: Locale;
@@ -133,6 +134,66 @@ export function ReactFlowCanvas(props: Props) {
   }, []);
   const drag = useRef<{ anchor: string; start: Map<string, {x: number; y: number}>; snap: DragSnapContext } | null>(null);
   const bypass = useRef(false);
+  const copyGesture = useRef<{ pointer: number; x: number; y: number; zoom: number; root: HTMLDivElement; nodes: ContentNode[];
+    offset: { x: number; y: number }; moved: boolean; commit: (offset: { x: number; y: number }) => void } | null>(null);
+  const [copyPreview, setCopyPreview] = useState<{ nodes: ContentNode[]; offset: { x: number; y: number } } | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const copyModifier = useRef(false);
+  const hoverPoint = useRef<{ x: number; y: number } | null>(null);
+  const [copyHint, setCopyHint] = useState(false);
+  const updateCopyHint = useCallback(() => {
+    // Keep the latched copy gesture visible even if Alt is released mid-drag.
+    if (copyGesture.current) { setCopyHint(true); return; }
+    const p = latest.current, point = hoverPoint.current, root = rootRef.current;
+    if (!copyModifier.current || !point || !root || p.hand || p.referenceMode || !p.onPrepareCopyDrag || drag.current
+      || document.activeElement?.closest('input,textarea,select,[contenteditable="true"]')) {
+      setCopyHint(false); return;
+    }
+    // Hit-test on modifier changes too: the pointer need not move after Alt.
+    const target = document.elementFromPoint(point.x, point.y);
+    const node = target?.closest<HTMLElement>('.react-flow__node');
+    const id = node?.getAttribute('data-id');
+    setCopyHint(!!target && !!node && root.contains(target) && !!id && selectionRef.current.includes(id)
+      && !target.closest(`${controlSelector},.nodrag,.react-flow__handle,.react-flow__edgeupdater`)
+      && !node.querySelector('.canvas-generation-placeholder'));
+  }, []);
+  const copyClick = useRef(false);
+  const finishCopyDrag = useCallback((commit: boolean) => {
+    const gesture = copyGesture.current;
+    if (!gesture) return;
+    copyGesture.current = null; setCopyPreview(null);
+    latest.current.onSelecting(false); latest.current.onGuides(null);
+    if (gesture.root.hasPointerCapture(gesture.pointer)) gesture.root.releasePointerCapture(gesture.pointer);
+    if (commit && gesture.moved) gesture.commit(gesture.offset);
+    updateCopyHint();
+  }, [updateCopyHint]);
+  useLayoutEffect(() => {
+    const keydown = (event: KeyboardEvent) => {
+      copyModifier.current = event.altKey || event.key === 'Alt';
+      updateCopyHint();
+      if (!copyGesture.current) return;
+      if (event.key === 'Alt') return;
+      event.preventDefault(); event.stopImmediatePropagation();
+      if (event.key === 'Escape') finishCopyDrag(false);
+    };
+    const keyup = (event: KeyboardEvent) => {
+      copyModifier.current = event.key !== 'Alt' && event.altKey;
+      updateCopyHint();
+    };
+    const cancel = () => {
+      copyModifier.current = false; hoverPoint.current = null;
+      finishCopyDrag(false); setCopyHint(false);
+    };
+    const visibility = () => { if (document.hidden) cancel(); };
+    window.addEventListener('keydown', keydown, true); window.addEventListener('keyup', keyup, true); window.addEventListener('blur', cancel);
+    document.addEventListener('visibilitychange', visibility);
+    return () => {
+      window.removeEventListener('keydown', keydown, true); window.removeEventListener('keyup', keyup, true); window.removeEventListener('blur', cancel);
+      document.removeEventListener('visibilitychange', visibility); cancel();
+    };
+  }, [finishCopyDrag, updateCopyHint]);
+  useLayoutEffect(() => { if (props.hand || props.referenceMode) finishCopyDrag(false); }, [props.hand, props.referenceMode, finishCopyDrag]);
+  useLayoutEffect(updateCopyHint, [props.selectedIds, props.children, props.hand, props.referenceMode, updateCopyHint]);
   const graph = useMemo(() => {
     const nodes: ContentNode[] = [], edges: CanvasEdge[] = [];
     // A shared port may belong to several lines. Reconnect only the most
@@ -204,6 +265,7 @@ export function ReactFlowCanvas(props: Props) {
     setConnectionSelection([...ids]);
   }, [setConnectionSelection]);
   const onChanges = useCallback((changes: NodeChange<ContentNode>[]) => {
+    if (copyGesture.current) return;
     const p = latest.current;
     if (!p.referenceMode) {
       const selection = changes.filter(change => change.type === 'select');
@@ -230,23 +292,64 @@ export function ReactFlowCanvas(props: Props) {
     const anchor = all.find(n => n.id === node.id)!;
     const bounds = boundsOf(all.filter(n => moving.has(n.id)))!;
     drag.current = { anchor: node.id, start: new Map(all.filter(n => moving.has(n.id)).map(n => [n.id, { x: n.x, y: n.y }])), snap: { anchor, bounds, targets: all.filter(n => !moving.has(n.id)), locks: {} } };
+    updateCopyHint();
     latest.current.onDragStart();
-  }, []);
-  const endDrag = useCallback(() => { drag.current = null; latest.current.onGuides(null); latest.current.onDragEnd(); }, []);
+  }, [updateCopyHint]);
+  const endDrag = useCallback(() => { drag.current = null; latest.current.onGuides(null); latest.current.onDragEnd(); updateCopyHint(); }, [updateCopyHint]);
   const onViewport = useCallback((v: Viewport) => {
     const current = latest.current.view;
     // Controlled viewport updates also emit this event. Only user/store changes
     // feed back into App, so its preset-zoom animation is not cancelled by echo.
     if (v.x !== current.x || v.y !== current.y || v.zoom !== current.zoom) latest.current.onView(v);
   }, []);
-  return <div className="lc-react-flow" data-hand={props.hand} data-free-connections={freeConnections} data-connectable={connectable} data-connecting={connecting} style={{ '--canvas-inverse-scale': 1 / props.view.zoom } as CSSProperties}
+  const moveCopyDrag = (event: React.PointerEvent<HTMLDivElement>) => {
+    const gesture = copyGesture.current;
+    if (!gesture || gesture.pointer !== event.pointerId) return false;
+    event.preventDefault(); event.stopPropagation();
+    const dx = event.clientX - gesture.x, dy = event.clientY - gesture.y;
+    if (!gesture.moved && Math.hypot(dx, dy) < 3) return true;
+    if (!gesture.moved) latest.current.onSelecting(true);
+    gesture.moved = true; gesture.offset = { x: dx / gesture.zoom, y: dy / gesture.zoom };
+    setCopyPreview({ nodes: gesture.nodes, offset: gesture.offset });
+    return true;
+  };
+  return <div ref={rootRef} className="lc-react-flow" data-copy-drag={!!copyPreview} data-copy-hint={copyHint} data-hand={props.hand} data-free-connections={freeConnections} data-connectable={connectable} data-connecting={connecting} style={{ '--canvas-inverse-scale': 1 / props.view.zoom } as CSSProperties}
+    onPointerEnter={e => {
+      hoverPoint.current = { x: e.clientX, y: e.clientY }; copyModifier.current = e.altKey; updateCopyHint();
+    }}
     onPointerMoveCapture={e => {
+      hoverPoint.current = { x: e.clientX, y: e.clientY }; copyModifier.current = e.altKey;
+      if (moveCopyDrag(e)) return;
+      updateCopyHint();
       bypass.current = e.altKey;
       const next = reconnectTarget(e.target);
       setReconnectHover(previous => previous?.edgeId === next?.edgeId && previous?.end === next?.end ? previous : next);
     }}
-    onPointerLeave={() => setReconnectHover(null)}
+    onPointerLeave={() => { hoverPoint.current = null; updateCopyHint(); setReconnectHover(null); }}
     onPointerDownCapture={e => {
+      hoverPoint.current = { x: e.clientX, y: e.clientY }; copyModifier.current = e.altKey;
+      copyClick.current = false;
+      if (copyGesture.current) { e.preventDefault(); e.stopPropagation(); return; }
+      if (e.button === 0 && e.altKey && !props.hand && !props.referenceMode && props.onPrepareCopyDrag && e.target instanceof Element
+        && !e.target.closest(`${controlSelector},.nodrag,.react-flow__handle,.react-flow__edgeupdater`)) {
+        const id = e.target.closest('.react-flow__node')?.getAttribute('data-id');
+        if (id) {
+          const ids = selectionRef.current.includes(id) ? [...selectionRef.current] : [id];
+          const prepared = props.onPrepareCopyDrag(ids);
+          // An unsupported placeholder must not turn an Alt drag into a move of the original.
+          e.preventDefault(); e.stopPropagation(); copyClick.current = true;
+          if (!prepared?.ids.length) return;
+          const nodes = graphRef.current.nodes.filter(node => prepared.ids.includes(node.id));
+          if (!nodes.length) return;
+          setSelection(prepared.ids); latest.current.onGuides(null);
+          copyGesture.current = { pointer: e.pointerId, x: e.clientX, y: e.clientY, zoom: props.view.zoom,
+            root: e.currentTarget, nodes, moved: false, offset: { x: 0, y: 0 }, commit: prepared.commit };
+          updateCopyHint();
+          e.currentTarget.setPointerCapture(e.pointerId);
+          e.currentTarget.closest<HTMLElement>('main')?.focus({ preventScroll: true });
+          return;
+        }
+      }
       reconnectClick.current = null;
       const endpoint = e.button === 0 ? reconnectTarget(e.target) : null;
       const edge = endpoint && latest.current.connections?.find(item => item.id === endpoint.edgeId);
@@ -262,7 +365,12 @@ export function ReactFlowCanvas(props: Props) {
         field?.classList.add('nodrag');
       }
     }}
+    onPointerUpCapture={e => { if (moveCopyDrag(e)) finishCopyDrag(true); }}
+    onPointerCancelCapture={e => { if (copyGesture.current?.pointer === e.pointerId) finishCopyDrag(false); }}
+    onLostPointerCapture={e => { if (copyGesture.current?.pointer === e.pointerId) finishCopyDrag(false); }}
+    onContextMenuCapture={e => { if (copyGesture.current) { e.preventDefault(); e.stopPropagation(); finishCopyDrag(false); } }}
     onMouseDownCapture={e => {
+      if (copyClick.current) { e.preventDefault(); e.stopPropagation(); return; }
       shiftClick.current = false;
       if (e.button !== 0 || props.hand || props.referenceMode || !(e.target instanceof Element)) return;
       if (e.target.closest(`${controlSelector},.react-flow__handle,.react-flow__edgeupdater`)) return;
@@ -290,6 +398,7 @@ export function ReactFlowCanvas(props: Props) {
       setSelection(ids.includes(id) ? ids.filter(selected => selected !== id) : [...ids, id]);
     }}
     onClickCapture={e => {
+      if (copyClick.current) { copyClick.current = false; e.preventDefault(); e.stopPropagation(); return; }
       const endpoint = reconnectClick.current;
       reconnectClick.current = null;
       if (endpoint) {
@@ -306,6 +415,7 @@ export function ReactFlowCanvas(props: Props) {
       e.stopPropagation();
     }}
     onWheelCapture={e => {
+      if (copyGesture.current) { e.preventDefault(); e.stopPropagation(); return; }
       if (!e.ctrlKey && !e.metaKey && !e.altKey && e.target instanceof Element) {
         const field = e.target.closest('textarea,[data-canvas-scroll]');
         if (field && field.scrollHeight > field.clientHeight) e.stopPropagation();
@@ -345,5 +455,13 @@ export function ReactFlowCanvas(props: Props) {
           if (latest.current.onConnect) setConnectionSelection([]);
         }
       }} />
+    {copyPreview && <div className="lc-flow-copy-preview" aria-hidden="true" inert>
+      <div style={{ transform: `translate(${props.view.x}px, ${props.view.y}px) scale(${props.view.zoom})`, transformOrigin: '0 0' }}>
+        {copyPreview.nodes.map(node => <div key={node.id} className="lc-flow-copy-preview-node" style={{
+          left: node.position.x + copyPreview.offset.x, top: node.position.y + copyPreview.offset.y,
+          width: node.width, height: node.height,
+        }}>{node.data.content}</div>)}
+      </div>
+    </div>}
   </div>;
 }

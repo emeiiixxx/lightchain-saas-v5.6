@@ -38,6 +38,7 @@ import { imageBounds } from '../canvas-selection';
 import { canvasToolbarPosition, intersectsViewport, screenBounds } from '../canvas-toolbar';
 import { IMAGE_FILENAME_TOP_SPACE } from '../canvas-renderer';
 import { ShapeToolMenu } from './ShapeToolMenu';
+import { useCanvasFilenameTooltip } from '../useCanvasFilenameTooltip';
 
 async function restoreTextEditTags(record: GenerationRecord): Promise<GenerationRecord> {
   const input = record.textEdit;
@@ -98,6 +99,7 @@ function ImageProperties({ board, onReplace, onAction, rotationLocked, onNotify 
 }
 
 export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplace, onHelp, onNotify, uploads, onRememberUpload }: Props) {
+  useCanvasFilenameTooltip(board);
   const { t, locale } = useLocale();
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [toolbarSize, setToolbarSize] = useState({ width: 700, height: 42 });
@@ -262,14 +264,14 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     const archived = archivedRecords.current.get(id);
     if (archived) archivedRecords.current.set(id, update(archived));
   };
-  const runAgentBatch = (id: string, title: string, settings: DemoOutput, agentConversationId: string, startIndex: number, first?: CanvasImage) => {
+  const runAgentBatch = (id: string, title: string, settings: DemoOutput, agentConversationId: string, startIndex: number, first?: CanvasImage, sourceIds: string[] = []) => {
     activeAgentBatches.current.add(id);
     void runAgentImageSequence({
       count: settings.count, startIndex,
       active: () => generationMounted.current,
       start: index => {
         const placeholder = index === startIndex && first ? first : board.beginGeneration(undefined, 1, {
-          name: title, taskRecordId: id, outputSize: demoOutputSize(settings), placement: 'agent', agentConversationId, generationIndex: index,
+          name: title, taskRecordId: id, outputSize: demoOutputSize(settings), placement: 'agent', agentConversationId, generationIndex: index, sourceIds,
         })[0];
         if (!placeholder) return undefined;
         if (placeholder !== first) updateAgentRecord(id, record => ({
@@ -302,7 +304,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       if (generationMounted.current) updateAgentRecord(id, record => ({ ...record, generating: false }));
     });
   };
-  const acceptAgentRequest = async ({ id, text: request, title, images, settings: requestedSettings, conversationId: agentConversationId }: AgentRequest, current: () => boolean) => {
+  const acceptAgentRequest = async ({ id, text: request, title, images, sourceIds = [], settings: requestedSettings, conversationId: agentConversationId }: AgentRequest, current: () => boolean) => {
     if (board.locked || !board.restored || !recordsRestored) return false;
     let settings = requestedSettings;
     // Auto uses the first reference's actual ratio. Until decoded, thinking stays
@@ -312,7 +314,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       settings = { ...settings, sourceSize: { width: reference.width, height: reference.height } };
     }
     if (!current() || !generationMounted.current) return false;
-    const placeholders = board.beginGeneration(undefined, 1, { name: title, taskRecordId: id, outputSize: demoOutputSize(settings), placement: 'agent', agentConversationId, generationIndex: 0 });
+    const placeholders = board.beginGeneration(undefined, 1, { name: title, taskRecordId: id, outputSize: demoOutputSize(settings), placement: 'agent', agentConversationId, generationIndex: 0, sourceIds });
     if (!placeholders.length) return false;
     const bindTask = (messages: AgentMessage[]) => messages.map(message => message.requestId === id ? { ...message, taskId: id } : message);
     setConversation(bindTask);
@@ -320,23 +322,25 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     const now = new Date();
     const time = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     setGenerationRecords(previous => [{
-      id, title, time, prompt: request, canvasEntry: 'agent', replayable: true, agentConversationId, agentSettings: settings, agentStartedCount: 1,
+      id, title, time, prompt: request, canvasEntry: 'agent', replayable: true, agentConversationId, agentSettings: settings, agentStartedCount: 1, sourceIds,
       generating: true, count: settings.count, ratio: settings.ratio, resolution: settings.resolution,
       resultRatio: `${placeholders[0].width} / ${placeholders[0].height}`,
       tags: images.map(image => ({ label: '参考图', image })),
       images: placeholders.map(item => ({ id: item.id, url: item.url, height: 92 * item.height / item.width, status: 'generating' })),
     }, ...previous]);
-    runAgentBatch(id, title, settings, agentConversationId, 0, placeholders[0]);
+    runAgentBatch(id, title, settings, agentConversationId, 0, placeholders[0], sourceIds);
     return true;
   };
   const agentRequests = useAgentRequests(acceptAgentRequest);
   const activeAgentRequestId = conversation.find(message => message.requestId && agentRequests.states[message.requestId])?.requestId;
   const agentRequestState = activeAgentRequestId ? agentRequests.states[activeAgentRequestId] : null;
-  const recordGenerationRequest = (request: string, title = 'AI助手', images: string[] = [], settings = agentDemoOutput(request)) => {
+  const recordGenerationRequest = (request: string, title = 'AI助手', images: string[] = [], settings = agentDemoOutput(request), sourceIds: string[] = []) => {
     if (board.locked || !board.restored || !recordsRestored || !conversationsRestored || activeAgentRequestId) return false;
     const id = crypto.randomUUID();
-    setConversation(previous => [...previous, { role: 'user', text: request, images, conversationId }, { role: 'assistant', text: '', requestId: id, conversationId }]);
-    agentRequests.submit({ id, text: request, title, images, settings, conversationId });
+    // Pin identity at send time; selection can change while the request thinks.
+    const capturedSourceIds = [...new Set(sourceIds)];
+    setConversation(previous => [...previous, { role: 'user', text: request, images, conversationId, sourceIds: capturedSourceIds }, { role: 'assistant', text: '', requestId: id, conversationId, sourceIds: capturedSourceIds }]);
+    agentRequests.submit({ id, text: request, title, images, settings, conversationId, sourceIds: capturedSourceIds });
     return true;
   };
   const stopAgentRequest = () => {
@@ -459,7 +463,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     setGenerationRecords(previous => [{ id, replayable: true, sourceId, sourceIds, title: independent ? `款式 - ${localEditTool}` : '快捷编辑', time, supportsPrompt, printMode: isPrint ? (draft.printMode ?? 'position') : undefined, prompt: supportsPrompt ? (draft.value.trim() || undefined) : undefined, generating: true, count, resultHeight: 92 * placeholders[0].height / placeholders[0].width, ratio: draft.ratio, resolution: draft.resolution, tags: [{ label: '服装图', image: source.url }, ...draft.references.map(ref => ({ label: independent && localEditTool === 'AI试衣' ? '模特图' : independent && localEditTool === '印花上身' ? '印花图' : '参考图', image: ref.url })), ...(isPrint ? [{ label: draft.printMode === 'repeat' ? '满印' : '指定位置' }] : [])], images: placeholders.map(item => ({ id: item.id, url: item.url, height: 92 * item.height / item.width, status: 'generating' })) }, ...previous]);
     if (!independent) setConversation(previous => [...previous, { role: 'user', text: request, conversationId }, { role: 'assistant', text: '已记录设计需求。当前为交互 Demo，暂未接入 AI 生成。', conversationId }]);
     setQuickEdit(null);
-    // Place loading tiles directly to the source's right, allowing overlaps.
+    // C01 places the batch below all current canvas elements before rendering.
     // Decode in parallel with the demo delay, so loading starts immediately and lasts 3s.
     const delay = new Promise<void>(resolve => {
       const timer = setTimeout(() => { generationTimers.current.delete(timer); resolve(); }, 3000);
@@ -503,7 +507,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     };
     updateStatus('generating');
     board.setSelected(null);
-    board.focusImage(placeholder.id, 100, { animate: true, ignorePanels: false });
+    board.focusAgentResults([targetKey]);
     const delay = new Promise<void>(resolve => {
       const timer = setTimeout(() => { generationTimers.current.delete(timer); resolve(); }, 2400);
       generationTimers.current.add(timer);
@@ -539,7 +543,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     if (!record.replayable || record.generating || record.pending) return;
     if (record.canvasEntry === 'agent') {
       const settings: DemoOutput = record.agentSettings ?? { count: record.count ?? Math.max(1, record.images.length), ratio: record.ratio, resolution: record.resolution, sourceSize: { width: 2, height: 3 } };
-      recordGenerationRequest(record.prompt ?? '', record.title, record.tags.flatMap(tag => tag.image ? [tag.image] : []), settings);
+      recordGenerationRequest(record.prompt ?? '', record.title, record.tags.flatMap(tag => tag.image ? [tag.image] : []), settings, record.sourceIds);
       return;
     }
     if (record.textEdit) {
@@ -604,7 +608,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
         const tile = pending && board.images.find(image => image.taskResultId === `${record.id}:${pending.id}` && image.generating);
         if (pending && !tile) updateAgentRecord(record.id, value => ({ ...value, images: value.images.map(image => image.id === pending.id ? { ...image, status: 'failed' } : image) }));
         const nextIndex = tile?.generationIndex ?? (tile ? Math.max(0, (record.agentStartedCount ?? record.images.length) - 1) : record.agentStartedCount ?? record.images.length);
-        runAgentBatch(record.id, record.title, record.agentSettings, record.agentConversationId ?? `legacy-agent:${record.id}`, nextIndex, tile || undefined);
+        runAgentBatch(record.id, record.title, record.agentSettings, record.agentConversationId ?? `legacy-agent:${record.id}`, nextIndex, tile || undefined, record.sourceIds);
         continue;
       }
       for (const result of record.images) {
@@ -665,6 +669,8 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
   const shownPreview = usePresence(preview);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const selected = board.images.find(i => i.id === board.selected);
+  const hovered = !board.locked && !board.isolationActive && !board.selectedIds.includes(board.hoveredId ?? '')
+    ? board.images.find(item => item.id === board.hoveredId) : undefined;
   const selectedInView = !!selected && intersectsViewport(screenBounds(imageBounds(selected), board.camera), board.size);
   const noContentInView = board.images.length > 0 && !board.images.some(item => intersectsViewport(screenBounds(imageBounds(item), board.camera), board.size));
   const returnHint = usePresence(noContentInView && !localEdit ? true : null);
@@ -701,30 +707,27 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
   };
   const unavailable = () => { setMenu(null); onNotify(demoNotice(locale)); };
   const agentMessages = conversation.filter(message => !message.requestId || message.taskId || message.text).map(message => {
-    if (!message.taskId) return { ...message, results: message.results?.map(result => ({ ...result, agentConversationId: result.agentConversationId ?? message.conversationId ?? conversationId, ...board.lookupImageFilename(result.id) })) };
+    if (!message.taskId) return { ...message, results: message.results?.map(result => ({ ...result, sourceIds: result.sourceIds ?? message.sourceIds, agentConversationId: result.agentConversationId ?? message.conversationId ?? conversationId, ...board.lookupImageFilename(result.id) })) };
     const record = generationRecords.find(record => record.id === message.taskId) ?? archivedRecords.current.get(message.taskId);
     return { ...message, results: record?.images.map((result, index): AgentImageResult => ({
-      id: `${record.id}:${result.id}`, agentConversationId: record.agentConversationId ?? message.conversationId ?? conversationId, url: result.url, name: `${record.title} · ${index + 1}.png`,
+      id: `${record.id}:${result.id}`, agentConversationId: record.agentConversationId ?? message.conversationId ?? conversationId, sourceIds: record.sourceIds ?? message.sourceIds, url: result.url, name: `${record.title} · ${index + 1}.png`,
       width: 92, height: result.height, status: result.status,
       ...board.lookupImageFilename(`${record.id}:${result.id}`),
     })) };
   });
-  const sendAgentResultsToCanvas = async (results: AgentImageResult[], loaded?: HTMLImageElement) => {
-    if (board.locked || !board.restored || !results.length) return;
+  const sendAgentResultToCanvas = async (result: AgentImageResult, loaded?: HTMLImageElement) => {
+    if (board.locked || !board.restored || result.status === 'generating' || result.status === 'failed') return;
     // Existing results can be focused even if their old conversation URL is no
     // longer loadable; placement always uses the current canvas instance.
-    if (board.focusAgentResults(results.map(result => result.id))) return;
+    if (board.focusAgentResults([result.id])) return;
     try {
-      const assets = await Promise.all(results.map(async result => {
-        const existing = board.images.find(item => item.taskResultId === result.id);
-        const image = existing?.image ?? (results.length === 1 ? loaded : undefined);
-        const asset = image
-          ? { image, url: image.currentSrc || image.src, width: image.naturalWidth, height: image.naturalHeight, name: result.name }
-          : await prepareMainImage({ id: crypto.randomUUID(), url: result.url, name: result.name });
-        return { ...asset, id: crypto.randomUUID(), taskResultId: result.id, agentConversationId: result.agentConversationId ?? conversationId };
-      }));
+      const asset = loaded
+        ? { image: loaded, url: loaded.currentSrc || loaded.src, width: loaded.naturalWidth, height: loaded.naturalHeight, name: result.name }
+        : await prepareMainImage({ id: crypto.randomUUID(), url: result.url, name: result.name });
       if (!generationMounted.current) return;
-      const outcome = board.addAgentImages(assets, { agentConversationId: results[0].agentConversationId ?? conversationId });
+      const agentConversationId = result.agentConversationId ?? conversationId;
+      const sourceIds = [...new Set(result.sourceIds ?? [])];
+      const outcome = board.addAgentImages([{ ...asset, id: crypto.randomUUID(), taskResultId: result.id, agentConversationId }], { agentConversationId, sourceIds });
       if (outcome.addedCount) onNotify(t('已发送至画布'), 'success');
     } catch { onNotify(t('图片加载失败，请重试'), 'error'); }
   };
@@ -745,7 +748,17 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       <Button variant="primary" size="s" onClick={board.returnToContent}>{t('回到内容')}</Button>
     </div>}
     {board.images.filter(item => item.generating !== undefined).map(item => <GeneratingPlaceholder key={item.id} active={!!item.generating} zoom={board.camera.zoom} suspended={board.isolationActive} style={{ left: item.x * board.camera.zoom + board.camera.x, top: item.y * board.camera.zoom + board.camera.y, width: item.width * board.camera.zoom, height: item.height * board.camera.zoom, visibility: board.isolationActive ? 'hidden' : 'visible' }} />)}
-    {board.images.filter(item => item.generationFailed).map(item => <div key={item.id} className="canvas-failed-result" style={{ position: 'absolute', pointerEvents: 'none', left: item.x * board.camera.zoom + board.camera.x, top: item.y * board.camera.zoom + board.camera.y, width: item.width * board.camera.zoom, height: item.height * board.camera.zoom, transform: `rotate(${item.rotation ?? 0}deg)`, visibility: board.isolationActive ? 'hidden' : 'visible' }}><div className="canvas-failed-result-content" style={{ width: item.width, height: item.height, transform: `scale(${board.camera.zoom})`, transformOrigin: 'top left' }}><TaskResultPlaceholder status="failed" size="large" onRetry={item.taskResultId ? () => retryCanvasImage(item.taskResultId!) : undefined} /></div></div>)}
+    {board.images.filter(item => item.generationFailed).map(item => {
+      // Size the state artwork and controls on a 320px short edge, then apply
+      // the image's actual dimensions and camera zoom together.
+      const contentScale = Math.max(1, Math.min(item.width, item.height)) / 320;
+      return <div key={item.id} className="canvas-failed-result" style={{ position: 'absolute', pointerEvents: 'none', left: item.x * board.camera.zoom + board.camera.x, top: item.y * board.camera.zoom + board.camera.y, width: item.width * board.camera.zoom, height: item.height * board.camera.zoom, transform: `rotate(${item.rotation ?? 0}deg)`, visibility: board.isolationActive ? 'hidden' : 'visible' }}>
+        <div className="canvas-failed-result-content" style={{ width: item.width / contentScale, height: item.height / contentScale, transform: `scale(${contentScale * board.camera.zoom})`, transformOrigin: 'top left' }}>
+          <TaskResultPlaceholder status="failed" size="large" onRetry={item.taskResultId ? () => retryCanvasImage(item.taskResultId!) : undefined} />
+        </div>
+      </div>;
+    })}
+    {hovered && <div className="element-hover" aria-hidden="true" style={{ left: hovered.x * board.camera.zoom + board.camera.x, top: hovered.y * board.camera.zoom + board.camera.y, width: hovered.width * board.camera.zoom, height: hovered.height * board.camera.zoom, transform: `rotate(${hovered.rotation ?? 0}deg)` }} />}
     {board.marquee && <div className="canvas-marquee" aria-hidden="true" style={{ left: board.marquee.x * board.camera.zoom + board.camera.x, top: board.marquee.y * board.camera.zoom + board.camera.y, width: board.marquee.width * board.camera.zoom, height: board.marquee.height * board.camera.zoom }} />}
     {board.images.filter(item => board.selectedIds.includes(item.id) && !item.shape && !item.generating && !item.generationFailed).map(item => {
       const box = screenBounds(imageBounds(item), board.camera);
@@ -754,7 +767,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
         <span className="canvas-selected-filename-text">{item.name}</span>
       </div>;
     })}
-    {board.selectedIds.length > 1 && !board.marquee && <MultiSelectionControls key={board.selectedIds.join('|')} board={board} onNotify={onNotify} />}
+    {board.selectedIds.length > 1 && !board.marquee && <MultiSelectionControls key={board.selectedIds.join('|')} board={board} onNotify={onNotify} onTechPack={unavailable} />}
     {!leftTab && <div className="left-tools wb-surface" data-canvas-ui data-phase="enter" role="toolbar" aria-label={t("画布功能栏")}>
       <Tool icon="canvas-imgIconEditor7" label={t("图层")} disabled={!!localEdit} size={24} onClick={() => openLeftPanel('layers')} />
       <Tool icon="canvas-imgIconSystem6" label={t("资产")} size={24} onClick={() => openLeftPanel('assets')} />
@@ -844,8 +857,10 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
             setAgentScrolling(element.scrollHeight > element.clientHeight);
             if (agentScrollTimer.current) clearTimeout(agentScrollTimer.current);
             agentScrollTimer.current = setTimeout(() => setAgentScrolling(false), 600);
-          }}>{conversation.length ? <AgentConversation conversationId={conversationId} messages={agentMessages} onPreview={setPreview} onNotify={onNotify} onUnavailable={unavailable} canvasLocked={board.locked || !board.restored} onSendToCanvas={sendAgentResultsToCanvas} onRetry={retryCanvasImage} onReference={src => {
-            setAttachments(previous => [...previous, { id: crypto.randomUUID(), name: `${t('参考图片')}.jpg`, kind: 'image', url: src }]);
+          }}>{conversation.length ? <AgentConversation conversationId={conversationId} messages={agentMessages} onPreview={setPreview} onNotify={onNotify} onUnavailable={unavailable} canvasLocked={board.locked || !board.restored} onSendToCanvas={sendAgentResultToCanvas} onRetry={retryCanvasImage} onReference={(src, resultId) => {
+            const source = resultId ? board.images.find(item => item.taskResultId === resultId && !item.generating && !item.generationFailed) : undefined;
+            setAttachments(previous => source && previous.some(item => item.canvasImageId === source.id) ? previous
+              : [...previous, { id: source ? `canvas:${source.id}` : crypto.randomUUID(), canvasImageId: source?.id, name: source?.name ?? `${t('参考图片')}.jpg`, kind: 'image', url: src }]);
             textarea.current?.focus();
           }} /> : <><h2>{t("今天你想设计什么？")}</h2><p>{t("从下方输入你的设计需求，或上传/从画布中选择图片进行修改与设计")}</p><div className="agent-suggestions">{[t("多款融合"), t("面料套版"), t("单款裂变"), t("印花设计"), t("工艺单素材包")].map(text => <button key={text} onClick={() => action(text)}><span className="suggestion-idea"><Icon name="suggestion-idea" size={20} /></span><span className="suggestion-label">{text}</span><span className="suggestion-add"><Icon name="suggestion-add" size={20} /></span></button>)}</div></>}</div>
           <div className="agent-input-area">
@@ -867,7 +882,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
               </div>
               <button type="button" className="agent-send" disabled={agentRequestState === 'thinking' || (!activeAgentRequestId && (board.locked || !board.restored || !recordsRestored || (!prompt.trim() && !composerAttachments.length)))} aria-label={t(activeAgentRequestId && agentRequestState !== 'thinking' ? '停止请求' : '发送设计需求')} data-tooltip={t(activeAgentRequestId && agentRequestState !== 'thinking' ? '停止请求' : '发送设计需求')} onClick={() => {
                 if (activeAgentRequestId) { stopAgentRequest(); return; }
-                const submitted = recordGenerationRequest([prompt.trim(), ...composerAttachments.filter(item => item.kind === 'file').map(item => `${t('附件：')}${item.name}`)].filter(Boolean).join('\n'), 'AI助手', composerAttachments.flatMap(item => item.url ? [item.url] : []));
+                const submitted = recordGenerationRequest([prompt.trim(), ...composerAttachments.filter(item => item.kind === 'file').map(item => `${t('附件：')}${item.name}`)].filter(Boolean).join('\n'), 'AI助手', composerAttachments.flatMap(item => item.url ? [item.url] : []), undefined, composerAttachments.flatMap(item => item.canvasImageId ? [item.canvasImageId] : []));
                 if (submitted) { setPrompt(''); setAttachments([]); board.selectMany([]); }
               }}>{activeAgentRequestId && agentRequestState !== 'thinking' ? <span className="agent-send-stop" aria-hidden="true" /> : <Icon name="agent-composer-20261029/submit" size={24} />}</button>
             </div>

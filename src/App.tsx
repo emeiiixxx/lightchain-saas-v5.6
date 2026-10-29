@@ -358,7 +358,7 @@ export default function App() {
     if (!bounds) return;
     const offset = getCanvasPasteOffset(bounds, viewRef.current,
       { width: canvas.current.clientWidth, height: canvas.current.clientHeight }, clipboard.pastes, point);
-    const created = pasteCanvasSelection(clipboard.items, offset.x, offset.y);
+    const created = pasteCanvasSelection(clipboard.items, offset.x, offset.y, { existing: imageRef.current });
     clipboard.pastes++;
     remember(imageRef.current);
     const next = [...imageRef.current, ...created];
@@ -371,6 +371,18 @@ export default function App() {
     const items = copyCanvasSelection(imageRef.current, selectedRef.current);
     if (items.length) pasteCopiedItems(undefined, items);
   }, [pasteCopiedItems]);
+  const prepareFlowCopyDrag = useCallback((ids: string[]) => {
+    const items = copyCanvasSelection(imageRef.current, ids, { preserveSelectedInputs: true });
+    if (!items.length) return null;
+    return { ids: items.map(item => item.id), commit: (offset: { x: number; y: number }) => {
+      const created = pasteCanvasSelection(items, offset.x, offset.y, { preserveSelectedInputs: true, existing: imageRef.current });
+      remember(imageRef.current);
+      const next = [...imageRef.current, ...created];
+      const selected = created.map(item => item.fusion ? `${item.id}:fusion` : item.id);
+      imageRef.current = next; selectedRef.current = selected;
+      setImages(next); setSelectedIds(selected);
+    } };
+  }, [remember]);
 
   async function copySelectedFromMenu() {
     const items = copyCanvasSelection(imageRef.current, selectedRef.current);
@@ -921,6 +933,7 @@ export default function App() {
 
       <ReactFlowCanvas view={view} selectedIds={selectedIds} hand={spaceDown || canvasMode === 'hand'} referenceMode={!!canvasReference}
         snap={snapToGrid} onView={setView} onSelection={selectFlowNodes} onPositions={moveFlowNodes}
+        onPrepareCopyDrag={prepareFlowCopyDrag}
         onDragStart={startFlowDrag} onDragEnd={finishFlowDrag} onGuides={setSnapGuide} onSelecting={setSelecting}>
         {images.filter(result => !result.nodeOnly && !result.sourceImageId && result.generatedByEditorId).map(result => {
           const editor = images.find(item => item.id === result.generatedByEditorId && item.fusion);

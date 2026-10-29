@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useLocale } from '../LocaleContext';
 import { Button, Icon } from './ui';
 
-const groups = [
+const shortcutGroups = (altKey: 'Alt' | 'Option') => [
   { title: '画布', rows: [
     ['抓手', '空格+拖动 / 按住中键拖动'], ['选择', 'V / 单击左键'],
     ['穿透选择', 'Ctrl + 单击左键'], ['放大画布', 'Ctrl + + / 滚轮'],
@@ -10,7 +10,7 @@ const groups = [
   ] },
   { title: '元素', rows: [
     ['复制', 'Ctrl + C'], ['复制为图片', 'Ctrl + Shift + C'], ['粘贴', 'Ctrl + V'],
-    ['复制并粘贴', 'Ctrl + D'], ['删除', 'Delete / Backspace'], ['剪切', 'Ctrl + X'],
+    ['复制并粘贴', 'Ctrl + D'], ['拖动复制', `${altKey} + 左键拖动`], ['删除', 'Delete / Backspace'], ['剪切', 'Ctrl + X'],
     ['撤销', 'Ctrl + Z'], ['重做', 'Ctrl + Shift + Z'], ['全选', 'Ctrl + A'],
     ['多选', '框选 / Shift + 单击左键'], ['取消', 'ESC'], ['建组', 'Ctrl + G'], ['解组', 'Ctrl + Shift + G'],
   ] },
@@ -25,6 +25,7 @@ const groups = [
 
 export function ShortcutsPanel({ phase, onClose }: { phase: 'enter' | 'exit'; onClose: () => void }) {
   const { t } = useLocale();
+  const groups = shortcutGroups(/Mac|iPhone|iPad/.test(navigator.platform) ? 'Option' : 'Alt');
   const panel = useRef<HTMLElement>(null);
   const close = useRef(onClose); close.current = onClose;
   useEffect(() => {

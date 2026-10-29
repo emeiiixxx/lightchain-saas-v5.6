@@ -1,5 +1,5 @@
 import { readImage, type CanvasImage } from './canvas';
-import { copyCanvasSelection } from './canvas-clipboard';
+import { copyCanvasSelection, pasteCanvasSelection } from './canvas-clipboard';
 import { readVideoReference, type UploadedVideo } from './video-reference-upload';
 
 export type VideoCanvasMedia = CanvasImage & {
@@ -28,7 +28,12 @@ export function copyVideoCanvasSelection(items: VideoCanvasMedia[], selected: st
     return { ...item, projectCover: undefined, coverOrder: undefined, generatedTaskId: undefined, ...(video ? { video: { ...video } } : {}) };
   });
 }
-export { pasteCanvasSelection as pasteVideoCanvasSelection } from './canvas-clipboard';
+export function pasteVideoCanvasSelection(items: VideoCanvasMedia[], dx: number, dy: number, existing: VideoCanvasMedia[] = items): VideoCanvasMedia[] {
+  return pasteCanvasSelection(items, dx, dy, { existing }).map(item => {
+    const media = item as VideoCanvasMedia;
+    return { ...media, ...(media.video ? { video: { ...media.video, name: media.name } } : {}) };
+  });
+}
 
 export function prepareVideoCanvasMedia(video: UploadedVideo): Omit<VideoCanvasMedia, 'x' | 'y'> {
   return sizeVideoCanvasMedia({ id: crypto.randomUUID(), name: video.name, url: video.posterUrl, width: video.width, height: video.height, video });

@@ -4,9 +4,15 @@ import type { CanvasImage } from './useCanvas';
 
 type Point = { x: number; y: number };
 
-export function imageBatchFitZoom(bounds: Pick<Bounds, 'width' | 'height'>, viewport: { width: number; height: number }, filenameTopSpace: number) {
-  return Math.min(1, Math.max(1, viewport.width) / Math.max(1, bounds.width),
+export function imageBatchFitZoom(bounds: Pick<Bounds, 'width' | 'height'>, viewport: { width: number; height: number }, filenameTopSpace: number, maxZoom = 1) {
+  return Math.min(maxZoom, Math.max(1, viewport.width) / Math.max(1, bounds.width),
     Math.max(1, viewport.height - filenameTopSpace) / Math.max(1, bounds.height));
+}
+
+export function imageBatchSize(items: Omit<CanvasImage, 'x' | 'y'>[]) {
+  const boxes = items.map(item => imageBounds({ ...item, x: 0, y: 0 }));
+  return { width: boxes.reduce((sum, box) => sum + box.width, 0) + Math.max(0, boxes.length - 1) * CANVAS_IMAGE_GAP,
+    height: boxes.reduce((height, box) => Math.max(height, box.height), 0) };
 }
 
 // Logical creation groups are independent of the user's selectable layer groups.

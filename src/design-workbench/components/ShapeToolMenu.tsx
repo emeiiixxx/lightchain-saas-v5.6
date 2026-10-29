@@ -102,7 +102,7 @@ export function ShapeToolMenu({ activeShape, onSelect, disabled = false }: {
     if (!contains(event.relatedTarget)) close();
   }}>
     <Button className={`workbench-tool shape-tool-trigger${activeShape ? ' is-active' : ''}`} disabled={disabled}
-      aria-label={t('形状工具')} title={t('形状工具')} aria-haspopup="menu" aria-expanded={open && !disabled} aria-controls={id}
+      aria-label={t('形状工具')} aria-haspopup="menu" aria-expanded={open && !disabled} aria-controls={id}
       onClick={() => { hover.cancel(); setOpen(value => !value); }} onKeyDown={event => {
         if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
           event.preventDefault(); event.stopPropagation(); enterMenu(event.key === 'ArrowUp');

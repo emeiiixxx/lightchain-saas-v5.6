@@ -45,6 +45,7 @@ import { centerVideoFlowAddition } from '../video-flow-addition-layout';
 import { bindCompletedTaskResults, createFashionVideoDemoResult, createMaterialDemoResults, createVideoDemoResult, demoPlaceholderSize } from '../video-workspace-demo';
 import { cropMaterialGrid, gridCropExample } from '../grid-crop';
 import { copyVideoCanvasSelection, pasteVideoCanvasSelection, prepareVideoCanvasMedia, readCanvasMedia, sizeVideoCanvasMedia, type VideoCanvasMedia } from '../video-canvas-media';
+import { copyVideoCanvasScene, pasteVideoCanvasScene, videoCanvasCopyIds } from '../video-canvas-clipboard';
 import { bindCanvasReferences, referenceOptions, type WorkflowReferenceTarget as WorkflowUpload } from '../video-canvas-references';
 import { createCanvasClipboard, getCanvasPasteOffset, matchesCanvasClipboard, writeCanvasClipboardEvent, writeCanvasClipboardSystem, type CanvasClipboard } from '../canvas-clipboard-session';
 import { videoReferenceUploadMessages, type UploadedVideo } from '../video-reference-upload';
@@ -300,7 +301,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     if (!activeRef.current || !clipboard?.items.length || !element) return;
     const bounds = boundsOf(clipboard.items)!;
     const offset = getCanvasPasteOffset(bounds, viewRef.current, { width: element.clientWidth, height: element.clientHeight }, clipboard.pastes, point);
-    const created: VideoCanvasMedia[] = pasteVideoCanvasSelection(clipboard.items, offset.x, offset.y);
+    const created: VideoCanvasMedia[] = pasteVideoCanvasSelection(clipboard.items, offset.x, offset.y, current.current.images);
     clipboard.pastes++;
     commit({ ...current.current, images: [...current.current.images, ...created], selected: created.map(item => item.id) });
     element.focus({ preventScroll: true });
@@ -309,6 +310,17 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const copied = captureSelectedMedia();
     if (copied.items.length) pasteCopiedItems(undefined, copied);
   }, [captureSelectedMedia, pasteCopiedItems]);
+  const prepareFlowCopyDrag = useCallback((ids: string[]) => {
+    const copied = copyVideoCanvasScene(current.current, ids), selected = videoCanvasCopyIds(copied);
+    if (!selected.length) return null;
+    return { ids: selected, commit: (offset: { x: number; y: number }) => {
+      if (!activeRef.current) return;
+      const previous = current.current, created = pasteVideoCanvasScene(copied, offset.x, offset.y, previous.images);
+      commit({ ...previous, images: [...previous.images, ...created.images], workflows: [...previous.workflows, ...created.workflows],
+        materialWorkflows: [...(previous.materialWorkflows ?? []), ...created.materialWorkflows],
+        upscaleWorkflows: [...(previous.upscaleWorkflows ?? []), ...created.upscaleWorkflows], selected: videoCanvasCopyIds(created) });
+    } };
+  }, [commit]);
   async function copySelectedFromMenu() {
     const copied = captureSelectedMedia();
     if (!copied.items.length) return;
@@ -1124,6 +1136,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       </div>}
       {active && items.length > 0 && <>
         <ReactFlowCanvas view={view} selectedIds={canvasReference?.ids ?? snapshot.selected} hand={effectiveMode === 'hand'} spacePanControlled referenceMode={!!canvasReference} snap={snapToGrid}
+          onPrepareCopyDrag={prepareFlowCopyDrag}
           onView={setView} onSelection={ids => replace({ ...current.current, selected: ids })}
           onPositions={positions => replace({ ...current.current, images: current.current.images.map(image => positions.has(image.id) ? { ...image, ...positions.get(image.id)! } : image), workflows: current.current.workflows.map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node),
             materialWorkflows: (current.current.materialWorkflows ?? []).map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node),
@@ -1287,7 +1300,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       excludedUrls={shownWorkflowUpload.value.kind === 'video' && shownWorkflowUpload.value.field === 'references'
         ? snapshot.workflows.filter(node => node.id === shownWorkflowUpload.value!.id).flatMap(node => videoWorkflowReferences(node).filter(reference => reference.kind === 'video').map(reference => reference.url)) : undefined}
       videoUploads={uploadedVideos} onConfirmVideo={shownWorkflowUpload.value.kind === 'video' ? reference => applyWorkflowVideo(reference, shownWorkflowUpload.value!) : undefined} onClose={() => setWorkflowUpload(null)} />}
-    {active && shownModal.value === 'help' && <Dialog title={t.helpIntro} closeLabel={t.close} onClose={closeModal} phase={shownModal.phase}><p className="video-canvas-help">{v.help}</p><p className="video-canvas-help">{connectionHelp[locale]}</p></Dialog>}
+    {active && shownModal.value === 'help' && <Dialog title={t.helpIntro} closeLabel={t.close} onClose={closeModal} phase={shownModal.phase}><p className="video-canvas-help">{v.help}</p><p className="video-canvas-help">{t.dragCopyHint}</p><p className="video-canvas-help">{connectionHelp[locale]}</p></Dialog>}
     {active && shownPreview.value && <FullImageViewer image={shownPreview.value} locale={locale} phase={shownPreview.phase} onClose={() => setPreview(null)} />}
     {active && shownVideoPreview.value && <FullVideoViewer key={shownVideoPreview.value.url} video={shownVideoPreview.value} locale={locale} phase={shownVideoPreview.phase} onClose={() => setVideoPreview(null)} />}
     {active && shownCutout.value && <CutoutEditor key={shownCutout.value.id} image={shownCutout.value} phase={shownCutout.phase} onClose={() => setCutout(null)} onApply={url => {

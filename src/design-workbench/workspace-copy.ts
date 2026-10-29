@@ -1,5 +1,8 @@
 // Workspace copy: Simplified Chinese key, English, Japanese.
 export const workspaceCopy: Record<string, readonly [string, string]> = {
+'拖动复制': ['Drag to duplicate', 'ドラッグで複製'],
+'Option + 左键拖动': ['Option + left-drag', 'Option＋左ドラッグ'],
+'Alt + 左键拖动': ['Alt + left-drag', 'Alt＋左ドラッグ'],
 "填充": ["Fill", "塗りつぶし"],
 "箭头": ["Arrow", "矢印"],
 "线条": ["Line", "線"],

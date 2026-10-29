@@ -12,10 +12,11 @@ const assetRoot = '/assets/design-workbench/agent-chat-20261028/';
 export type AgentImageResult = {
   id: string; url: string; name: string;
   agentConversationId?: string;
+  sourceIds?: string[];
   width?: number; height?: number;
   status?: 'generating' | 'failed' | 'success';
 };
-type SendToCanvas = (results: AgentImageResult[], loaded?: HTMLImageElement) => Promise<void>;
+type SendToCanvas = (result: AgentImageResult, loaded?: HTMLImageElement) => Promise<void>;
 export type AgentMessage = {
   role: 'user' | 'assistant';
   text: string;
@@ -23,6 +24,7 @@ export type AgentMessage = {
   requestId?: string;
   taskId?: string;
   conversationId?: string;
+  sourceIds?: string[];
   results?: AgentImageResult[];
   kind?: 'analysis' | 'plan';
   analysis?: { image: string; text: string }[];
@@ -86,7 +88,7 @@ function ImageAnalysis({ references }: { references: AgentMessage['analysis'] })
 }
 
 function AgentImage({ result, onPreview, onReference, onSendToCanvas, canvasLocked, onUnavailable, onNotify }: {
-  result: AgentImageResult; onPreview: (image: FullImageViewerImage) => void; onReference: (src: string) => void; onSendToCanvas: SendToCanvas; canvasLocked: boolean; onUnavailable: () => void; onNotify: Notify;
+  result: AgentImageResult; onPreview: (image: FullImageViewerImage) => void; onReference: (src: string, resultId?: string) => void; onSendToCanvas: SendToCanvas; canvasLocked: boolean; onUnavailable: () => void; onNotify: Notify;
 }) {
   const { t } = useLocale();
   const { url: src, name } = result;
@@ -118,11 +120,11 @@ function AgentImage({ result, onPreview, onReference, onSendToCanvas, canvasLock
         <img ref={image} src={src} alt={name} />
       </button>
       <div className="agent-image-actions" role="toolbar" aria-label={t('图片操作')} data-workbench-menu onClick={event => event.stopPropagation()} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); setMenu(null); } }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setMenu(null); }}>
-        <Button aria-label={t('用作参考图')} title={t('用作参考图')} onClick={() => onReference(src)}><AgentArtwork name="reference" /></Button>
+        <Button aria-label={t('用作参考图')} title={t('用作参考图')} onClick={() => onReference(src, result.id)}><AgentArtwork name="reference" /></Button>
         <Button aria-label={t('发送至画布')} title={t('发送至画布')} disabled={canvasLocked || sending} onClick={async () => {
           setMenu(null);
           setSending(true);
-          try { await onSendToCanvas([result], image.current?.naturalWidth ? image.current : undefined); }
+          try { await onSendToCanvas(result, image.current?.naturalWidth ? image.current : undefined); }
           finally { setSending(false); }
         }}><AgentArtwork name="send" /></Button>
         <Button aria-label={t('收藏到资源库')} title={t('收藏到资源库')} onClick={onUnavailable}><AgentArtwork name="save" /></Button>
@@ -133,7 +135,7 @@ function AgentImage({ result, onPreview, onReference, onSendToCanvas, canvasLock
 }
 
 export function AgentConversation({ conversationId, messages, onPreview, onReference, onSendToCanvas, onRetry, canvasLocked, onUnavailable, onNotify }: {
-  conversationId: string; messages: AgentMessage[]; onPreview: (image: FullImageViewerImage) => void; onReference: (src: string) => void; onSendToCanvas: SendToCanvas; onRetry: (resultId: string) => void; canvasLocked: boolean; onUnavailable: () => void; onNotify: Notify;
+  conversationId: string; messages: AgentMessage[]; onPreview: (image: FullImageViewerImage) => void; onReference: (src: string, resultId?: string) => void; onSendToCanvas: SendToCanvas; onRetry: (resultId: string) => void; canvasLocked: boolean; onUnavailable: () => void; onNotify: Notify;
 }) {
   const { t } = useLocale();
   const thread = useRef<HTMLDivElement>(null);
@@ -185,9 +187,7 @@ export function AgentConversation({ conversationId, messages, onPreview, onRefer
         </div>
       </section> : <>
         {!!message.results?.length && <div className="agent-image-task agent-card">
-          <div className="agent-task-heading"><AgentArtwork name="image-task" size={20} colored /><span>{t('图片任务')}</span>
-            {message.results.length > 1 && <Button className="agent-task-send" aria-label={t('全部发送至画布')} title={t('全部发送至画布')} disabled={canvasLocked || message.results.some(result => result.status === 'generating') || !message.results.some(result => !result.status || result.status === 'success')} onClick={() => void onSendToCanvas(message.results!.filter(result => !result.status || result.status === 'success'))}><AgentArtwork name="send" /></Button>}
-          </div>
+          <div className="agent-task-heading"><AgentArtwork name="image-task" size={20} colored /><span>{t('图片任务')}</span></div>
           <div className="agent-task-images">{message.results.map(result => result.status === 'generating' || result.status === 'failed'
             ? <div key={result.id} className="agent-result-image agent-result-placeholder" style={{ aspectRatio: `${result.width ?? 2} / ${result.height ?? 3}` }}><TaskResultPlaceholder status={result.status} size="large" onRetry={result.status === 'failed' ? () => onRetry(result.id) : undefined} /></div>
             : <AgentImage key={result.id} result={result} onPreview={onPreview} onReference={onReference} onSendToCanvas={onSendToCanvas} canvasLocked={canvasLocked} onUnavailable={onUnavailable} onNotify={onNotify} />)}</div>

@@ -6,6 +6,8 @@ export type AgentRequest = {
   text: string;
   title: string;
   images: string[];
+  /** Canvas instances captured with the submitted references, never live selection. */
+  sourceIds?: string[];
   settings: DemoOutput;
   conversationId: string;
 };
