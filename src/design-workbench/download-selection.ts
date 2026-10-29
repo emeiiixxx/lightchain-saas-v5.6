@@ -14,6 +14,7 @@ function crc32(bytes: Uint8Array) {
 // Encode every selected image in the chosen format, then download one ZIP.
 export async function downloadSelection(items: CanvasImage[], format: DownloadFormat) {
   const files = await Promise.all(items.map(async (item, index) => {
+    if (item.shape) await item.image.decode();
     const blob = await encodeImage(item.image, format);
     const extension = format.toLowerCase();
     const name = encoder.encode(`${index + 1}-${item.name.replace(/\.[^.]+$/, '').replace(/[\\/:*?"<>|]/g, '_')}.${extension}`);

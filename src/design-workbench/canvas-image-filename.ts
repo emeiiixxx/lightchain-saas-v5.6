@@ -1,7 +1,7 @@
 import { canvasMediaFilename, createCanvasFileNamer, type GeneratedMediaFile } from '../canvas-media-filename';
 import { readDemoState, writeDemoState } from './demo-storage';
 
-export type ImageFile = { name: string; url: string; mimeType?: string; generatedFile?: GeneratedMediaFile; taskResultId?: string; generating?: boolean };
+export type ImageFile = { shape?: unknown; name: string; url: string; mimeType?: string; generatedFile?: GeneratedMediaFile; taskResultId?: string; generating?: boolean };
 type Ledger = { counters: GeneratedMediaFile[]; results: Record<string, GeneratedMediaFile> };
 const format = (file: GeneratedMediaFile) => `${file.featureLabel}-${file.date}-${String(file.sequence).padStart(3, '0')}.${file.extension}`;
 const featureName = (title: string) => title.replace(/^款式\s*-\s*/, '').trim() || 'AI助手';
@@ -55,6 +55,7 @@ export function createDesignCanvasFileNamer() {
       const records = new Map([...tasks.records, ...tasks.archived.map(([, task]) => task)].map(task => [task.id, task]));
       for (const image of images) if (image.generatedFile) remember(image.generatedFile, image.taskResultId);
       return images.map(image => {
+        if (image.shape) return image;
         if (image.origin !== 'generated') return { ...image, name: canvasMediaFilename(image.name, image.url) };
         const retained = image.generatedFile ?? (image.taskResultId ? results.get(image.taskResultId) : undefined);
         if (retained) return assign({ ...image, generatedFile: retained }, retained.featureLabel);

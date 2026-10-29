@@ -16,14 +16,22 @@ import { imageBatchFitZoom, placeAddedImages, restoreCanvasContentGroups } from 
 import { createDesignCanvasFileNamer } from './canvas-image-filename';
 import { CANVAS_IMAGE_GAP } from './canvas-spacing';
 import { canvasMediaFilename, type GeneratedMediaFile } from '../canvas-media-filename';
+import { hitShape, shapeSvg, type CanvasShape, type ShapeKind } from './canvas-shapes';
 
-export type CanvasImage = { id: string; name: string; image: HTMLImageElement; url: string; mimeType?: string; generatedFile?: GeneratedMediaFile; x: number; y: number; width: number; height: number; addedAt?: number; additionBatchId?: string; contentGroupId?: string; agentConversationId?: string; generatedAt?: number; uploadedAt?: number; origin?: 'upload' | 'generated' | 'copy'; generationParentId?: string; generationRootId?: string; generationRootAddedAt?: number; generationBatchId?: string; generationIndex?: number; groupId?: string; groupedAt?: number; generating?: boolean; generationFailed?: boolean; taskResultId?: string; generationPlacement?: 'agent'; fit?: 'cover'; rotation?: number; radius?: number; opacity?: number; flipX?: boolean; flipY?: boolean; stroke?: string; strokeWidth?: number; strokeOpacity?: number; strokeStyle?: 'solid' | 'dashed' | 'dotted'; strokeAlign?: 'inside' | 'center' | 'outside'; favorite?: boolean; cover?: boolean };
+export type CanvasImage = { shape?: CanvasShape; id: string; name: string; image: HTMLImageElement; url: string; mimeType?: string; generatedFile?: GeneratedMediaFile; x: number; y: number; width: number; height: number; addedAt?: number; additionBatchId?: string; contentGroupId?: string; agentConversationId?: string; generatedAt?: number; uploadedAt?: number; origin?: 'upload' | 'generated' | 'copy'; generationParentId?: string; generationRootId?: string; generationRootAddedAt?: number; generationBatchId?: string; generationIndex?: number; groupId?: string; groupedAt?: number; generating?: boolean; generationFailed?: boolean; taskResultId?: string; generationPlacement?: 'agent'; fit?: 'cover'; rotation?: number; radius?: number; opacity?: number; flipX?: boolean; flipY?: boolean; stroke?: string; strokeWidth?: number; strokeOpacity?: number; strokeStyle?: 'solid' | 'dashed' | 'dotted'; strokeAlign?: 'inside' | 'center' | 'outside'; favorite?: boolean; cover?: boolean };
+function refreshShapeAsset(item: CanvasImage, patch?: Partial<CanvasImage>): CanvasImage {
+  if (!item.shape || (patch && !['shape', 'width', 'height', 'stroke', 'strokeWidth', 'strokeOpacity', 'strokeStyle', 'radius', 'flipX', 'flipY'].some(key => key in patch))) return item;
+  const url = shapeSvg(item.shape, item.width, item.height, item.stroke, item.strokeWidth, item);
+  const image = new Image(); image.src = url;
+  return { ...item, image, url, mimeType: 'image/svg+xml' };
+}
 type Camera = { x: number; y: number; zoom: number };
 type Point = { x: number; y: number };
 function movableImageAt(images: CanvasImage[], point: Point, camera: Camera) {
   const world = { x: (point.x - camera.x) / camera.zoom, y: (point.y - camera.y) / camera.zoom };
   return [...images].reverse().find(image => {
     if (image.generating) return false;
+    if (image.shape) return hitShape(image, world, camera.zoom);
     const angle = -(image.rotation ?? 0) * Math.PI / 180;
     const dx = world.x - image.x - image.width / 2, dy = world.y - image.y - image.height / 2;
     return Math.abs(dx * Math.cos(angle) - dy * Math.sin(angle)) <= image.width / 2
@@ -91,12 +99,19 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [panning, setPanning] = useState(false);
   const [mode, setMode] = useState<'select' | 'hand'>('select');
+  const [shapeTool, setShapeTool] = useState<ShapeKind | null>(null);
+  const [shapePreview, setShapePreview] = useState<CanvasImage | null>(null);
+  const shapeDraft = useRef<{ pointer: number; start: Point; point: Point; camera: Camera; item: CanvasImage; moved: boolean } | null>(null);
+  const cancelShape = useCallback(() => { shapeDraft.current = null; setShapePreview(null); }, []);
+  const chooseMode = useCallback((next: 'select' | 'hand') => {
+    cancelShape(); setShapeTool(null); setMode(next);
+  }, [cancelShape]);
   const [spacePressed, setSpacePressed] = useState(false);
   const effectiveMode = spacePressed ? 'hand' : mode;
   const [historyVersion, setHistoryVersion] = useState(0);
   const future = useRef<CanvasImage[][]>([]);
-  const live = useRef({ images, selected, selectedIds, camera, size, mode });
-  live.current = { images, selected, selectedIds, camera, size, mode };
+  const live = useRef({ images, selected, selectedIds, camera, size, mode, shapeTool });
+  live.current = { images, selected, selectedIds, camera, size, mode, shapeTool };
   const [restored, setRestored] = useState(false);
   useEffect(() => {
     let active = true;
@@ -113,7 +128,26 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     })();
     return () => { active = false; };
   }, [fileNamer]);
-  useEffect(() => { if (restored) writeDemoState('canvas', { images, camera }); }, [restored, images, camera]);
+  useEffect(() => {
+    if (!restored) return;
+    // Serialization and synchronous localStorage writes must not compete with
+    // camera or placement frames. Save once interaction has settled.
+    let timer: ReturnType<typeof setTimeout>;
+    const save = () => {
+      if (focusAnimation.current || placementAnimation.current) { timer = setTimeout(save, MOTION_DURATION); return; }
+      writeDemoState('canvas', { images: live.current.images, camera: live.current.camera });
+    };
+    timer = setTimeout(save, MOTION_DURATION);
+    return () => clearTimeout(timer);
+  }, [restored, images, camera]);
+  useEffect(() => {
+    if (!restored) return;
+    const save = () => writeDemoState('canvas', { images: live.current.images, camera: live.current.camera });
+    const hidden = () => { if (document.visibilityState === 'hidden') save(); };
+    window.addEventListener('pagehide', save);
+    document.addEventListener('visibilitychange', hidden);
+    return () => { window.removeEventListener('pagehide', save); document.removeEventListener('visibilitychange', hidden); save(); };
+  }, [restored]);
   const placementAnimation = useRef<((finish: boolean) => void) | null>(null);
   const finishPlacement = useCallback(() => placementAnimation.current?.(true), []);
   useEffect(() => () => placementAnimation.current?.(false), []);
@@ -131,12 +165,12 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
   const hoverPoint = useRef<Point | null>(null);
   const updateMoveCursor = useCallback(() => {
     const state = live.current, drag = gesture.current;
-    const movable = !lock.current && state.mode === 'select' && !space.current
+    const movable = !lock.current && !state.shapeTool && state.mode === 'select' && !space.current
       && (drag ? drag.mode === 'move' && drag.ids.length > 0
         : !!hoverPoint.current && !!movableImageAt(state.images, hoverPoint.current, state.camera));
     canvasRef.current?.toggleAttribute('data-movable', movable);
   }, []);
-  useEffect(updateMoveCursor, [images, camera, mode, locked, panning, spacePressed, updateMoveCursor]);
+  useEffect(updateMoveCursor, [images, camera, mode, shapeTool, locked, panning, spacePressed, updateMoveCursor]);
   const animatePlacement = useCallback((next: CanvasImage[], onComplete?: () => void) => {
     finishPlacement();
     const previous = new Map(live.current.images.map(image => [image.id, image]));
@@ -181,9 +215,10 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
   const setInteractionLocked = useCallback((value: boolean) => {
     if (!value) focusAnimation.current?.();
     lock.current = value; setLocked(value);
+    cancelShape(); setShapeTool(null);
     gesture.current = null; space.current = false;
     setSpacePressed(false); setPanning(false); setMarquee(null); setContextMenu(null);
-  }, []);
+  }, [cancelShape]);
   const editingViewport = useCallback((ignorePanels = false) => {
     // Local tools stay centered in the full canvas; sidebars overlay this editing view.
     if (ignorePanels) return { left: 16, right: live.current.size.width - 16 };
@@ -239,14 +274,16 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
   }, [editingViewport]);
   const remember = useCallback((snapshot: CanvasImage[]) => { history.current.push(snapshot); future.current = []; setHistoryVersion(v => v + 1); if (history.current.length > 40) history.current.shift(); }, []);
   const worldPoint = useCallback((point: Point, cam = live.current.camera) => ({ x: (point.x - cam.x) / cam.zoom, y: (point.y - cam.y) / cam.zoom }), []);
-  const transitionCamera = useCallback((next: Camera, animate = false, point?: Point, duration = MOTION_DURATION) => {
+  const transitionCamera = useCallback((next: Camera, animate = false, point?: Point, duration = MOTION_DURATION, delay = 0) => {
     focusAnimation.current?.();
     const apply = (value: Camera) => { live.current.camera = value; setCamera(value); };
     if (!animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { apply(next); return; }
     const start = { ...live.current.camera };
     const anchor = point ?? { x: live.current.size.width / 2, y: live.current.size.height / 2 };
     const from = worldPoint(anchor, start), to = worldPoint(anchor, next);
-    const started = performance.now();
+    // Adding images can make the first render expensive. Start the clock on
+    // the first frame, so that work cannot consume the visible transition.
+    let started: number | null = null;
     let frame = 0, cancelled = false;
     const cancel = () => {
       cancelled = true; cancelAnimationFrame(frame);
@@ -255,7 +292,10 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     focusAnimation.current = cancel;
     const tick = (now: number) => {
       if (cancelled) return;
-      const progress = Math.min(1, (now - started) / duration);
+      started ??= now;
+      const elapsed = now - started - delay;
+      if (elapsed < 0) { frame = requestAnimationFrame(tick); return; }
+      const progress = Math.min(1, elapsed / Math.max(1, duration));
       if (progress === 1) { apply(next); focusAnimation.current = null; return; }
       const eased = easeOut(progress);
       const zoom = start.zoom * Math.pow(next.zoom / start.zoom, eased);
@@ -417,7 +457,7 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     if (lock.current) return;
     finishPlacement();
     const state = live.current; if (!state.selected) return; if (record) remember(state.images);
-    const next = state.images.map(item => item.id === state.selected ? { ...item, ...patch } : item);
+    const next = state.images.map(item => item.id === state.selected ? refreshShapeAsset({ ...item, ...patch }, patch) : item);
     live.current.images = next; setImages(next);
   }, [remember, finishPlacement]);
   const insertCopies = useCallback((items: CanvasImage[], center?: Point) => {
@@ -455,7 +495,7 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     finishPlacement();
     const state = live.current; if (record) remember(state.images);
     const lookup = new Map(patches.map(patch => [patch.id, patch]));
-    const next = state.images.map(item => lookup.has(item.id) ? { ...item, ...lookup.get(item.id) } : item);
+    const next = state.images.map(item => lookup.has(item.id) ? refreshShapeAsset({ ...item, ...lookup.get(item.id) }, lookup.get(item.id)!) : item);
     live.current.images = next; setImages(next);
   }, [remember, finishPlacement]);
   const groupSelection = useCallback((ungroup = false) => {
@@ -493,7 +533,7 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     finishPlacement();
     const state = live.current;
     const target = state.images.find(item => item.id === imageId);
-    if (!target || target.generating || target.generationFailed) return false;
+    if (!target || target.shape || target.generating || target.generationFailed) return false;
     if (!target.cover) {
       remember(state.images);
       const next = state.images.map(item => ({ ...item, cover: item.id === imageId }));
@@ -518,7 +558,7 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     if (!items.length) return;
     try {
       if (items.length > 1) await downloadSelection(items, format);
-      else await exportImage(items[0].image, items[0].name, format);
+      else { if (items[0].shape) await items[0].image.decode(); await exportImage(items[0].image, items[0].name, format); }
     } catch (error) { notify(error instanceof Error && error.message === '当前浏览器不支持此格式导出，请选择其他格式' ? error.message : '下载失败，请重试。', 'error'); }
   }, [notify]);
   const arrange = useCallback((layout: CanvasLayout = 'compact', scope: 'canvas' | 'selection' = 'canvas') => {
@@ -587,7 +627,7 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     animatePlacement(next, scope === 'canvas' ? () => fit({ animate: true }) : undefined);
   }, [remember, fit, arrangementViewport, finishPlacement, animatePlacement]);
 
-  const addImages = useCallback((items: Omit<CanvasImage, 'x' | 'y'>[], options?: { point?: Point }) => {
+  const addImages = useCallback((items: Omit<CanvasImage, 'x' | 'y'>[], options?: { point?: Point; panDelay?: number }) => {
     if (lock.current || !items.length) return;
     finishPlacement();
     const state = live.current, viewport = agentViewport();
@@ -600,17 +640,21 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
       generatedAt: undefined, generationParentId: undefined, generationRootId: undefined, generationRootAddedAt: undefined,
       generationBatchId: undefined, generationIndex: undefined, taskResultId: undefined, generationPlacement: undefined,
       generating: false, generationFailed: false, groupId: undefined, groupedAt: undefined }));
-    const width = pending.reduce((sum, item) => sum + item.width, 0) + (pending.length - 1) * CANVAS_IMAGE_GAP;
-    const height = Math.max(...pending.map(item => item.height));
-    const targetZoom = imageBatchFitZoom({ width, height }, { width: viewport.right - viewport.left, height: viewport.bottom - viewport.top }, IMAGE_FILENAME_TOP_SPACE);
     const additions = placeAddedImages(pending, state.images,
       { ...start, width: (viewport.right - viewport.left) / state.camera.zoom, height: (viewport.bottom - viewport.top) / state.camera.zoom },
-      { point: options?.point, filenameTopSpace: IMAGE_FILENAME_TOP_SPACE / Math.max(0.0001, targetZoom) });
+      { point: options?.point, filenameTopSpace: IMAGE_FILENAME_TOP_SPACE / state.camera.zoom });
     remember(state.images);
     const next = [...state.images, ...additions]; live.current.images = next;
     setImages(next); selectMany(additions.map(item => item.id));
-    if (!options?.point) focusAgentImages(additions);
-  }, [agentViewport, focusAgentImages, remember, worldPoint, finishPlacement, selectMany]);
+    if (!options?.point) {
+      const bounds = selectionBounds(additions), zoom = state.camera.zoom;
+      // Pan only. If the batch exceeds the viewport, show its beginning instead
+      // of shrinking it or centering an off-screen gap between large images.
+      const left = viewport.left + Math.max(0, (viewport.right - viewport.left - bounds.width * zoom) / 2);
+      const top = viewport.top + Math.max(0, (viewport.bottom - viewport.top - bounds.height * zoom - IMAGE_FILENAME_TOP_SPACE) / 2);
+      transitionCamera({ x: left - bounds.x * zoom, y: top + IMAGE_FILENAME_TOP_SPACE - bounds.y * zoom, zoom }, true, undefined, MOTION_DURATION, options?.panDelay);
+    }
+  }, [agentViewport, transitionCamera, remember, worldPoint, finishPlacement, selectMany]);
 
   // Toolbar tasks reserve a complete row below all current content; Agent
   // rounds reserve each image only as that image starts.
@@ -788,7 +832,11 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
       isolationCache.current?.dispose(); isolationCache.current = null;
       paintCanvasScene(ctx, images, camera, size, palette);
     }
-  }, [images, selectedIds, camera, size, theme, locale, isolation, projectCover, filenameIcon]);
+    if (shapePreview) {
+      ctx.save(); ctx.translate(camera.x, camera.y); ctx.scale(camera.zoom, camera.zoom);
+      paintCanvasImage(ctx, shapePreview, palette); ctx.restore();
+    }
+  }, [images, selectedIds, camera, size, theme, locale, isolation, projectCover, filenameIcon, shapePreview]);
 
   useEffect(() => {
     const canvas = canvasRef.current!, stage = canvas.parentElement!;
@@ -799,6 +847,7 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
       if (e.target instanceof Element && e.target.closest('[data-canvas-ui]')) return;
       e.preventDefault(); if (lock.current) return; const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? live.current.size.height : 1;
       focusAnimation.current?.();
+      if (shapeDraft.current) return;
       if (e.ctrlKey || e.metaKey || e.altKey) zoomAt(live.current.camera.zoom * Math.exp(-e.deltaY * unit * .006), local(e));
       else setCamera(cam => ({ ...cam, x: cam.x - (e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX) * unit, y: cam.y - (e.shiftKey && !e.deltaX ? 0 : e.deltaY) * unit }));
     };
@@ -806,6 +855,7 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
       if (lock.current) { e.preventDefault(); return; }
       finishPlacement();
       focusAnimation.current?.();
+      cancelShape(); setShapeTool(null);
       const state = live.current;
       const hit = movableImageAt(state.images, local(e), state.camera);
       e.preventDefault(); gesture.current = null; setPanning(false); setMarquee(null);
@@ -821,6 +871,20 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
       hoverPoint.current = point;
       const hit = movableImageAt(state.images, point, state.camera);
       const pan = state.mode === 'hand' || space.current || e.button === 1 || (!!quickEditing.current && !hit);
+      if (state.shapeTool && !pan) {
+        const start = worldPoint(point, state.camera);
+        const names = { rectangle: '矩形', ellipse: '圆形', triangle: '三角形', line: '线条', arrow: '箭头' };
+        const token = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim();
+        const channels = token.match(/^rgba?\(\s*(\d+)[,\s]+(\d+)[,\s]+(\d+)/);
+        const color = channels ? '#' + channels.slice(1, 4).map(value => Number(value).toString(16).padStart(2, '0')).join('') : token || '#ADB8B7';
+        const item: CanvasImage = { id: crypto.randomUUID(), name: names[state.shapeTool], shape: { kind: state.shapeTool, fill: color },
+          image: new Image(), url: '', x: start.x, y: start.y, width: 1, height: 1,
+          stroke: color, strokeWidth: ['line', 'arrow'].includes(state.shapeTool) ? 2 / state.camera.zoom : 0, strokeStyle: 'solid', addedAt: nextCanvasTime() };
+        shapeDraft.current = { pointer: e.pointerId, start, point, camera: { ...state.camera }, item, moved: false };
+        setContextMenu(null); selectMany([]); gesture.current = null;
+        canvas.setPointerCapture(e.pointerId); e.preventDefault(); canvas.focus({ preventScroll: true });
+        return;
+      }
       let ids = state.selectedIds;
       const baseIds = e.shiftKey ? [...ids] : [];
       if (!pan) {
@@ -838,6 +902,20 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     const move = (e: PointerEvent) => {
       hoverPoint.current = local(e);
       updateMoveCursor();
+      const draft = shapeDraft.current;
+      if (draft && draft.pointer === e.pointerId && !lock.current) {
+        const point = local(e), end = worldPoint(point, draft.camera);
+        let dx = end.x - draft.start.x, dy = end.y - draft.start.y;
+        const linear = draft.item.shape?.kind === 'line' || draft.item.shape?.kind === 'arrow';
+        if (e.shiftKey) {
+          if (linear) { const distance = Math.hypot(dx, dy), angle = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * Math.PI / 4; dx = Math.cos(angle) * distance; dy = Math.sin(angle) * distance; }
+          else { const extent = Math.max(Math.abs(dx), Math.abs(dy)); dx = (dx < 0 ? -1 : 1) * extent; dy = (dy < 0 ? -1 : 1) * extent; }
+        }
+        draft.moved = Math.hypot(point.x - draft.point.x, point.y - draft.point.y) >= 3;
+        draft.item = { ...draft.item, x: draft.start.x + Math.min(0, dx), y: draft.start.y + Math.min(0, dy),
+          width: Math.max(1, Math.abs(dx)), height: Math.max(1, Math.abs(dy)), flipX: linear && dx < 0, flipY: linear && dy < 0 };
+        setShapePreview(draft.moved ? draft.item : null); return;
+      }
       const drag = gesture.current; if (!drag || lock.current) return;
       const point = local(e), dx = point.x - drag.point.x, dy = point.y - drag.point.y;
       if (!drag.moved && Math.hypot(dx, dy) < 3) return;
@@ -862,6 +940,19 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     };
     const leave = () => { hoverPoint.current = null; updateMoveCursor(); };
     const up = (event?: PointerEvent) => {
+      const draft = shapeDraft.current;
+      if (draft) {
+        if (event && event.pointerId !== draft.pointer) return;
+        if (event?.type === 'pointerup') move(event);
+        if (event?.type === 'pointerup' && draft.moved && !lock.current) {
+          const item = refreshShapeAsset(draft.item);
+          remember(live.current.images);
+          const next = [...live.current.images, item]; live.current.images = next; setImages(next);
+          selectMany([item.id]);
+        }
+        cancelShape();
+        if (canvas.hasPointerCapture(draft.pointer)) canvas.releasePointerCapture(draft.pointer);
+      }
       const drag = gesture.current;
       if (event?.type === 'pointerup' && drag?.blank && drag.primary && !drag.moved) setBlankClickVersion(value => value + 1);
       gesture.current = null; setMarquee(null); setPanning(false); updateMoveCursor();
@@ -878,9 +969,9 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
       if (e.code === 'Space') { e.preventDefault(); space.current = true; setSpacePressed(true); }
       if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); removeSelected(); }
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); if (e.shiftKey) redo(); else undo(); }
-      if (e.key === 'Escape') { up(); setSelected(null); setContextMenu(null); }
-      if (e.key.toLowerCase() === 'v') setMode('select');
-      if (e.key.toLowerCase() === 'h') setMode('hand');
+      if (e.key === 'Escape') { up(); setShapeTool(null); setSelected(null); setContextMenu(null); }
+      if (e.key.toLowerCase() === 'v') chooseMode('select');
+      if (e.key.toLowerCase() === 'h') chooseMode('hand');
       if (e.key === '1') zoomAt(1);
       if (e.key === '2') fit();
       if (e.key === '+' || e.key === '=') zoomAt(live.current.camera.zoom * 1.2);
@@ -891,10 +982,16 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     stage.addEventListener('wheel', wheel, { passive: false, capture: true });
     canvas.addEventListener('contextmenu', context);
     canvas.addEventListener('pointerenter', move); canvas.addEventListener('pointerleave', leave);
-    canvas.addEventListener('pointerdown', down); canvas.addEventListener('pointermove', move); canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up);
+    canvas.addEventListener('pointerdown', down); canvas.addEventListener('pointermove', move); canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up); canvas.addEventListener('lostpointercapture', up);
     window.addEventListener('keydown', keydown); window.addEventListener('keyup', keyup); window.addEventListener('blur', blur);
-    return () => { canvas.removeEventListener('pointerenter', move); canvas.removeEventListener('pointerleave', leave); canvas.removeEventListener('contextmenu', context); stage.removeEventListener('wheel', wheel, true); canvas.removeEventListener('pointerdown', down); canvas.removeEventListener('pointermove', move); canvas.removeEventListener('pointerup', up); canvas.removeEventListener('pointercancel', up); window.removeEventListener('keydown', keydown); window.removeEventListener('keyup', keyup); window.removeEventListener('blur', blur); };
-  }, [fit, remember, removeSelected, undo, redo, worldPoint, zoomAt, copySelected, duplicate, paste, selectMany, setSelected, groupSelection, updateMoveCursor, finishPlacement]);
+    return () => { canvas.removeEventListener('pointerenter', move); canvas.removeEventListener('pointerleave', leave); canvas.removeEventListener('contextmenu', context); stage.removeEventListener('wheel', wheel, true); canvas.removeEventListener('pointerdown', down); canvas.removeEventListener('pointermove', move); canvas.removeEventListener('pointerup', up); canvas.removeEventListener('pointercancel', up); canvas.removeEventListener('lostpointercapture', up); window.removeEventListener('keydown', keydown); window.removeEventListener('keyup', keyup); window.removeEventListener('blur', blur); };
+  }, [fit, remember, removeSelected, undo, redo, worldPoint, zoomAt, copySelected, duplicate, paste, selectMany, setSelected, groupSelection, updateMoveCursor, finishPlacement, cancelShape, chooseMode]);
   useEffect(() => () => { urls.current.forEach(url => URL.revokeObjectURL(url)); }, []);
-  return { restored, lookupImageFilename, projectCover, isolationActive: isolation.amount > 0 && images.some(image => image.id === isolation.id && !image.generating), locked, setInteractionLocked, setQuickEditing, blankClickVersion, setIsolatedImageId, editingViewport, focusImage, focusAgentResults, addAgentImages, selectedIds, marquee, selectMany, updateImages, groupSelection, alignSelection, contextMenu, setContextMenu, copySelected, paste, reorder, setCover, resetCover, downloadImage, size, mode, effectiveMode, setMode, beginEdit, updateSelected, duplicate, arrange, redo, canUndo: !images.some(image => image.generating) && history.current.length > 0, canRedo: !images.some(image => image.generating) && future.current.length > 0, historyVersion, canvasRef, images, selected, setSelected, camera, panning, upload, addImages, beginGeneration, beginResultRetry, finishGeneration, zoomAt, navigateMinimap, fit, returnToContent, removeSelected, undo };
+  const selectShapeTool = useCallback((kind: ShapeKind) => {
+    if (lock.current || !restored) return;
+    cancelShape(); finishPlacement(); focusAnimation.current?.();
+    setMode('select'); setShapeTool(kind); setSelected(null); setContextMenu(null);
+    canvasRef.current?.focus({ preventScroll: true });
+  }, [restored, cancelShape, finishPlacement, setSelected]);
+  return { shapeTool, selectShapeTool, restored, lookupImageFilename, projectCover, isolationActive: isolation.amount > 0 && images.some(image => image.id === isolation.id && !image.generating), locked, setInteractionLocked, setQuickEditing, blankClickVersion, setIsolatedImageId, editingViewport, focusImage, focusAgentResults, addAgentImages, selectedIds, marquee, selectMany, updateImages, groupSelection, alignSelection, contextMenu, setContextMenu, copySelected, paste, reorder, setCover, resetCover, downloadImage, size, mode, effectiveMode, setMode: chooseMode, beginEdit, updateSelected, duplicate, arrange, redo, canUndo: !images.some(image => image.generating) && history.current.length > 0, canRedo: !images.some(image => image.generating) && future.current.length > 0, historyVersion, canvasRef, images, selected, setSelected, camera, panning, upload, addImages, beginGeneration, beginResultRetry, finishGeneration, zoomAt, navigateMinimap, fit, returnToContent, removeSelected, undo };
 }

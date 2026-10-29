@@ -1,5 +1,11 @@
 // Workspace copy: Simplified Chinese key, English, Japanese.
 export const workspaceCopy: Record<string, readonly [string, string]> = {
+"填充": ["Fill", "塗りつぶし"],
+"箭头": ["Arrow", "矢印"],
+"线条": ["Line", "線"],
+"三角形": ["Triangle", "三角形"],
+"圆形": ["Ellipse", "楕円"],
+"形状工具": ["Shapes", "図形"],
 '思考中...': ['Thinking...', '考え中...'],
 '网络异常，重连中...': ['Connection lost. Reconnecting...', '接続が不安定です。再接続中...'],
 '请求失败，请重试': ['Request failed. Please retry.', 'リクエストに失敗しました。再試行してください。'],

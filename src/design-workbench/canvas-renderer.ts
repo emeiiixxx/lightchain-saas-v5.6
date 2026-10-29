@@ -1,4 +1,5 @@
 import type { CanvasImage } from './useCanvas';
+import { paintShape } from './canvas-shapes';
 import { imageBounds } from './canvas-selection';
 import { intersectsViewport, screenBounds } from './canvas-toolbar';
 
@@ -25,7 +26,7 @@ function filenameIcon(source: HTMLImageElement, color: string) {
 }
 
 export function paintCanvasImageFilename(ctx: CanvasRenderingContext2D, image: CanvasImage, palette: CanvasPalette, zoom: number) {
-  if (image.generating || image.generationFailed) return;
+  if (image.shape || image.generating || image.generationFailed) return;
   const bounds = imageBounds(image), width = bounds.width * zoom;
   if (!image.name || width <= 0) return;
   ctx.save(); ctx.translate(bounds.x, bounds.y); ctx.scale(1 / zoom, 1 / zoom);
@@ -81,6 +82,11 @@ function visible(image: CanvasImage, camera: Camera, viewport: Viewport) {
 
 // Shared native-size image painter; isolation never changes individual alpha values.
 export function paintCanvasImage(ctx: CanvasRenderingContext2D, img: CanvasImage, palette: CanvasPalette) {
+  if (img.shape) {
+    ctx.save(); ctx.translate(img.x + img.width / 2, img.y + img.height / 2);
+    ctx.rotate((img.rotation ?? 0) * Math.PI / 180); ctx.scale(img.flipX ? -1 : 1, img.flipY ? -1 : 1);
+    ctx.globalAlpha = (img.opacity ?? 100) / 100; paintShape(ctx, img); ctx.restore(); return;
+  }
   if (img.generating || img.generationFailed || !img.image.complete || !img.image.naturalWidth) return;
   ctx.save();
   ctx.translate(img.x + img.width / 2, img.y + img.height / 2);

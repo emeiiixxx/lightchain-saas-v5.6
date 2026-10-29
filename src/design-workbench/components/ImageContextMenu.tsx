@@ -98,6 +98,7 @@ export function ImageContextMenu({ board, onUpload }: { board: Board; onUpload: 
   const subTrigger = (kind: 'download' | 'order', label: string, icon: string) => <button type="button" role="menuitem" data-sub={kind} aria-haspopup="menu" aria-expanded={submenu === kind} onPointerEnter={() => openSub(kind)} onClick={() => openSub(kind)}><Icon name={icon} size={20} /><span>{t(label)}</span><Icon name="context-img" size={16} /></button>;
   const item = (label: string, icon: string, action: () => void, shortcut?: string) => <button type="button" role="menuitem" onPointerEnter={() => setSubmenu(null)} onFocus={() => setSubmenu(null)} onClick={() => perform(action)}><Icon name={icon} size={20} /><span>{t(label)}</span>{shortcut && <kbd>{shortcut}</kbd>}</button>;
   const validImage = board.images.some(image => image.id === shown.value?.id && !image.generating && !image.generationFailed);
+  const canSetCover = validImage && !board.images.find(image => image.id === shown.value?.id)?.shape;
   const isManualCover = board.images.some(image => image.id === shown.value?.id && image.cover);
   const updateProjectCover = () => {
     const imageId = shown.value?.id;
@@ -116,7 +117,7 @@ export function ImageContextMenu({ board, onUpload }: { board: Board; onUpload: 
     {subTrigger('order', '图层顺序', 'context-imgLeftIcon1')}
     {validImage && item('复制', 'context-imgLeftIcon2', board.copySelected, `${modifier} + C`)}
     {validImage && item('复制并粘贴', 'context-imgLeftIcon3', board.duplicate, `${modifier} + D`)}
-    {validImage && <button type="button" role="menuitem" onPointerEnter={() => setSubmenu(null)} onFocus={() => setSubmenu(null)} onClick={updateProjectCover}><Icon name="context-project-cover" size={20} /><span>{t(isManualCover ? '恢复默认封面' : '设为项目封面')}</span>{!coverUsed && !isManualCover && <span className="image-context-new-badge">NEW</span>}</button>}
+    {canSetCover && <button type="button" role="menuitem" onPointerEnter={() => setSubmenu(null)} onFocus={() => setSubmenu(null)} onClick={updateProjectCover}><Icon name="context-project-cover" size={20} /><span>{t(isManualCover ? '恢复默认封面' : '设为项目封面')}</span>{!coverUsed && !isManualCover && <span className="image-context-new-badge">NEW</span>}</button>}
     <div className="element-menu-divider" role="separator" />
     {item('删除', 'context-imgLeftIcon5', board.removeSelected, '←/del')}
     {sub.value && <div ref={subPanel} className={`image-context-menu image-context-submenu ${sub.value === 'download' ? 'element-design-menu download-format-menu' : ''} ${subPosition.left ? 'opens-left' : ''}`} role="menu" aria-label={t(sub.value === 'download' ? '下载格式' : '图层顺序')} data-phase={sub.phase} inert={sub.phase === 'exit'} style={{ left: Math.max(8, subPosition.x), top: subPosition.y }}>

@@ -6,7 +6,7 @@
 .canvas-return-hint { position: absolute; bottom: 82px; left: 50%; transform: translateX(-50%); z-index: 17; display: flex; align-items: center; gap: 16px; width: max-content; max-width: calc(100% - 32px); padding: 8px 8px 8px 16px; border: 1px solid var(--border-weak); border-radius: var(--radius-l); background: var(--surface-default); box-shadow: 0 6px 14px -2px var(--overlay-weak); }
 .canvas-return-hint p { margin: 0; color: var(--text-secondary); font-size: 14px; line-height: 20px; }
 @media (max-width: 680px) { .canvas-return-hint { bottom: 132px; max-width: calc(100% - 24px); gap: 12px; padding-left: 12px; } .canvas-return-hint p { font-size: 12px; line-height: 18px; } }
-.workbench-empty :is(.bottom-tools, .zoom-tools) { display: none; }
+.workbench-empty .zoom-tools { display: none; }
 .wb-surface { background: var(--surface-floating); border: 1px solid var(--border-weak); border-radius: var(--radius-l); box-shadow: var(--shadow-m); }
 .workbench-tool { width: 32px; padding: 0; }
 .workbench-tool.is-active { background: var(--state-selected); color: var(--text-primary); }
@@ -545,3 +545,5 @@ html:not([lang='zh-CN']) .shortcuts-panel { width: 400px; }
 .model-upload-menu > .lc-button { justify-content: center; gap: 4px; background: var(--state-default); color: var(--text-secondary); font-size: 12px; font-weight: 400; white-space: nowrap; }
 .model-upload-menu > .lc-button:hover, .model-upload-menu > .lc-button:focus-visible { background: var(--brand-primary); color: var(--text-on-brand-black); }
 .model-upload-menu > .lc-button:active { background: var(--state-selected-brand); }
+
+.canvas-stage > canvas.is-drawing-shape { cursor: crosshair; }

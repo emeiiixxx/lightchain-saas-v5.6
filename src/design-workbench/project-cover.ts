@@ -3,7 +3,7 @@ import type { CanvasImage } from './useCanvas';
 // Keep automatic selection derived from the surviving images. Only an explicit
 // user choice is stored in `cover`, so any newly added image can update the default.
 export function resolveProjectCover(images: CanvasImage[]): CanvasImage | undefined {
-  const ready = images.filter(image => !image.generating && !image.generationFailed);
+  const ready = images.filter(image => !image.shape && !image.generating && !image.generationFailed);
   const manual = ready.find(image => image.cover);
   if (manual) return manual;
   // A generated image becomes eligible when its result replaces the placeholder;

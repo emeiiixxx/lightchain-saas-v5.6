@@ -1,0 +1,12 @@
+.shape-tool-anchor { position: relative; display: flex; flex: none; }
+.shape-tool-trigger { height: 32px; }
+.shape-tool-icon { display: block; flex: none; }
+.shape-tool-trigger[aria-expanded='true']:not(.is-active) { background: var(--state-hover); color: var(--text-primary); }
+.shape-tool-menu { position: fixed; inset: auto; margin: 0; box-sizing: border-box; width: max-content; max-width: calc(100vw - 16px); display: flex; gap: 4px; padding: 8px; overflow-x: auto; border: 1px solid var(--border-weak); border-radius: var(--radius-l); background: var(--surface-floating); color: var(--text-secondary); box-shadow: var(--shadow-m); pointer-events: auto; transform-origin: center bottom; }
+.shape-tool-menu .shape-tool-option { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; flex: 0 0 48px; width: 48px; height: 48px; padding: 4px 0; border-radius: var(--radius-base); color: inherit; font-size: 12px; font-weight: 400; line-height: 16px; white-space: nowrap; }
+.shape-tool-menu .shape-tool-option[aria-checked='true'] { color: var(--text-brand); background: var(--state-selected); }
+.shape-tool-menu[data-phase='enter'] { animation: shape-tool-enter var(--motion-duration) var(--motion-easing) both; }
+.shape-tool-menu[data-phase='exit'] { animation: shape-tool-exit var(--motion-duration) var(--motion-easing) both; }
+@keyframes shape-tool-enter { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes shape-tool-exit { from { opacity: 1; transform: translateY(0); } to { opacity: 0; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .shape-tool-menu[data-phase] { animation: none; } }

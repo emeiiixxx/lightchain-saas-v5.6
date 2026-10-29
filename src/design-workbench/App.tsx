@@ -14,6 +14,7 @@ import { Workbench } from './components/Workbench';
 import type { CanvasImage } from './useCanvas';
 import { Toast, type ToastNotice } from './components/Toast';
 import type { Notify } from './notification';
+import { MOTION_DURATION } from './motion';
 
 export default function App() {
   const { t, locale, setLocale } = useLocale();
@@ -72,8 +73,8 @@ export default function App() {
   }, [clearUploadRequest]);
   const shownModal = usePresence(modal);
   const shownToast = usePresence(toast);
-  const shownWelcome = usePresence(!board.images.length ? true : null);
-  const shownToolbar = usePresence(board.images.length ? true : null);
+  const shownWelcome = usePresence(!board.images.length && !board.shapeTool ? true : null);
+  const shownToolbar = usePresence(true);
   const shownDrop = usePresence(dragging && board.images.length ? true : null);
   const chooseFiles = (point?: { x: number; y: number }) => {
     clearUploadRequest();
@@ -92,13 +93,13 @@ export default function App() {
     // request's placement point, even before the closing animation unmounts it.
     if (session !== uploadRequest.current || modal !== 'upload') return;
     if (replaceTarget.current && items[0]) { const item = items[0]; board.updateSelected({ image: item.image, url: item.url, name: item.name, mimeType: item.mimeType, width: item.image.naturalWidth, height: item.image.naturalHeight, generatedFile: undefined, origin: 'upload', generatedAt: undefined, taskResultId: undefined, generationPlacement: undefined }); }
-    else board.addImages(items, { point: additionPoint.current });
+    else board.addImages(items, { point: additionPoint.current, panDelay: MOTION_DURATION });
     closeUpload();
   };
 
   return <div className="app-shell">
     <main className={`canvas-stage ${dragging ? 'is-dragging' : ''}`} aria-label={t("设计生产工作台")} onDragEnter={e => { if (!board.locked && e.dataTransfer.types.includes('Files')) { e.preventDefault(); dragCount.current++; setDragging(true); } }} onDragOver={e => { if (e.dataTransfer.types.includes('Files')) { e.preventDefault(); e.dataTransfer.dropEffect = board.locked ? 'none' : 'copy'; } }} onDragLeave={e => { if (e.dataTransfer.types.includes('Files')) { dragCount.current--; if (dragCount.current <= 0) setDragging(false); } }} onDrop={e => { e.preventDefault(); dragCount.current = 0; setDragging(false); if (board.locked) return; const r = e.currentTarget.getBoundingClientRect(); void board.upload(e.dataTransfer.files, board.images.length ? { x: e.clientX - r.left, y: e.clientY - r.top } : undefined); }}>
-      <canvas ref={board.canvasRef} className={board.locked ? 'is-locked' : board.panning ? 'is-panning' : board.effectiveMode === 'hand' ? 'is-hand' : ''} tabIndex={0} aria-label={t("无限画布。拖动空白处框选，Shift 点选多张；空格拖动平移；按住 Control、Command 或 Option / Alt 滚轮缩放。")} />
+      <canvas ref={board.canvasRef} className={board.locked ? 'is-locked' : board.panning ? 'is-panning' : board.effectiveMode === 'hand' ? 'is-hand' : board.shapeTool ? 'is-drawing-shape' : ''} tabIndex={0} aria-label={t("无限画布。拖动空白处框选，Shift 点选多张；空格拖动平移；按住 Control、Command 或 Option / Alt 滚轮缩放。")} />
       <ProjectPanel name={title} onNameChange={setTitle} onBack={() => { window.dispatchEvent(new Event('lc-v56-design:leave-project')); setModal('project'); }} />
       {!panel && <Button className="sidebar-toggle" icon="sidebar" aria-label={panel ? t("收起右侧栏") : t("展开右侧栏")} title={panel ? t("收起右侧栏") : t("展开右侧栏")} aria-expanded={panel} aria-controls="canvas-right-sidebar" data-canvas-ui onClick={() => setPanel(true)} />}
       {shownWelcome.value && <section data-phase={shownWelcome.phase} inert={shownWelcome.phase === 'exit'} className="welcome" aria-label={t("开始设计")}>
