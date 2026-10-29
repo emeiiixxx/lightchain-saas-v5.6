@@ -7,7 +7,7 @@ import { Icon } from './ui';
 
 type Board = ReturnType<typeof useCanvas>;
 const coverNewUsedKey = 'lc-v56-design-project-cover-used';
-export function ImageContextMenu({ board, onUpload }: { board: Board; onUpload: () => void }) {
+export function ImageContextMenu({ board, onUpload }: { board: Board; onUpload: (point?: { x: number; y: number }) => void }) {
   const { t, locale } = useLocale();
   const [coverUsed, setCoverUsed] = useState(() => {
     try { return localStorage.getItem(coverNewUsedKey) === '1'; }
@@ -93,7 +93,7 @@ export function ImageContextMenu({ board, onUpload }: { board: Board; onUpload: 
   };
   if (!shown.value) return null;
   if (shown.value.id === null) return <div ref={root} className="image-context-menu" role="menu" tabIndex={-1} aria-label={t('上传图片')} data-canvas-ui data-workbench-menu data-phase={shown.phase} inert={shown.phase === 'exit'} style={{ left: position.x, top: position.y }} onKeyDown={keys} onContextMenu={event => event.preventDefault()}>
-    <button type="button" role="menuitem" onClick={() => { close(); onUpload(); }}><Icon name="canvas-imgIconSystem5" size={20} /><span>{t('上传图片')}</span></button>
+    <button type="button" role="menuitem" onClick={() => { const point = shown.value?.worldPoint; close(); onUpload(point); }}><Icon name="canvas-imgIconSystem5" size={20} /><span>{t('上传图片')}</span></button>
   </div>;
   const subTrigger = (kind: 'download' | 'order', label: string, icon: string) => <button type="button" role="menuitem" data-sub={kind} aria-haspopup="menu" aria-expanded={submenu === kind} onPointerEnter={() => openSub(kind)} onClick={() => openSub(kind)}><Icon name={icon} size={20} /><span>{t(label)}</span><Icon name="context-img" size={16} /></button>;
   const item = (label: string, icon: string, action: () => void, shortcut?: string) => <button type="button" role="menuitem" onPointerEnter={() => setSubmenu(null)} onFocus={() => setSubmenu(null)} onClick={() => perform(action)}><Icon name={icon} size={20} /><span>{t(label)}</span>{shortcut && <kbd>{shortcut}</kbd>}</button>;

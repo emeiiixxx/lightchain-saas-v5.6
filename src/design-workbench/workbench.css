@@ -1,4 +1,7 @@
 .workbench { position: absolute; inset: 0; pointer-events: none; }
+.workbench > .canvas-selected-filename { position: absolute; z-index: 5; display: flex; align-items: center; gap: 4px; height: 16px; overflow: hidden; color: var(--text-tertiary); font-size: 12px; font-weight: 400; line-height: 16px; pointer-events: none; user-select: none; }
+.canvas-selected-filename-icon { width: 16px; height: 16px; flex: 0 0 16px; background: currentColor; mask: url('/assets/design-workbench/canvas-image-name.svg') center / 16px 16px no-repeat; -webkit-mask: url('/assets/design-workbench/canvas-image-name.svg') center / 16px 16px no-repeat; }
+.canvas-selected-filename-text { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .workbench [data-canvas-ui] { pointer-events: auto; }
 .canvas-return-hint { position: absolute; bottom: 82px; left: 50%; transform: translateX(-50%); z-index: 17; display: flex; align-items: center; gap: 16px; width: max-content; max-width: calc(100% - 32px); padding: 8px 8px 8px 16px; border: 1px solid var(--border-weak); border-radius: var(--radius-l); background: var(--surface-default); box-shadow: 0 6px 14px -2px var(--overlay-weak); }
 .canvas-return-hint p { margin: 0; color: var(--text-secondary); font-size: 14px; line-height: 20px; }
@@ -80,9 +83,9 @@ body:has(.handle-rotate[data-rotating='true']), body:has(.handle-rotate[data-rot
 .switcher-indicator { position: absolute; pointer-events: none; border: 1px solid var(--panel-switch-border); border-radius: 100px; background: var(--panel-switch-gradient); transition-property: left, top, width, height; }
 .right-panel-content { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 .conversation-bar { height: 56px; flex: none; padding: 12px; display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1; }
-.conversation-bar > .lc-button, .conversation-trigger { font-size: 14px; font-weight: 400; height: 40px; padding: 0 12px; gap: 8px; }
+.conversation-bar > .lc-button, .conversation-trigger { font-size: 14px; font-weight: 500; height: 40px; padding: 0 12px; gap: 8px; }
 .conversation-bar > .workbench-tool { width: 40px; padding: 0; }
-.agent-content { flex: 1; min-height: 0; padding: 16px 24px; overflow-y: auto; overscroll-behavior: contain; scrollbar-gutter: stable; scrollbar-width: thin; scrollbar-color: transparent transparent; transition: scrollbar-color var(--motion-duration) var(--motion-easing); }
+.agent-content { flex: 1; min-height: 0; padding: 16px 12px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: transparent transparent; transition: scrollbar-color var(--motion-duration) var(--motion-easing); }
 .agent-content::-webkit-scrollbar { width: 8px; }
 .agent-content::-webkit-scrollbar-thumb { background: transparent; border-radius: 8px; transition: background-color var(--motion-duration) var(--motion-easing); }
 .agent-content[data-scrolling='true'] { scrollbar-color: var(--border-medium) transparent; }
@@ -107,20 +110,70 @@ body:has(.handle-rotate[data-rotating='true']), body:has(.handle-rotate[data-rot
 .agent-composer:focus-within::before { opacity: 1; }
 .agent-composer textarea { width: 100%; height: 65px; resize: none; background: transparent; border: 0; outline: none; font: inherit; font-size: 14px; line-height: 20px; color: var(--text-primary); }
 .agent-composer textarea::placeholder { color: var(--text-placeholder); }
+/* Figma 50:17684: inward stroke, 24px tags, 64px text, 40px actions. */
+.agent-input-area > .agent-composer { border: 0; box-shadow: inset 0 0 0 1px var(--border-weak); }
+.agent-input-area > .agent-composer::before { inset: 0; }
+.agent-input-area > .agent-composer:focus-within { box-shadow: none; }
+.agent-input-area > .agent-composer > textarea { height: 64px; min-height: 64px; padding: 0; color: var(--text-secondary); }
+.agent-input-area .agent-add { background: var(--state-default); }
 .agent-input-footer { display: flex; justify-content: space-between; align-items: center; }
 .agent-add { width: 40px; height: 40px; border-radius: var(--radius-l); padding: 0; }
+/* Figma 25:17112 uses the opaque default arrow. Apply disabled alpha only
+   through its foreground token, never through an already-faded SVG mask. */
 .agent-send { width: 40px; height: 40px; border-radius: 999px; display: grid; place-items: center; background: var(--brand-primary); color: var(--text-on-brand-black); }
 .agent-send:disabled { background: var(--brand-primary-disabled); color: var(--text-on-brand-disabled); opacity: 1; }
-.agent-thread { display: flex; flex-direction: column; gap: 20px; padding-bottom: 16px; }
-.agent-demo-caption { align-self: center; color: var(--text-tertiary); font-size: 12px; line-height: 20px; }
-.agent-turn { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 0; }
+.agent-thread { display: flex; flex-direction: column; gap: 16px; min-height: 100%; justify-content: flex-end; }
+.agent-turn { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; min-width: 0; flex: none; }
 .agent-turn--user { align-items: flex-end; }
-.agent-turn-label { color: var(--text-tertiary); font-size: 12px; line-height: 16px; }
-.agent-turn-bubble { max-width: calc(100% - 24px); padding: 12px; border-radius: var(--radius-l); background: var(--surface-secondary); font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.agent-turn-bubble { display: flex; flex-direction: column; gap: 8px; min-width: 0; max-width: 80%; padding: 8px 12px; border-radius: var(--radius-l); font-size: 14px; line-height: 20px; overflow-wrap: anywhere; }
 .agent-turn--user .agent-turn-bubble { background: var(--brand-primary); color: var(--text-on-brand-black); }
 .agent-turn-bubble p { margin: 0; white-space: pre-wrap; }
-.agent-turn-images { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-.agent-turn-images img { display: block; width: 120px; max-width: 100%; height: 150px; border-radius: var(--radius-base); object-fit: cover; }
+.agent-artwork { display: inline-flex; align-items: center; justify-content: center; flex: none; vertical-align: middle; }
+.agent-artwork img { display: block; max-width: none; }
+.agent-artwork-mask { width: 100%; height: 100%; background: currentColor; mask-repeat: no-repeat; mask-position: center; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; }
+.agent-reference-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; min-width: 0; }
+.agent-reference-tags .generation-record-tag.generation-record-tag--image { min-height: 24px; height: 24px; padding: 0 4px; gap: 6px; background: var(--control-fill-default); box-shadow: inset 0 0 0 1px var(--border-weak); border-radius: 6px; }
+.agent-reference-tags .generation-tag-thumb, .agent-reference-tags .generation-tag-thumb img { width: 16px; height: 16px; }
+.agent-card { max-width: 100%; min-width: 0; border-radius: var(--radius-l); background: var(--surface-secondary); box-shadow: inset 0 0 0 1px var(--border-weak); color: var(--text-secondary); }
+.agent-analysis { width: 100%; padding: 8px 12px; }
+.agent-analysis-trigger { display: flex; align-items: center; gap: 4px; width: 100%; padding: 4px 0; border: 0; background: transparent; text-align: left; cursor: pointer; color: var(--text-tertiary); font-size: 14px; line-height: 20px; }
+.agent-analysis-trigger > span:nth-child(2) { flex: 1; }
+.agent-analysis-trigger > .agent-artwork:last-child { transition: rotate var(--motion-duration) var(--motion-easing); }
+.agent-analysis[data-open='true'] .agent-analysis-trigger > .agent-artwork:last-child { rotate: 90deg; }
+.agent-analysis-disclosure { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing); }
+.agent-analysis[data-open='true'] .agent-analysis-disclosure { grid-template-rows: 1fr; opacity: 1; }
+.agent-analysis-clip { min-height: 0; overflow: hidden; }
+.agent-analysis-references { display: flex; flex-direction: column; align-items: flex-start; gap: 20px; padding-top: 12px; }
+.agent-analysis-reference { width: 100%; max-width: 320px; min-width: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.agent-analysis-reference > img { display: block; width: 100%; max-width: 320px; height: auto; border-radius: var(--radius-base); }
+.agent-analysis-reference figcaption { display: flex; flex-direction: column; gap: 4px; font-size: 14px; line-height: 24px; overflow-wrap: anywhere; }
+.agent-analysis-reference h4 { margin: 0; font-size: inherit; line-height: inherit; font-weight: 500; color: var(--text-primary); }
+.agent-analysis-reference p { margin: 0; color: var(--text-secondary); }
+.agent-plan { width: 100%; padding: 8px 12px; }
+.agent-plan-content { display: flex; flex-direction: column; gap: 12px; padding: 8px; font-size: 14px; line-height: 24px; overflow-wrap: anywhere; }
+.agent-plan-content header, .agent-plan-content section { display: flex; flex-direction: column; gap: 4px; }
+.agent-plan-content h3, .agent-plan-content h4, .agent-plan-content p, .agent-plan-content ul { margin: 0; }
+.agent-plan-content h3 { font-size: 16px; line-height: 24px; font-weight: 600; color: var(--text-primary); }
+.agent-plan-content h4 { font-size: 14px; line-height: 24px; font-weight: 700; color: var(--text-primary); }
+.agent-plan-content ul { list-style: disc; padding-left: 21px; }
+.agent-plan-content header p, .agent-plan-conclusion { color: var(--text-tertiary); }
+.agent-assistant-text { width: 100%; min-width: 0; padding: 4px; font-size: 14px; line-height: 24px; color: var(--text-secondary); overflow-wrap: anywhere; }
+.agent-assistant-text p { margin: 0; white-space: pre-wrap; }
+.agent-image-task { display: flex; flex-direction: column; gap: 12px; width: fit-content; padding: 12px; }
+.agent-task-heading { display: flex; align-items: center; gap: 4px; font-size: 14px; line-height: 20px; }
+.agent-task-heading .agent-task-send { margin-left: auto; width: 24px; height: 24px; min-width: 24px; padding: 4px; }
+.agent-result-placeholder { overflow: hidden; border-radius: 8px; }
+.agent-task-images { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; max-width: 100%; }
+.agent-result-image { position: relative; width: 320px; max-width: 100%; min-width: 0; }
+.agent-image-preview { display: block; width: 100%; padding: 0; border: 0; border-radius: var(--radius-base); overflow: hidden; cursor: zoom-in; background: var(--surface-secondary); }
+.agent-image-preview > img { display: block; width: 100%; height: auto; }
+.agent-image-actions { position: absolute; left: 8px; bottom: 8px; display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: var(--radius-base); background: var(--surface-media-overlay, rgba(0,0,0,.6)); box-shadow: inset 0 0 0 1px var(--border-weak), 0 2px 2px var(--overlay-weak); backdrop-filter: blur(10px); color: var(--text-on-brand-white); opacity: 0; visibility: hidden; transition: opacity var(--motion-duration) var(--motion-easing), visibility var(--motion-duration) var(--motion-easing); }
+.agent-result-image:is(:hover, :focus-within, [data-menu-open='true']) .agent-image-actions { opacity: 1; visibility: visible; }
+.agent-image-actions > .lc-button, .agent-image-actions > .element-menu-anchor > .lc-button { width: 24px; min-width: 24px; height: 24px; min-height: 24px; padding: 0; border-radius: 6px; color: inherit; }
+.agent-attachment-chip .agent-attachment-icon > img { display: block; border-radius: 4px; object-fit: cover; }
+.agent-send > .agent-artwork { position: relative; z-index: 1; }
+@media (hover: none) { .agent-image-actions { opacity: 1; visibility: visible; } }
+@media (prefers-reduced-motion: reduce) { .agent-analysis-trigger > .agent-artwork:last-child, .agent-analysis-disclosure, .agent-image-actions { transition: none; } }
 .image-properties { padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
 .property-title { display: flex; align-items: center; justify-content: space-between; }
 .property-title h2 { font-size: 16px; font-weight: 500; line-height: 24px; }

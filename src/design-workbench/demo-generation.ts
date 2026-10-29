@@ -12,27 +12,45 @@ let cached: ReturnType<typeof loadResults> | undefined;
 function loadResults() {
   return Promise.all(sources.map((url, index) => prepareMainImage({ id: url, name: `快捷编辑 · ${index + 1}`, url })));
 }
-type DemoOutput = {
+export type DemoOutput = {
   ratio?: string;
   resolution?: string;
   sourceSize: { width: number; height: number };
   count: number;
+  startIndex?: number;
+  outputSize?: { width: number; height: number };
 };
+
+export function demoOutputSize(options: DemoOutput) {
+  if (options.outputSize) return options.outputSize;
+  const [rw, rh] = (options.ratio ?? '').split(':').map(Number);
+  const ratio = rw > 0 && rh > 0 ? rw / rh : options.sourceSize.width / options.sourceSize.height;
+  const longEdge = options.resolution === '4K' ? 4096 : options.resolution === '1K' ? 1024 : 2048;
+  const width = Math.max(1, Math.round(ratio >= 1 ? longEdge : longEdge * ratio));
+  const height = Math.max(1, Math.round(ratio >= 1 ? longEdge / ratio : longEdge));
+  return { width, height };
+}
+
+// The Agent is a local interaction fixture, not a language model. Explicit
+// counts/ratios in a Demo prompt let users exercise single and multi-image tasks.
+export function agentDemoOutput(request: string): DemoOutput {
+  const countText = request.match(/(\d+|[一二两三四五六七八九])\s*(?:张|幅|款|images?)/i)?.[1];
+  const chinese: Record<string, number> = { 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
+  const count = Math.min(9, Math.max(1, countText ? chinese[countText] ?? Number(countText) : 2));
+  const match = request.match(/(?:^|\D)(21|16|9|4|3|2|1)\s*[:：]\s*(21|16|9|4|3|2|1)(?!\d)/);
+  return { count, ratio: match ? `${match[1]}:${match[2]}` : 'auto', resolution: request.match(/\b([124])k\b/i)?.[0].toUpperCase() ?? '2K', sourceSize: { width: 2, height: 3 } };
+}
 
 export async function prepareDemoResults(options?: DemoOutput) {
   cached ??= loadResults().catch(error => { cached = undefined; throw error; });
   const assets = await cached;
   if (!options) return assets;
-  const [rw, rh] = (options.ratio ?? '').split(':').map(Number);
-  const ratio = rw > 0 && rh > 0 ? rw / rh : options.sourceSize.width / options.sourceSize.height;
   // Demo-only raster output: honor the requested shape without stretching a
   // square fixture on the canvas. Production uses the service's output file.
-  const longEdge = options.resolution === '4K' ? 4096 : options.resolution === '1K' ? 1024 : 2048;
-  const width = Math.max(1, Math.round(ratio >= 1 ? longEdge : longEdge * ratio));
-  const height = Math.max(1, Math.round(ratio >= 1 ? longEdge / ratio : longEdge));
+  const { width, height } = demoOutputSize(options);
   const results = [];
   for (let index = 0; index < options.count; index++) {
-    const asset = assets[index % assets.length];
+    const asset = assets[((options.startIndex ?? 0) + index) % assets.length];
     const canvas = document.createElement('canvas');
     canvas.width = width; canvas.height = height;
     const context = canvas.getContext('2d');

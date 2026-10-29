@@ -1,4 +1,4 @@
-import { useId, useLayoutEffect, useRef } from 'react';
+import { useId, useLayoutEffect, useRef, type ReactNode } from 'react';
 import { useLocale } from '../LocaleContext';
 import { usePresence } from '../usePresence';
 import { downloadFormats, type DownloadFormat } from '../download-image';
@@ -8,7 +8,8 @@ export function DownloadFormatOptions({ onSelect }: { onSelect: (format: Downloa
   return <>{downloadFormats.map(format => <Button role="menuitem" key={format} onClick={() => onSelect(format)}>{format}</Button>)}</>;
 }
 
-export function DownloadFormatMenu({ open, disabled, onToggle, onClose, onSelect, withLabel = true }: {
+export function DownloadFormatMenu({ open, disabled, onToggle, onClose, onSelect, withLabel = true, icon }: {
+  icon?: ReactNode;
   withLabel?: boolean;
   open: boolean; disabled?: boolean; onToggle: () => void; onClose: () => void; onSelect: (format: DownloadFormat) => void;
 }) {
@@ -37,7 +38,7 @@ export function DownloadFormatMenu({ open, disabled, onToggle, onClose, onSelect
       if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
       event.preventDefault(); const last = event.key === 'ArrowUp'; if (!open) onToggle();
       requestAnimationFrame(() => { const items = panel.current?.querySelectorAll('button'); items?.[last ? items.length - 1 : 0]?.focus(); });
-    }}><Icon name="element-download" size={withLabel ? 16 : 20} />{withLabel && t('下载')}</Button>
+    }}>{icon ?? <Icon name="element-download" size={withLabel ? 16 : 20} />}{withLabel && t('下载')}</Button>
     {shown.value && <div ref={panel} id={id} popover="manual" role="menu" aria-label={t('下载')} className="element-design-menu download-format-menu" data-workbench-menu data-phase={shown.phase} inert={shown.phase === 'exit'} onKeyDown={event => {
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); onClose(); anchor.current?.querySelector('button')?.focus(); return; }
       if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;

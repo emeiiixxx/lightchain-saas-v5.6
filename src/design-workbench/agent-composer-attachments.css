@@ -1,0 +1,134 @@
+.agent-composer-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 4px 8px;
+  min-width: 0;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.agent-composer-attachments .agent-composer-attachments__chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 1 auto;
+  gap: 6px;
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+  height: 24px;
+  padding: 0 4px;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px var(--border-weak);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.agent-composer-attachments .agent-composer-attachments__chip[data-kind='image'] {
+  background: var(--alpha-brand-20);
+  box-shadow: inset 0 0 0 1px var(--brand-primary);
+}
+
+.agent-composer-attachments .generation-record-tag.generation-record-tag--image,
+.agent-composer-attachments .agent-composer-attachments__content {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+}
+
+.agent-composer-attachments .generation-tag-thumb,
+.agent-composer-attachments .generation-tag-thumb img {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.agent-composer-attachments .agent-composer-attachments__icon {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.agent-composer-attachments .agent-composer-attachments__icon > .icon {
+  position: absolute;
+  width: auto !important;
+  height: auto !important;
+}
+
+.agent-composer-attachments .agent-composer-attachments__icon--file > .icon {
+  inset: 9.38% 25% 9.38% 21.88%;
+}
+
+.agent-composer-attachments .agent-composer-attachments__icon--image > .icon {
+  inset: 12.5% 6.25% 12.5% 12.5%;
+}
+
+.agent-composer-attachments .agent-composer-attachments__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-composer-attachments .lc-button.agent-composer-attachments__remove {
+  flex: none;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  min-height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  color: inherit;
+}
+
+.agent-composer-attachments .agent-composer-attachments__lock-shine {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.agent-composer-attachments .agent-composer-attachments__lock-shine::after {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  width: 50%;
+  background: linear-gradient(110deg, transparent, color-mix(in srgb, var(--text-on-brand-white) 45%, transparent), transparent);
+  content: '';
+  animation: agent-composer-attachments-lock-shine 500ms var(--motion-easing, ease-out) forwards;
+}
+
+@keyframes agent-composer-attachments-lock-shine {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(200%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-composer-attachments .agent-composer-attachments__lock-shine {
+    display: none;
+  }
+
+  .agent-composer-attachments .agent-composer-attachments__lock-shine::after {
+    animation: none;
+  }
+}

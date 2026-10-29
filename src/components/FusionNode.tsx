@@ -44,7 +44,7 @@ export function FusionNode({ image, locale, onChange, onAddMain, onReference, on
   const t = merge ? { ...copy[locale], ...mergeCopy[locale] } : lingerie ? { ...copy[locale], ...lingerieCopy[locale] } : copy[locale];
   const referenceLimit = workflowReferenceLimit(settings);
   const references = fusionReferences(settings);
-  const supportsReferenceSorting = !merge && !lingerie;
+  const supportsReferenceSorting = !lingerie;
   const sortNode: VideoWorkflow = {
     id: image.id, x: image.x, y: image.y, mode: 'references', generationMode: 'fast',
     references: references.map(({ id, name, url }) => ({ id, name, url, kind: 'image' })),

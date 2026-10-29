@@ -14,6 +14,10 @@ export type ConnectedGroupContext = {
   occupied?: ReadonlyMap<string, FlowLayoutRect>;
   groupGap?: number;
   bottomFloor?: number;
+  // Local additions can anchor a source without moving it or arranging the
+  // surrounding canvas. Full arrangement retains collision avoidance.
+  fixedRoots?: ReadonlyMap<string, FlowLayoutRect>;
+  avoidCollisions?: boolean;
 };
 export type ConnectedGroupLayout = { positions: Map<string, Position>; width: number; height: number; bounds?: FlowLayoutRect };
 const STACK_GAP = 120;
@@ -207,10 +211,16 @@ export function layoutConnectedGroup(input: FlowLayoutVertex[], order: Record<st
       const offset = Math.max(0, minimumX - points.get(root.id)!.x);
       for (const point of points.values()) point.x += offset;
     }
+    const fixedRoot = context?.fixedRoots?.get(root.id);
+    if (fixedRoot) {
+      const offset = fixedRoot.x - points.get(root.id)!.x;
+      for (const point of points.values()) point.x += offset;
+    }
     let center = inputs.length ? (
       Math.min(...inputs.map(box => box.y))
       + Math.max(...inputs.map(box => box.y + box.height))
     ) / 2 : context ? context.origin.y + (baseline?.positions.get(root.id)?.y ?? 0) + root.height / 2 : 0;
+    if (fixedRoot) center = fixedRoot.y + fixedRoot.height / 2;
     let placeAbove = false;
     if (anchor && anchorBox) {
       const slots = reservations.get(anchor.id)![anchor.side];
@@ -225,7 +235,7 @@ export function layoutConnectedGroup(input: FlowLayoutVertex[], order: Record<st
       }
     }
     const blocked: Contour[] = [];
-    if (context) {
+    if (context && context.avoidCollisions !== false) {
       const previousBoxes = new Map(fixedOccupied);
       for (const [id, point] of positions) {
         const vertex = byId.get(id)!;
@@ -248,7 +258,7 @@ export function layoutConnectedGroup(input: FlowLayoutVertex[], order: Record<st
           });
         }
       }
-    } else for (const [rank, contour] of contours) {
+    } else if (!context) for (const [rank, contour] of contours) {
       // A loose input may fill its reserved slot between two old results.
       // Whole trees still avoid each other's full column contours.
       const previousSpans = root.kind === 'media' && !parents.get(root.id)!.length && points.size === 1

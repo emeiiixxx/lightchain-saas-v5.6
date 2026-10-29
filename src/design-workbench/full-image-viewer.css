@@ -1,6 +1,9 @@
 /* Figma 68:27657. Full-viewport image interaction, independent of canvas view. */
 .full-image-viewer { position: fixed; inset: 0; margin: 0; padding: 0; width: 100dvw; height: 100dvh; max-width: none; max-height: none; border: 0; border-radius: 0; overflow: hidden; background: transparent; color: var(--text-on-brand-white); outline: none; }
 .full-image-viewer::backdrop { background: var(--overlay-scrim); backdrop-filter: blur(50px); }
+/* C03: both canvas and Agent use the same opaque full-screen image surface. */
+.full-image-viewer:not(.full-image-viewer--task) { background: rgb(10, 11, 11); }
+.full-image-viewer:not(.full-image-viewer--task)::backdrop { background: rgb(10, 11, 11); backdrop-filter: none; }
 .full-image-viewer:not([inert]) { pointer-events: auto; }
 .full-image-viewer[data-phase='enter'] { animation-fill-mode: backwards; }
 .full-image-viewer[data-phase='enter']::backdrop { animation: ui-enter var(--motion-duration) var(--motion-easing) backwards; }

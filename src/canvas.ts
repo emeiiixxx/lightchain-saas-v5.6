@@ -50,7 +50,7 @@ function referenceGridRows(settings?: FusionSettings) {
 // The 56px add entry and its 12px gap disappear at the three-point limit.
 export function workflowHeight(settings?: FusionSettings) {
   if (settings?.kind === 'batch') return 404;
-  if (settings?.kind === 'merge') return 505 + (referenceGridRows(settings) - 1) * 64;
+  if (settings?.kind === 'merge') return 505 - 56 + Math.min(160, referenceGridRows(settings) * 64 - 8);
   if (settings?.kind === 'flat' && settings.batchFlat) {
     const count = fusionReferences(settings).length;
     const rows = Math.ceil(Math.max(1, count + (count < 20 ? 1 : 0)) / 4);

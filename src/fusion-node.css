@@ -98,17 +98,11 @@
 .fusion-position[data-selected='true'] .merge-node::before { opacity: 0; }
 .merge-node .fusion-content > .fusion-field:first-child { margin-bottom: 4px; }
 .merge-node .fusion-label { gap: 8px; }
+.merge-node .fusion-content > .fusion-field:first-child .fusion-label { gap: 4px; }
 .merge-node .fusion-required { margin-left: -4px; }
 .merge-count-divider { width: 1px; height: 12px; background: var(--border-weak); }
 .merge-reference-count { color: var(--text-tertiary); font-size: 12px; line-height: 16px; white-space: nowrap; }
 .merge-reference-count > span { color: var(--text-brand); }
-.merge-node .fusion-references { grid-template-columns: repeat(4, 56px); grid-auto-rows: 56px; gap: 8px; min-height: 56px; }
-.merge-node .fusion-references > * { width: 56px; height: 56px; flex: 0 0 56px; }
-.merge-node .fusion-reference-wrap .fusion-reference { position: relative; overflow: hidden; border-radius: 8px; background: var(--control-fill-hover); }
-.merge-node .fusion-reference > .progressive-image,
-.merge-node .fusion-reference img { border-radius: 0; }
-.merge-node .fusion-reference-wrap .fusion-reference-remove { width: 16px; min-width: 16px; height: 16px; border-radius: 999px; top: 4px; right: 4px; }
-.merge-node .fusion-reference-wrap:hover .fusion-reference::after { content: ''; position: absolute; inset: 0; border-radius: 8px; background: var(--overlay-weak); pointer-events: none; }
 .merge-node .fusion-textarea:hover { background: var(--control-fill-hover); border-color: var(--border-weak); }
 .merge-node .fusion-textarea:focus-within { background: var(--control-fill-focus); border-color: var(--brand-primary); }
 .merge-node .fusion-textarea.has-error { border-color: var(--status-danger); }

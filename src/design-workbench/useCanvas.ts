@@ -1,7 +1,7 @@
 import { readDemoState, writeDemoState, restoreDemoUrls, rememberDemoAsset } from './demo-storage';
 import { resolveProjectCover } from './project-cover';
 import type { Notify } from './notification';
-import { CanvasIsolationCache, paintCanvasImage, paintCanvasScene, type CanvasPalette } from './canvas-renderer';
+import { CanvasIsolationCache, IMAGE_FILENAME_TOP_SPACE, paintCanvasImage, paintCanvasImageFilename, paintCanvasScene, type CanvasPalette } from './canvas-renderer';
 import { nextCanvasTime, orderArrangementUnits } from './canvas-order';
 import { MOTION_DURATION, easeOut } from './motion';
 import { downloadSelection } from './download-selection';
@@ -10,8 +10,14 @@ import { exportImage } from './download-image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { expandGroups, imageBounds, selectionBounds, type Alignment, type Bounds } from './canvas-selection';
 import { intersectsViewport, screenBounds } from './canvas-toolbar';
+import { placeAgentImageBatch } from './agent-image-placement';
+import { placeToolbarImageBatch } from './toolbar-image-placement';
+import { imageBatchFitZoom, placeAddedImages, restoreCanvasContentGroups } from './canvas-image-additions';
+import { createDesignCanvasFileNamer } from './canvas-image-filename';
+import { CANVAS_IMAGE_GAP } from './canvas-spacing';
+import { canvasMediaFilename, type GeneratedMediaFile } from '../canvas-media-filename';
 
-export type CanvasImage = { id: string; name: string; image: HTMLImageElement; url: string; mimeType?: string; x: number; y: number; width: number; height: number; addedAt?: number; generatedAt?: number; uploadedAt?: number; origin?: 'upload' | 'generated' | 'copy'; generationParentId?: string; generationRootId?: string; generationRootAddedAt?: number; generationBatchId?: string; generationIndex?: number; groupId?: string; groupedAt?: number; generating?: boolean; generationFailed?: boolean; taskResultId?: string; fit?: 'cover'; rotation?: number; radius?: number; opacity?: number; flipX?: boolean; flipY?: boolean; stroke?: string; strokeWidth?: number; strokeOpacity?: number; strokeStyle?: 'solid' | 'dashed' | 'dotted'; strokeAlign?: 'inside' | 'center' | 'outside'; favorite?: boolean; cover?: boolean };
+export type CanvasImage = { id: string; name: string; image: HTMLImageElement; url: string; mimeType?: string; generatedFile?: GeneratedMediaFile; x: number; y: number; width: number; height: number; addedAt?: number; additionBatchId?: string; contentGroupId?: string; agentConversationId?: string; generatedAt?: number; uploadedAt?: number; origin?: 'upload' | 'generated' | 'copy'; generationParentId?: string; generationRootId?: string; generationRootAddedAt?: number; generationBatchId?: string; generationIndex?: number; groupId?: string; groupedAt?: number; generating?: boolean; generationFailed?: boolean; taskResultId?: string; generationPlacement?: 'agent'; fit?: 'cover'; rotation?: number; radius?: number; opacity?: number; flipX?: boolean; flipY?: boolean; stroke?: string; strokeWidth?: number; strokeOpacity?: number; strokeStyle?: 'solid' | 'dashed' | 'dotted'; strokeAlign?: 'inside' | 'center' | 'outside'; favorite?: boolean; cover?: boolean };
 type Camera = { x: number; y: number; zoom: number };
 type Point = { x: number; y: number };
 function movableImageAt(images: CanvasImage[], point: Point, camera: Camera) {
@@ -24,12 +30,25 @@ function movableImageAt(images: CanvasImage[], point: Point, camera: Camera) {
       && Math.abs(dx * Math.sin(angle) + dy * Math.cos(angle)) <= image.height / 2;
   });
 }
-// All canvas zoom paths share a 10% minimum.
+// Manual zoom has a 10% minimum; C01 batch focus can fit larger result batches.
 const MIN_ZOOM = 0.1;
+function fittedCanvasZoom(bounds: Bounds, viewport: { width: number; height: number }) {
+  return Math.max(MIN_ZOOM, Math.min(Math.max(1, viewport.width) / bounds.width,
+    Math.max(1, viewport.height - IMAGE_FILENAME_TOP_SPACE) / bounds.height, 1));
+}
 const clamp = (n: number) => Math.min(4, Math.max(MIN_ZOOM, n));
 const editing = (target: EventTarget | null) => target instanceof HTMLElement && !!target.closest('input,textarea,select,[contenteditable],dialog');
 
 export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-CN') {
+  const [fileNamer] = useState(createDesignCanvasFileNamer);
+  const lookupImageFilename = useCallback((resultId: string) => fileNamer.lookup(resultId), [fileNamer]);
+  const [filenameIcon, setFilenameIcon] = useState<HTMLImageElement | null>(null);
+  useEffect(() => {
+    let active = true;
+    const image = new Image(); image.src = '/assets/design-workbench/canvas-image-name.svg';
+    void image.decode().then(() => { if (active) setFilenameIcon(image); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const lock = useRef(false);
   const [locked, setLocked] = useState(false);
@@ -63,7 +82,7 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
   }, [isolatedImageId]);
   const [images, setImages] = useState<CanvasImage[]>([]);
   const projectCover = useMemo(() => resolveProjectCover(images), [images]);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; id: string | null } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; id: string | null; worldPoint?: Point } | null>(null);
   const copied = useRef<CanvasImage[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const selected = selectedIds.length === 1 ? selectedIds[0] : null;
@@ -87,13 +106,13 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
         if (saved) {
           const items = await restoreDemoUrls(saved.images);
           const loaded = await Promise.all(items.map(async item => { const image = new Image(); image.src = item.url; await image.decode(); return { ...item, image }; }));
-          if (active && !live.current.images.length) { live.current.images = loaded; setImages(loaded); setCamera(saved.camera); }
+          if (active && !live.current.images.length) { const named = restoreCanvasContentGroups(fileNamer.restore(loaded)); live.current.images = named; setImages(named); setCamera(saved.camera); }
         }
       } catch { /* Keep the current session usable if stored Demo data cannot load. */ }
       if (active) setRestored(true);
     })();
     return () => { active = false; };
-  }, []);
+  }, [fileNamer]);
   useEffect(() => { if (restored) writeDemoState('canvas', { images, camera }); }, [restored, images, camera]);
   const placementAnimation = useRef<((finish: boolean) => void) | null>(null);
   const finishPlacement = useCallback(() => placementAnimation.current?.(true), []);
@@ -249,7 +268,8 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     if (lock.current) return;
     finishPlacement();
     const p = point ?? { x: live.current.size.width / 2, y: live.current.size.height / 2 };
-    const z = clamp(zoom), world = worldPoint(p);
+    // After a large C01 batch fitted below 10%, zooming out must not jump in.
+    const z = Math.min(4, Math.max(Math.min(MIN_ZOOM, live.current.camera.zoom), zoom)), world = worldPoint(p);
     transitionCamera({ x: p.x - world.x * z, y: p.y - world.y * z, zoom: z }, options?.animate, p, options?.duration);
   }, [worldPoint, transitionCamera]);
   const navigateMinimap = useCallback((x: number, y: number) => {
@@ -273,6 +293,91 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     const top = 80, bottom = Math.max(top + 1, viewport.height - 112);
     return { left, right, top, bottom };
   }, []);
+  const agentViewport = useCallback(() => {
+    const canvas = canvasRef.current, stage = canvas?.parentElement;
+    const rect = canvas?.getBoundingClientRect(), size = live.current.size;
+    let left = 16, right = size.width - 16, top = 16;
+    // Reserve fixed controls even on the empty canvas, where they appear with
+    // the first result. Include their actual position when compact UI stacks.
+    let bottom = size.height - (size.width <= 1300 ? 144 : 80);
+    if (stage && rect) {
+      const bounds = (selector: string) => {
+        const element = stage.querySelector<HTMLElement>(selector);
+        const box = element?.getBoundingClientRect();
+        return box && box.width > 0 && box.height > 0 ? box : null;
+      };
+      const leftPanel = bounds('#canvas-left-sidebar:not([data-phase="exit"])') ?? bounds('.left-tools');
+      const rightPanel = bounds('#canvas-right-sidebar:not([data-phase="exit"])');
+      if (leftPanel) left = Math.max(left, leftPanel.right - rect.left + 16);
+      if (rightPanel) right = Math.min(right, rightPanel.left - rect.left - 16);
+      const project = bounds('.project-panel');
+      if (project && project.right - rect.left > left && project.left - rect.left < right) top = Math.max(top, project.bottom - rect.top + 16);
+      for (const selector of ['.bottom-tools', '.zoom-tools']) {
+        const toolbar = bounds(selector);
+        if (toolbar && toolbar.right - rect.left > left && toolbar.left - rect.left < right) bottom = Math.min(bottom, toolbar.top - rect.top - 16);
+      }
+    }
+    return { left, right: Math.max(left + 1, right), top, bottom: Math.max(top + 1, bottom) };
+  }, []);
+  const focusAgentImages = useCallback((items: CanvasImage[]) => {
+    if (!items.length) return;
+    const bounds = selectionBounds(items), viewport = agentViewport();
+    // Only this batch determines scale, even when other objects are far away.
+    // Do not impose the manual zoom floor: a tall batch must remain fully visible.
+    const zoom = imageBatchFitZoom(bounds, { width: viewport.right - viewport.left, height: viewport.bottom - viewport.top }, IMAGE_FILENAME_TOP_SPACE);
+    const center = { x: (viewport.left + viewport.right) / 2, y: (viewport.top + viewport.bottom) / 2 };
+    transitionCamera({ x: center.x - (bounds.x + bounds.width / 2) * zoom, y: center.y + IMAGE_FILENAME_TOP_SPACE / 2 - (bounds.y + bounds.height / 2) * zoom, zoom }, true, center);
+  }, [agentViewport, transitionCamera]);
+  const focusAgentResults = useCallback((resultIds: string[]) => {
+    if (lock.current || !resultIds.length) return false;
+    finishPlacement();
+    const items = resultIds.map(id => live.current.images.find(item => item.taskResultId === id));
+    if (items.some(item => !item)) return false;
+    focusAgentImages(items as CanvasImage[]);
+    return true;
+  }, [finishPlacement, focusAgentImages]);
+  const addAgentImages = useCallback((items: (Omit<CanvasImage, 'x' | 'y'> & { taskResultId: string })[], options?: { agentConversationId?: string; appendAfter?: CanvasImage; focus?: boolean; acceptedTask?: boolean }) => {
+    if ((lock.current && !options?.acceptedTask) || !items.length) return { images: [], addedCount: 0 };
+    finishPlacement();
+    const state = live.current, viewport = agentViewport();
+    const seen = new Set(state.images.flatMap(item => item.taskResultId ? [item.taskResultId] : []));
+    const conversationId = options?.agentConversationId ?? items[0].agentConversationId ?? 'agent-demo-20261028';
+    const contentGroupId = `agent:${conversationId}`;
+    const pending = items.filter(item => {
+      if (seen.has(item.taskResultId)) return false;
+      seen.add(item.taskResultId); return true;
+    }).map(item => ({ ...fileNamer.assign(item, 'AI助手', state.images), addedAt: nextCanvasTime(), cover: false,
+      contentGroupId, agentConversationId: conversationId, origin: 'generated' as const, generationPlacement: 'agent' as const }));
+    const start = worldPoint({ x: viewport.left, y: viewport.top });
+    const width = pending.reduce((sum, item) => sum + item.width, 0) + Math.max(0, pending.length - 1) * CANVAS_IMAGE_GAP;
+    const height = Math.max(1, ...pending.map(item => item.height));
+    const targetZoom = options?.focus === false ? state.camera.zoom : imageBatchFitZoom({ width, height }, { width: viewport.right - viewport.left, height: viewport.bottom - viewport.top }, IMAGE_FILENAME_TOP_SPACE);
+    const additions = placeAgentImageBatch(pending, state.images, { ...start, width: (viewport.right - viewport.left) / state.camera.zoom, height: (viewport.bottom - viewport.top) / state.camera.zoom }, {
+      appendAfter: options?.appendAfter, filenameTopSpace: IMAGE_FILENAME_TOP_SPACE / Math.max(0.0001, targetZoom),
+    });
+    if (additions.length) {
+      if (options?.acceptedTask) {
+        // Later outputs belong to the already accepted operation. Keep that
+        // batch atomic in undo, including edits made while it was generating.
+        const batchIds = new Set(additions.map(item => item.generationBatchId));
+        const extend = (snapshot: CanvasImage[]) => snapshot.some(item => batchIds.has(item.generationBatchId))
+          ? [...snapshot, ...additions.filter(item => !snapshot.some(existing => existing.id === item.id))] : snapshot;
+        history.current = history.current.map(extend);
+        future.current = future.current.map(extend);
+        if (gesture.current) gesture.current.snapshot = extend(gesture.current.snapshot);
+      } else remember(state.images);
+      const next = [...state.images, ...additions];
+      // Commit before React paints so concurrent accepted tasks see reserved space.
+      live.current.images = next; setImages(next);
+      if (options?.focus !== false) {
+        selectMany(additions.filter(item => !item.generating).map(item => item.id));
+        focusAgentImages(additions);
+      }
+    } else if (options?.focus !== false) {
+      focusAgentResults(items.map(item => item.taskResultId));
+    }
+    return { images: additions, addedCount: additions.length };
+  }, [agentViewport, worldPoint, remember, selectMany, finishPlacement, focusAgentImages, focusAgentResults, fileNamer]);
   const fit = useCallback((options?: { animate?: boolean }) => {
     if (lock.current) return;
     finishPlacement();
@@ -280,8 +385,8 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     if (!items.length) { transitionCamera({ x: 0, y: 0, zoom: 1 }, options?.animate); return; }
     const bounds = selectionBounds(items);
     const { left, right, top, bottom } = arrangementViewport();
-    const zoom = Math.max(MIN_ZOOM, Math.min(Math.max(1, right - left) / bounds.width, (bottom - top) / bounds.height, 1));
-    const next = { x: (left + right) / 2 - (bounds.x + bounds.width / 2) * zoom, y: (top + bottom) / 2 - (bounds.y + bounds.height / 2) * zoom, zoom };
+    const zoom = fittedCanvasZoom(bounds, { width: right - left, height: bottom - top });
+    const next = { x: (left + right) / 2 - (bounds.x + bounds.width / 2) * zoom, y: (top + IMAGE_FILENAME_TOP_SPACE + bottom) / 2 - (bounds.y + bounds.height / 2) * zoom, zoom };
     transitionCamera(next, options?.animate);
   }, [arrangementViewport, transitionCamera]);
   const returnToContent = useCallback(() => {
@@ -440,7 +545,29 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     }
     const boxes = itemsByUnit.map(selectionBounds);
     const viewport = arrangementViewport();
-    const positions = arrangeBoxes(boxes, layout, (viewport.right - viewport.left) / (viewport.bottom - viewport.top));
+    const viewportSize = { width: viewport.right - viewport.left, height: viewport.bottom - viewport.top };
+    const aspectRatio = viewportSize.width / viewportSize.height;
+    // Names occupy 16px + an 8px gap in screen space. Reserve that height in
+    // each layout cell, in addition to the shared world-pixel spacing.
+    // Whole-canvas arrangement subsequently fits the view, so solve against
+    // that destination zoom instead of using the pre-arrangement camera.
+    let labelZoom = scope === 'canvas' ? 1 : state.camera.zoom;
+    let positions: Point[] = [];
+    for (let pass = 0; ; pass++) {
+      const filenameHeight = IMAGE_FILENAME_TOP_SPACE / labelZoom;
+      positions = arrangeBoxes(boxes.map(box => ({ ...box, height: box.height + filenameHeight })), layout, aspectRatio);
+      if (scope === 'selection') break;
+      const arrangedBounds = {
+        x: 0, y: 0,
+        width: Math.max(...positions.map((point, index) => point.x + boxes[index].width)),
+        height: Math.max(...positions.map((point, index) => point.y + boxes[index].height)),
+      };
+      const fitZoom = fittedCanvasZoom(arrangedBounds, viewportSize);
+      if (fitZoom >= labelZoom) break;
+      // Round downward to avoid a floating-point convergence loop. If packing
+      // keeps changing, the normal fit floor provides a safe bounded fallback.
+      labelZoom = pass < 20 ? Math.max(MIN_ZOOM, Math.floor(fitZoom * 1000) / 1000) : MIN_ZOOM;
+    }
     const origin = selectionBounds(targets);
     const offsets = new Map<string, Point>();
     itemsByUnit.forEach((members, index) => {
@@ -460,71 +587,114 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     animatePlacement(next, scope === 'canvas' ? () => fit({ animate: true }) : undefined);
   }, [remember, fit, arrangementViewport, finishPlacement, animatePlacement]);
 
-  const addImages = useCallback((items: Omit<CanvasImage, 'x' | 'y'>[]) => {
-    if (lock.current) return;
+  const addImages = useCallback((items: Omit<CanvasImage, 'x' | 'y'>[], options?: { point?: Point }) => {
+    if (lock.current || !items.length) return;
     finishPlacement();
-    if (!items.length) return;
-    const { images: old, size: viewport } = live.current;
-    const center = worldPoint({ x: viewport.width / 2, y: viewport.height / 2 });
-    const columns = Math.min(4, items.length), gap = 32;
-    const cellWidth = Math.max(...items.map(item => item.width));
-    const cellHeight = Math.max(...items.map(item => item.height));
-    const rows = Math.ceil(items.length / columns);
-    const width = columns * cellWidth + (columns - 1) * gap;
-    const height = rows * cellHeight + (rows - 1) * gap;
-    const additions = items.map((item, index) => ({ ...item, cover: false, origin: 'upload' as const, uploadedAt: item.uploadedAt ?? nextCanvasTime(), id: crypto.randomUUID(), addedAt: nextCanvasTime(), generatedAt: undefined, generationParentId: undefined, generationRootId: undefined, generationRootAddedAt: undefined, generationBatchId: undefined, generationIndex: undefined, groupId: undefined, groupedAt: undefined, x: center.x - width / 2 + (index % columns) * (cellWidth + gap), y: center.y - height / 2 + Math.floor(index / columns) * (cellHeight + gap) }));
-    remember(old); const next = [...old, ...additions]; live.current.images = next;
-    setImages(next); setSelected(additions[0].id); fit();
-  }, [fit, remember, worldPoint, finishPlacement]);
-
-  // Insert directly beside the source image, allowing overlap with existing objects.
-  const beginGeneration = useCallback((sourceId: string | undefined, count: number, fallback?: { name?: string; taskRecordId?: string; sourceSize?: { width: number; height: number } }) => {
-    finishPlacement();
-    const state = live.current, existingSource = state.images.find(item => item.id === sourceId);
-    if (existingSource?.generating || existingSource?.generationFailed || (!existingSource && !fallback)) return [];
-    // Historical tasks can outlive their canvas input. Reserve a result batch
-    // after existing content, or at the viewport center on an empty canvas.
-    const content = state.images.length ? selectionBounds(state.images) : null;
-    const viewport = editingViewport();
-    const center = { x: ((viewport.left + viewport.right) / 2 - state.camera.x) / state.camera.zoom, y: (state.size.height / 2 - state.camera.y) / state.camera.zoom };
-    const source: CanvasImage = existingSource ?? {
-      id: sourceId ?? crypto.randomUUID(), name: fallback?.name ?? '生成结果', image: new Image(), url: '',
-      x: content ? content.x + content.width : center.x - 240,
-      y: content?.y ?? center.y - 200, width: 0, height: 400, addedAt: nextCanvasTime(),
-    };
-    // Loading follows the input image; decoded results supply their own dimensions.
-    const height = existingSource?.height ?? fallback?.sourceSize?.height ?? source.height;
-    const width = existingSource?.width ?? fallback?.sourceSize?.width ?? height;
-    const anchor = selectionBounds([source]);
-    const gap = 40;
-    const x = !existingSource && !content ? center.x - (count * width + (count - 1) * gap) / 2 : anchor.x + anchor.width + gap;
-    const y = !existingSource && !content ? center.y - height / 2 : anchor.y;
-    const batchId = crypto.randomUUID();
-    const additions = Array.from({ length: count }, (_, index): CanvasImage => ({
-      id: crypto.randomUUID(), addedAt: nextCanvasTime(), name: `${source.name} · ${index + 1}`, image: source.image, url: source.url,
-      generationParentId: source.id, generationRootId: source.generationRootId ?? source.id,
-      generationRootAddedAt: source.generationRootAddedAt ?? source.addedAt ?? 0,
-      generationBatchId: batchId, generationIndex: index, origin: 'generated',
-      x: x + index * (width + gap), y,
-      width, height, generating: true, fit: 'cover',
-    }));
-    if (fallback?.taskRecordId) additions.forEach(item => { item.taskResultId = `${fallback.taskRecordId}:${item.id}`; });
+    const state = live.current, viewport = agentViewport();
+    const start = worldPoint({ x: viewport.left, y: viewport.top });
+    const additionBatchId = crypto.randomUUID();
+    const pending = items.map(item => ({ ...item, name: canvasMediaFilename(item.name, item.url), generatedFile: undefined,
+      width: item.image.naturalWidth || item.width, height: item.image.naturalHeight || item.height,
+      cover: false, origin: 'upload' as const, uploadedAt: item.uploadedAt ?? nextCanvasTime(), id: crypto.randomUUID(),
+      addedAt: nextCanvasTime(), additionBatchId, contentGroupId: `added:${additionBatchId}`, agentConversationId: undefined,
+      generatedAt: undefined, generationParentId: undefined, generationRootId: undefined, generationRootAddedAt: undefined,
+      generationBatchId: undefined, generationIndex: undefined, taskResultId: undefined, generationPlacement: undefined,
+      generating: false, generationFailed: false, groupId: undefined, groupedAt: undefined }));
+    const width = pending.reduce((sum, item) => sum + item.width, 0) + (pending.length - 1) * CANVAS_IMAGE_GAP;
+    const height = Math.max(...pending.map(item => item.height));
+    const targetZoom = imageBatchFitZoom({ width, height }, { width: viewport.right - viewport.left, height: viewport.bottom - viewport.top }, IMAGE_FILENAME_TOP_SPACE);
+    const additions = placeAddedImages(pending, state.images,
+      { ...start, width: (viewport.right - viewport.left) / state.camera.zoom, height: (viewport.bottom - viewport.top) / state.camera.zoom },
+      { point: options?.point, filenameTopSpace: IMAGE_FILENAME_TOP_SPACE / Math.max(0.0001, targetZoom) });
     remember(state.images);
-    const next = [...state.images, ...additions];
-    animatePlacement(next);
+    const next = [...state.images, ...additions]; live.current.images = next;
+    setImages(next); selectMany(additions.map(item => item.id));
+    if (!options?.point) focusAgentImages(additions);
+  }, [agentViewport, focusAgentImages, remember, worldPoint, finishPlacement, selectMany]);
+
+  // Toolbar tasks reserve a complete row below all current content; Agent
+  // rounds reserve each image only as that image starts.
+  const beginGeneration = useCallback((sourceId: string | undefined, count: number, fallback?: {
+    name?: string; taskRecordId?: string; sourceSize?: { width: number; height: number };
+    outputSize?: { width: number; height: number }; outputSizes?: { width: number; height: number }[];
+    placement?: 'agent'; agentConversationId?: string; generationIndex?: number; sourceIds?: string[];
+  }) => {
+    const acceptedContinuation = fallback?.placement === 'agent' && (fallback.generationIndex ?? 0) > 0;
+    if ((lock.current && !acceptedContinuation) || count < 1) return [];
+    finishPlacement();
+    if (fallback?.placement === 'agent') {
+      const batchId = fallback.taskRecordId ?? crypto.randomUUID();
+      const index = fallback.generationIndex ?? 0;
+      const output = fallback.outputSize ?? fallback.sourceSize;
+      // No speculative placeholder until the Demo workflow resolves real pixels.
+      if (!output || output.width <= 0 || output.height <= 0) return [];
+      const image = new Image();
+      image.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/%3E';
+      const previous = live.current.images.filter(item => item.generationBatchId === batchId)
+        .sort((a, b) => (b.generationIndex ?? 0) - (a.generationIndex ?? 0))[0];
+      return addAgentImages(Array.from({ length: count }, (_, offset) => {
+        const id = crypto.randomUUID();
+        return fileNamer.assign({
+          id, taskResultId: `${batchId}:${id}`, agentConversationId: fallback.agentConversationId,
+          name: `${fallback.name ?? 'AI助手'} · ${index + offset + 1}.png`, image, url: image.src,
+          width: output.width, height: output.height,
+          generating: true, generationBatchId: batchId, generationIndex: index + offset,
+        }, fallback.name ?? 'AI助手', live.current.images);
+      }), { agentConversationId: fallback.agentConversationId, appendAfter: index > 0 ? previous : undefined,
+        focus: index === 0, acceptedTask: acceptedContinuation }).images;
+    }
+    const state = live.current;
+    const normalized = restoreCanvasContentGroups(state.images);
+    const requestedIds = new Set([sourceId, ...(fallback?.sourceIds ?? [])].filter(Boolean));
+    const sources = normalized.filter(item => requestedIds.has(item.id) && !item.generating && !item.generationFailed);
+    const existingSource = normalized.find(item => item.id === sourceId);
+    if (existingSource?.generating || existingSource?.generationFailed || (!existingSource && !fallback)) return [];
+    const viewport = agentViewport();
+    const start = worldPoint({ x: viewport.left, y: viewport.top });
+    const source = existingSource;
+    const defaultSize = fallback?.outputSize ?? fallback?.sourceSize
+      ?? { width: source?.image.naturalWidth || source?.width || 1024, height: source?.image.naturalHeight || source?.height || 1024 };
+    const sizes = Array.from({ length: count }, (_, index) => fallback?.outputSizes?.[index] ?? defaultSize);
+    if (sizes.some(size => size.width <= 0 || size.height <= 0)) return [];
+    const batchId = fallback?.taskRecordId ?? crypto.randomUUID();
+    const groupIds = new Set(sources.map(item => item.contentGroupId!));
+    const contentGroupId = groupIds.size === 1 ? [...groupIds][0] : `tool:${batchId}`;
+    const image = source?.image ?? new Image();
+    const pending = sizes.map((size, index): Omit<CanvasImage, 'x' | 'y'> => {
+      const result: Omit<CanvasImage, 'x' | 'y'> = {
+        id: crypto.randomUUID(), addedAt: nextCanvasTime(), name: `${source?.name ?? '生成结果'} · ${index + 1}`, image, url: source?.url ?? '',
+        generationParentId: source?.id, generationRootId: source?.generationRootId ?? source?.id,
+        generationRootAddedAt: source?.generationRootAddedAt ?? source?.addedAt ?? 0,
+        generationBatchId: batchId, generationIndex: index, contentGroupId, origin: 'generated',
+        width: size.width, height: size.height, generating: true, fit: 'cover',
+      };
+      if (fallback?.taskRecordId) result.taskResultId = `${fallback.taskRecordId}:${result.id}`;
+      return fileNamer.assign(result, fallback?.name ?? '快捷编辑', state.images);
+    });
+    const batchSize = { width: sizes.reduce((sum, size) => sum + size.width, 0) + (count - 1) * CANVAS_IMAGE_GAP,
+      height: Math.max(...sizes.map(size => size.height)) };
+    const targetZoom = imageBatchFitZoom(batchSize, {
+      width: viewport.right - viewport.left, height: viewport.bottom - viewport.top,
+    }, IMAGE_FILENAME_TOP_SPACE);
+    const filenameTopSpace = IMAGE_FILENAME_TOP_SPACE / Math.min(state.camera.zoom, targetZoom);
+    const additions = placeToolbarImageBatch(pending, normalized,
+      { ...start, width: (viewport.right - viewport.left) / state.camera.zoom, height: (viewport.bottom - viewport.top) / state.camera.zoom }, filenameTopSpace);
+    remember(state.images);
+    const next = [...normalized, ...additions]; live.current.images = next; setImages(next);
+    selectMany([]); focusAgentImages(additions);
     return additions;
-  }, [remember, finishPlacement, animatePlacement, editingViewport]);
+  }, [remember, finishPlacement, agentViewport, worldPoint, selectMany, focusAgentImages, addAgentImages, fileNamer]);
 
   // Single-image retry is available only on an existing failed canvas tile.
   const beginResultRetry = useCallback((resultId: string, targetResultId = resultId) => {
     finishPlacement();
     const existing = live.current.images.find(item => item.taskResultId === resultId || item.id === resultId);
     if (!existing || existing.generating || !existing.generationFailed) return null;
-    const placeholder = { ...existing, generating: true, generationFailed: false, taskResultId: targetResultId };
+    const placeholder = fileNamer.assign({ ...existing, generating: true, generationFailed: false, taskResultId: targetResultId }, existing.generatedFile?.featureLabel ?? '快捷编辑');
     const next = live.current.images.map(item => item.id === existing.id ? placeholder : item);
     live.current.images = next; setImages(next);
     return placeholder;
-  }, [finishPlacement]);
+  }, [finishPlacement, fileNamer]);
 
   const finishGeneration = useCallback((ids: string[], results: (Omit<CanvasImage, 'x' | 'y'> | null)[] | null, preserveFailure = false) => {
     finishPlacement();
@@ -535,17 +705,18 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     const settle = (items: CanvasImage[]) => items.flatMap(item => {
       if (!resultById.has(item.id)) return [item];
       const result = resultById.get(item.id);
-      return result ? [{ ...item, name: result.name, url: result.url, image: result.image, width: result.image.naturalWidth, height: result.image.naturalHeight, mimeType: result.mimeType, generatedAt: result.generatedAt, generating: false, generationFailed: false }] : preserveFailure ? [{ ...item, generating: false, generationFailed: true }] : [];
+      return result ? [{ ...item, ...fileNamer.complete(item, result), url: result.url, image: result.image, width: result.image.naturalWidth, height: result.image.naturalHeight, mimeType: result.mimeType, generatedAt: result.generatedAt, generating: false, generationFailed: false }] : preserveFailure ? [{ ...item, generating: false, generationFailed: true }] : [];
     });
     // Undo/redo must never bring back a placeholder whose task has already finished.
     history.current = history.current.map(settle); future.current = future.current.map(settle);
     if (gesture.current) gesture.current.snapshot = settle(gesture.current.snapshot);
     const next = settle(live.current.images); live.current.images = next; setImages(next);
-  }, [finishPlacement]);
+  }, [finishPlacement, fileNamer]);
 
   const upload = useCallback(async (files: FileList | File[], point?: Point) => {
     if (lock.current) return;
     finishPlacement();
+    const dropPoint = point ? worldPoint(point) : undefined;
     const accepted = Array.from(files).filter(file => ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/svg+xml'].includes(file.type) && file.size <= 20 * 1024 * 1024);
     if (accepted.length !== files.length) notify('支持 JPG、PNG、WebP、SVG、GIF，单张图片不超过 20 MB', 'error');
     if (!accepted.length) return;
@@ -557,14 +728,8 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     const loaded = results.flatMap(r => r.status === 'fulfilled' ? [r.value] : []);
     if (loaded.length !== accepted.length) notify('部分图片无法读取，请重新选择', 'error');
     if (!loaded.length || lock.current) return;
-    finishPlacement();
-    const { images: old, size: viewport } = live.current;
-    const center = worldPoint(point ?? { x: viewport.width / 2, y: viewport.height / 2 });
-    const total = loaded.reduce((sum, img) => sum + img.width, 0) + (loaded.length - 1) * 32;
-    let nextX = center.x - total / 2;
-    const additions = loaded.map(img => { const item = { ...img, addedAt: nextCanvasTime(), x: nextX, y: center.y - img.height / 2 }; nextX += img.width + 32; return item; });
-    remember(old); const next = [...old, ...additions]; live.current.images = next; setImages(next); setSelected(additions[0].id);
-  }, [notify, remember, worldPoint, finishPlacement]);
+    addImages(loaded, dropPoint ? { point: dropPoint } : undefined);
+  }, [notify, worldPoint, finishPlacement, addImages]);
 
   useEffect(() => {
     const canvas = canvasRef.current!;
@@ -588,6 +753,9 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
       background: style.getPropertyValue('--background-canvas').trim(),
       surface: style.getPropertyValue('--background-default').trim(),
       text: style.getPropertyValue('--text-secondary').trim(),
+      filenameText: style.getPropertyValue('--text-tertiary').trim(),
+      filenameIcon,
+      foregroundFilenameIds: new Set(selectedIds),
       track: style.getPropertyValue('--border-strong').trim(),
       progress: style.getPropertyValue('--brand-primary-hover').trim(),
       loadingLabel: locale === 'en' ? 'Generating...' : '\u751f\u6210\u4e2d...',
@@ -613,12 +781,14 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
         ctx.fillRect(0, 0, size.width, size.height); ctx.restore();
       }
       ctx.save(); ctx.translate(camera.x, camera.y); ctx.scale(camera.zoom, camera.zoom);
-      paintCanvasImage(ctx, editingImage, palette); ctx.restore();
+      paintCanvasImage(ctx, editingImage, palette);
+      if (!palette.foregroundFilenameIds.has(editingImage.id)) paintCanvasImageFilename(ctx, editingImage, palette, camera.zoom);
+      ctx.restore();
     } else {
       isolationCache.current?.dispose(); isolationCache.current = null;
       paintCanvasScene(ctx, images, camera, size, palette);
     }
-  }, [images, camera, size, theme, locale, isolation, projectCover]);
+  }, [images, selectedIds, camera, size, theme, locale, isolation, projectCover, filenameIcon]);
 
   useEffect(() => {
     const canvas = canvasRef.current!, stage = canvas.parentElement!;
@@ -639,7 +809,7 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
       const state = live.current;
       const hit = movableImageAt(state.images, local(e), state.camera);
       e.preventDefault(); gesture.current = null; setPanning(false); setMarquee(null);
-      if (!hit) { setSelected(null); setContextMenu({ x: e.clientX, y: e.clientY, id: null }); return; }
+      if (!hit) { setSelected(null); setContextMenu({ x: e.clientX, y: e.clientY, id: null, worldPoint: worldPoint({ x: e.clientX - canvas.getBoundingClientRect().left, y: e.clientY - canvas.getBoundingClientRect().top }) }); return; }
       live.current.selected = hit.id; setSelected(hit.id); setContextMenu({ x: e.clientX, y: e.clientY, id: hit.id });
     };
     const down = (e: PointerEvent) => {
@@ -726,5 +896,5 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     return () => { canvas.removeEventListener('pointerenter', move); canvas.removeEventListener('pointerleave', leave); canvas.removeEventListener('contextmenu', context); stage.removeEventListener('wheel', wheel, true); canvas.removeEventListener('pointerdown', down); canvas.removeEventListener('pointermove', move); canvas.removeEventListener('pointerup', up); canvas.removeEventListener('pointercancel', up); window.removeEventListener('keydown', keydown); window.removeEventListener('keyup', keyup); window.removeEventListener('blur', blur); };
   }, [fit, remember, removeSelected, undo, redo, worldPoint, zoomAt, copySelected, duplicate, paste, selectMany, setSelected, groupSelection, updateMoveCursor, finishPlacement]);
   useEffect(() => () => { urls.current.forEach(url => URL.revokeObjectURL(url)); }, []);
-  return { restored, projectCover, isolationActive: isolation.amount > 0 && images.some(image => image.id === isolation.id && !image.generating), locked, setInteractionLocked, setQuickEditing, blankClickVersion, setIsolatedImageId, editingViewport, focusImage, selectedIds, marquee, selectMany, updateImages, groupSelection, alignSelection, contextMenu, setContextMenu, copySelected, paste, reorder, setCover, resetCover, downloadImage, size, mode, effectiveMode, setMode, beginEdit, updateSelected, duplicate, arrange, redo, canUndo: !images.some(image => image.generating) && history.current.length > 0, canRedo: !images.some(image => image.generating) && future.current.length > 0, historyVersion, canvasRef, images, selected, setSelected, camera, panning, upload, addImages, beginGeneration, beginResultRetry, finishGeneration, zoomAt, navigateMinimap, fit, returnToContent, removeSelected, undo };
+  return { restored, lookupImageFilename, projectCover, isolationActive: isolation.amount > 0 && images.some(image => image.id === isolation.id && !image.generating), locked, setInteractionLocked, setQuickEditing, blankClickVersion, setIsolatedImageId, editingViewport, focusImage, focusAgentResults, addAgentImages, selectedIds, marquee, selectMany, updateImages, groupSelection, alignSelection, contextMenu, setContextMenu, copySelected, paste, reorder, setCover, resetCover, downloadImage, size, mode, effectiveMode, setMode, beginEdit, updateSelected, duplicate, arrange, redo, canUndo: !images.some(image => image.generating) && history.current.length > 0, canRedo: !images.some(image => image.generating) && future.current.length > 0, historyVersion, canvasRef, images, selected, setSelected, camera, panning, upload, addImages, beginGeneration, beginResultRetry, finishGeneration, zoomAt, navigateMinimap, fit, returnToContent, removeSelected, undo };
 }

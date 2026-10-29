@@ -4,7 +4,51 @@ import { intersectsViewport, screenBounds } from './canvas-toolbar';
 
 type Camera = { x: number; y: number; zoom: number };
 type Viewport = { width: number; height: number };
-export type CanvasPalette = { background: string; surface: string; text: string; track: string; progress: string; loadingLabel: string; badgeBackground: string; badgeText: string; coverId?: string; coverLabel: string; vectorLabel: string; fontFamily: string };
+export type CanvasPalette = { background: string; surface: string; text: string; filenameText: string; filenameIcon: HTMLImageElement | null; foregroundFilenameIds: ReadonlySet<string>; track: string; progress: string; loadingLabel: string; badgeBackground: string; badgeText: string; coverId?: string; coverLabel: string; vectorLabel: string; fontFamily: string };
+
+// Figma 31:17639: 16px image icon, 4px gap, 12/16 text and an 8px
+// image gap stay in screen pixels; only the row width follows the image zoom.
+export const IMAGE_FILENAME_TOP_SPACE = 24;
+const tintedFilenameIcons = new Map<string, HTMLCanvasElement>();
+function filenameIcon(source: HTMLImageElement, color: string) {
+  const key = `${source.src}:${color}`;
+  const cached = tintedFilenameIcons.get(key);
+  if (cached) return cached;
+  const canvas = document.createElement('canvas'); canvas.width = 32; canvas.height = 32;
+  const context = canvas.getContext('2d');
+  if (!context) return source;
+  context.drawImage(source, 0, 0, 32, 32);
+  context.globalCompositeOperation = 'source-in';
+  context.fillStyle = color; context.fillRect(0, 0, 32, 32);
+  tintedFilenameIcons.set(key, canvas);
+  return canvas;
+}
+
+export function paintCanvasImageFilename(ctx: CanvasRenderingContext2D, image: CanvasImage, palette: CanvasPalette, zoom: number) {
+  if (image.generating || image.generationFailed) return;
+  const bounds = imageBounds(image), width = bounds.width * zoom;
+  if (!image.name || width <= 0) return;
+  ctx.save(); ctx.translate(bounds.x, bounds.y); ctx.scale(1 / zoom, 1 / zoom);
+  ctx.globalAlpha = 1;
+  ctx.beginPath(); ctx.rect(0, -IMAGE_FILENAME_TOP_SPACE, width, 16); ctx.clip();
+  if (palette.filenameIcon) ctx.drawImage(filenameIcon(palette.filenameIcon, palette.filenameText), 0, -IMAGE_FILENAME_TOP_SPACE, 16, 16);
+  ctx.font = `400 12px ${palette.fontFamily}`;
+  ctx.fillStyle = palette.filenameText; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  const available = width - 20;
+  let name = image.name;
+  if (ctx.measureText(name).width > available) {
+    const letters = Array.from(name), ellipsis = '…';
+    let low = 0, high = letters.length;
+    while (low < high) {
+      const middle = Math.ceil((low + high) / 2);
+      if (ctx.measureText(letters.slice(0, middle).join('') + ellipsis).width <= available) low = middle;
+      else high = middle - 1;
+    }
+    name = ctx.measureText(ellipsis).width <= available ? letters.slice(0, low).join('') + ellipsis : '';
+  }
+  ctx.fillText(name, 20, -IMAGE_FILENAME_TOP_SPACE + 8);
+  ctx.restore();
+}
 
 function paintImageBadges(ctx: CanvasRenderingContext2D, img: CanvasImage, palette: CanvasPalette) {
   const vector = img.mimeType === 'image/svg+xml' || /\.svg(?:[?#]|$)/i.test(img.name) || /\.svg(?:[?#]|$)|^data:image\/svg\+xml/i.test(img.url);
@@ -31,7 +75,7 @@ function paintImageBadges(ctx: CanvasRenderingContext2D, img: CanvasImage, palet
 function visible(image: CanvasImage, camera: Camera, viewport: Viewport) {
   const box = imageBounds(image);
   // Include outside/rotated strokes and antialiasing in the culling bounds.
-  const margin = (image.strokeWidth ?? 0) * Math.SQRT2 + 2 / camera.zoom;
+  const margin = (image.strokeWidth ?? 0) * Math.SQRT2 + (IMAGE_FILENAME_TOP_SPACE + 2) / camera.zoom;
   return intersectsViewport(screenBounds({ x: box.x - margin, y: box.y - margin, width: box.width + margin * 2, height: box.height + margin * 2 }, camera), viewport);
 }
 
@@ -88,6 +132,7 @@ export function paintCanvasScene(ctx: CanvasRenderingContext2D, images: CanvasIm
     if (image.id === excludedId || !visible(image, camera, viewport)) continue;
     if (image.generating) { if (includePending) paintPendingTile(ctx, image, palette, camera.zoom); }
     else paintCanvasImage(ctx, image, palette);
+    if (!palette.foregroundFilenameIds.has(image.id)) paintCanvasImageFilename(ctx, image, palette, camera.zoom);
   }
   ctx.restore();
 }
@@ -106,7 +151,7 @@ export class CanvasIsolationCache {
     const scale = Math.min(dpr, 2, Math.sqrt(MAX_PIXELS / viewport.width / viewport.height), MAX_EDGE / viewport.width, MAX_EDGE / viewport.height);
     const width = Math.max(1, Math.floor(viewport.width * scale)), height = Math.max(1, Math.floor(viewport.height * scale));
     const key = this.key;
-    const label = [palette.loadingLabel, palette.coverLabel, palette.vectorLabel, palette.coverId].join('|');
+    const label = [palette.loadingLabel, palette.coverLabel, palette.vectorLabel, palette.coverId, palette.filenameText, palette.filenameIcon?.src, [...palette.foregroundFilenameIds].join(',')].join('|');
     if (key && key.images === images && key.id === id && key.camera.x === camera.x && key.camera.y === camera.y && key.camera.zoom === camera.zoom && key.viewport.width === viewport.width && key.viewport.height === viewport.height && key.width === width && key.height === height && key.theme === theme && key.label === label) return this.canvas;
     try {
       const canvas = this.canvas ??= document.createElement('canvas');

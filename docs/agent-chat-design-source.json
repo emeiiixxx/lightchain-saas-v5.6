@@ -1,0 +1,391 @@
+{
+  "fileKey": "A3oI9FzDPseUH4ybk7mA3H",
+  "nodeId": "25:15945",
+  "designUrl": "https://www.figma.com/design/A3oI9FzDPseUH4ybk7mA3H/Lightchain-SaaS-v5.6.0?node-id=25-15945&m=dev",
+  "retrievedOn": "2026-10-28",
+  "scope": "设计生产工作台右侧 AI 助手对话样式",
+  "assetPolicy": "保留 Figma 导出的原始 SVG 和图片内容；图片本地后缀按实际格式命名，未转码；示例图片仅用于演示会话。",
+  "assets": [
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/assistant.svg",
+      "source": "https://www.figma.com/api/mcp/asset/4a717100-93a6-49d9-8a23-1beef19c5e95.svg",
+      "slot": "AI助手页签",
+      "bytes": 1480,
+      "svgRoot": {
+        "width": "16",
+        "height": "16",
+        "viewBox": "0 0 16 16"
+      }
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/properties.svg",
+      "source": "https://www.figma.com/api/mcp/asset/92cc6935-4e20-4a34-bda4-6d15f0ed0977.svg",
+      "slot": "图层属性页签",
+      "bytes": 1205,
+      "svgRoot": {
+        "width": "16",
+        "height": "16",
+        "viewBox": "0 0 16 16"
+      }
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/sidebar.svg",
+      "source": "https://www.figma.com/api/mcp/asset/4dfd410e-28e3-4239-b993-8a3c6f0979bf.svg",
+      "slot": "收起右侧栏",
+      "bytes": 800,
+      "svgRoot": {
+        "width": "24",
+        "height": "24",
+        "viewBox": "0 0 24 24"
+      }
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/chevron-down.svg",
+      "source": "https://www.figma.com/api/mcp/asset/4e446eef-6caf-4b88-a4a2-3e0c8f467da9.svg",
+      "slot": "会话菜单箭头",
+      "bytes": 601,
+      "svgRoot": {
+        "width": "16",
+        "height": "16",
+        "viewBox": "0 0 16 16"
+      }
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/new-chat.svg",
+      "source": "https://www.figma.com/api/mcp/asset/86a7be7b-0123-40e8-8f9d-83d417f08f76.svg",
+      "slot": "新建对话",
+      "bytes": 1570,
+      "svgRoot": {
+        "width": "24",
+        "height": "24",
+        "viewBox": "0 0 24 24"
+      }
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/analyze.svg",
+      "source": "https://www.figma.com/api/mcp/asset/5aced6ea-1043-41c4-aae6-ff2d9e50c399.svg",
+      "slot": "图片分析卡片图标",
+      "bytes": 2372,
+      "svgRoot": {
+        "width": "20",
+        "height": "20",
+        "viewBox": "0 0 20 20"
+      }
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/chevron-right.svg",
+      "source": "https://www.figma.com/api/mcp/asset/49bae764-ef20-4a8d-8a9f-872b4b4e4fee.svg",
+      "slot": "图片分析卡片箭头",
+      "bytes": 600,
+      "svgRoot": {
+        "width": "16",
+        "height": "16",
+        "viewBox": "0 0 16 16"
+      }
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/image-task.svg",
+      "source": "https://www.figma.com/api/mcp/asset/606cc0d9-d579-4057-9115-140fee6b8eea.svg",
+      "slot": "图片任务卡片图标",
+      "bytes": 2182,
+      "svgRoot": {
+        "width": "20",
+        "height": "20",
+        "viewBox": "0 0 20 20"
+      }
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/reference.svg",
+      "source": "https://www.figma.com/api/mcp/asset/70167767-e9d3-4066-a55b-435de1256921.svg",
+      "slot": "结果图引用操作",
+      "bytes": 1464,
+      "svgRoot": {
+        "width": "16",
+        "height": "16",
+        "viewBox": "0 0 16 16"
+      }
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/send.svg",
+      "source": "https://www.figma.com/api/mcp/asset/3a299340-f59f-43d3-9820-5e2f92f68370.svg",
+      "slot": "结果图发送操作",
+      "bytes": 918,
+      "svgRoot": {
+        "width": "16",
+        "height": "16",
+        "viewBox": "0 0 16 16"
+      }
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/save.svg",
+      "source": "https://www.figma.com/api/mcp/asset/8a80092c-c315-4640-9fd8-253158148672.svg",
+      "slot": "结果图保存操作",
+      "bytes": 1868,
+      "svgRoot": {
+        "width": "16",
+        "height": "16",
+        "viewBox": "0 0 16 16"
+      }
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/download.svg",
+      "source": "https://www.figma.com/api/mcp/asset/17d9bcfc-07d7-4fc8-bcea-a89d7afc88c0.svg",
+      "slot": "结果图下载操作",
+      "bytes": 991,
+      "svgRoot": {
+        "width": "16",
+        "height": "16",
+        "viewBox": "0 0 16 16"
+      }
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/add.svg",
+      "source": "https://www.figma.com/api/mcp/asset/9950e704-3026-4d73-93fb-f83608017258.svg",
+      "slot": "添加附件",
+      "bytes": 607,
+      "svgRoot": {
+        "width": "24",
+        "height": "24",
+        "viewBox": "0 0 24 24"
+      }
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/submit.svg",
+      "source": "https://www.figma.com/api/mcp/asset/bf0a4534-46c2-4593-8ab4-a8591dcc3f99.svg",
+      "slot": "提交按钮",
+      "bytes": 703,
+      "svgRoot": {
+        "width": "24",
+        "height": "24",
+        "viewBox": "0 0 24 24"
+      },
+      "runtimeNote": "保留设计来源导出，当前Agent发送箭头改用submit-default.svg的不透明蒙版。"
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/reference-1.jpg",
+      "source": "https://www.figma.com/api/mcp/asset/92a8e042-42f5-44ff-8193-ac669d4dc2be.png",
+      "slot": "示例用户消息图片1标签",
+      "bytes": 357812,
+      "pixels": {
+        "width": 1383,
+        "height": 1383
+      },
+      "contentType": "image/jpeg",
+      "note": "Figma 资产地址使用 .png 后缀，原始响应内容为 JPEG；本地使用 .jpg 后缀，保留原始响应字节，未转码。"
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/reference-2.jpg",
+      "source": "https://www.figma.com/api/mcp/asset/93d21d7f-3b9b-4547-92bb-0fc98fb6a881.png",
+      "slot": "示例用户消息图片2标签",
+      "bytes": 357801,
+      "pixels": {
+        "width": 1383,
+        "height": 1383
+      },
+      "contentType": "image/jpeg",
+      "note": "Figma 资产地址使用 .png 后缀，原始响应内容为 JPEG；本地使用 .jpg 后缀，保留原始响应字节，未转码。"
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/result.jpg",
+      "source": "https://www.figma.com/api/mcp/asset/762a951c-5472-48a6-821f-f66616a05cbb.png",
+      "slot": "示例图片任务结果",
+      "bytes": 1232495,
+      "pixels": {
+        "width": 1696,
+        "height": 2528
+      },
+      "contentType": "image/jpeg",
+      "note": "Figma 资产地址使用 .png 后缀，原始响应内容为 JPEG；本地使用 .jpg 后缀，保留原始响应字节，未转码。"
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/thinking-face.svg",
+      "source": "https://www.figma.com/api/mcp/asset/f1c6c98c-07c5-4c03-8aae-3c3d81545cd6.svg",
+      "nodeId": "25:16723",
+      "slot": "助手图标静态轮廓",
+      "bytes": 1934,
+      "svgRoot": {
+        "width": "16.5001",
+        "height": "15",
+        "viewBox": "0 0 16.5001 15"
+      }
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/thinking-question.svg",
+      "source": "https://www.figma.com/api/mcp/asset/87caf9eb-3acf-4e6d-81bb-09eeb7c07ce7.svg",
+      "nodeId": "25:16726",
+      "slot": "助手问号",
+      "bytes": 1060,
+      "svgRoot": {
+        "width": "3.99512",
+        "height": "7.00391",
+        "viewBox": "0 0 3.99512 7.00391"
+      }
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/thinking-star.svg",
+      "source": "https://www.figma.com/api/mcp/asset/ed5aee88-10f0-430d-8e94-d8414bac9d46.svg",
+      "nodeId": "25:16729",
+      "slot": "大星光",
+      "bytes": 702,
+      "svgRoot": {
+        "width": "32",
+        "height": "32",
+        "viewBox": "0 0 32 32"
+      },
+      "runtimeFile": "public/assets/design-workbench/agent-chat-20261028/thinking-star-visible.svg",
+      "note": "保留原始导出；运行时副本仅将导出烘焙的首帧opacity=0改为1，显隐由原始3701ms关键帧控制。原SVG为32×32，通过父级比例分别显示为8×8和5×5；不改路径或根尺寸。"
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/thinking-star-small.svg",
+      "source": "https://www.figma.com/api/mcp/asset/91680e29-3c76-40da-a4c5-9bf3b803bba4.svg",
+      "nodeId": "25:16731",
+      "slot": "小星光",
+      "bytes": 888,
+      "svgRoot": {
+        "width": "32",
+        "height": "32",
+        "viewBox": "0 0 32 32"
+      },
+      "runtimeFile": "public/assets/design-workbench/agent-chat-20261028/thinking-star-small-visible.svg",
+      "note": "保留原始导出；运行时副本仅将导出烘焙的首帧opacity=0改为1，显隐由原始3701ms关键帧控制。原SVG为32×32，通过父级比例分别显示为8×8和5×5；不改路径或根尺寸。"
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/request-error.svg",
+      "source": "https://www.figma.com/api/mcp/asset/e8ddda4e-be7d-47cf-b0cc-2800acb0bec1.svg",
+      "nodeId": "25:17061",
+      "slot": "异常提示图标",
+      "bytes": 997,
+      "svgRoot": {
+        "width": "20",
+        "height": "20",
+        "viewBox": "0 0 20 20"
+      }
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/submit-disabled.svg",
+      "source": "https://www.figma.com/api/mcp/asset/7621edbc-0545-4bba-90e2-62bbf4bc5d7c.svg",
+      "nodeId": "6:12217",
+      "slot": "思考中禁用发送按钮图标",
+      "bytes": 703,
+      "svgRoot": {
+        "width": "24",
+        "height": "24",
+        "viewBox": "0 0 24 24"
+      },
+      "runtimeNote": "保留设计来源导出，当前Agent发送箭头改用submit-default.svg的不透明蒙版。"
+    },
+    {
+      "file": "public/assets/design-workbench/agent-chat-20261028/submit-default.svg",
+      "source": "https://www.figma.com/api/mcp/asset/6da43181-ce4d-410b-ae68-fec5ee4e18eb.svg",
+      "nodeId": "6:12209",
+      "slot": "Agent输入框默认态发送箭头；禁用态共用不透明蒙版，由语义token单独控制颜色",
+      "bytes": 686,
+      "svgRoot": {
+        "width": "24",
+        "height": "24",
+        "viewBox": "0 0 24 24"
+      }
+    }
+  ],
+  "inputStates": {
+    "thinking": {
+      "nodeId": "25:16718",
+      "url": "https://www.figma.com/design/A3oI9FzDPseUH4ybk7mA3H/Lightchain-SaaS-v5.6.0?node-id=25-16718&m=dev"
+    },
+    "exception": {
+      "nodeId": "25:17058",
+      "url": "https://www.figma.com/design/A3oI9FzDPseUH4ybk7mA3H/Lightchain-SaaS-v5.6.0?node-id=25-17058&m=dev"
+    },
+    "banner": {
+      "height": 56,
+      "overlapWithComposer": 12,
+      "padding": [
+        8,
+        12
+      ],
+      "topRadius": 16,
+      "contentHeight": 32
+    },
+    "thinkingIcon": {
+      "nodeId": "25:16721",
+      "size": 30,
+      "loopMs": 3701,
+      "tracks": [
+        "25:16724",
+        "25:16725",
+        "25:16726",
+        "25:16729",
+        "25:16731"
+      ]
+    },
+    "transition": "200ms ease-out；减少动态效果时关闭过渡及图标循环。",
+    "demoBehavior": "发送后模拟思考2秒，再创建现有图片任务。未指定张数时默认演示2张，第一张完成后再开始第二张，对话与画布逐张展示，不提前显示未开始图片的占位；指定张数时沿用输入数量。断网显示网络异常并每3秒尝试恢复，网络恢复时立即继续；立即重试沿用同一请求ID。异常状态的停止按钮取消尚未接受的请求，保留聊天内容及新输入草稿。已创建的画布任务独立运行，不受后续请求重试或停止影响。请求留在原会话；会话可切换。",
+    "boundary": "仅本地演示：网络状态来自浏览器online/offline，不代表真实服务可用性；没有接入Agent接口、真实重连协议或扣费。任务生成失败继续使用现有失败占位和重新生成入口。",
+    "default": {
+      "nodeId": "25:17112",
+      "url": "https://www.figma.com/design/A3oI9FzDPseUH4ybk7mA3H/Lightchain-SaaS-v5.6.0?node-id=25-17112&m=dev",
+      "icon": "24px原始默认态箭头；不透明蒙版配Text/on-brand-black。禁用态仅通过Text/on-brand-disabled控制透明度，避免使用自带50%透明度的SVG重复叠加。"
+    }
+  },
+  "canvasSelectionComposer": {
+    "nodeId": "50:17684",
+    "designUrl": "https://www.figma.com/design/A3oI9FzDPseUH4ybk7mA3H/Lightchain-SaaS-v5.6.0?node-id=50-17684&m=dev",
+    "retrievedOn": "2026-10-29",
+    "scope": "设计生产工作台 AI 助手输入框的画布图片引用标签",
+    "geometry": {
+      "tagHeight": 24,
+      "tagRadius": 6,
+      "tagPaddingInline": 4,
+      "tagInnerGap": 6,
+      "thumbnailSize": 16,
+      "thumbnailRadius": 4,
+      "closeButtonSize": 16,
+      "columnGap": 8,
+      "rowGap": 4,
+      "textHeight": 64,
+      "composerPadding": 12,
+      "composerRadius": 16,
+      "footerButtonSize": 40
+    },
+    "tokens": [
+      "--alpha-brand-20",
+      "--brand-primary",
+      "--text-secondary",
+      "--border-weak",
+      "--control-fill-default"
+    ],
+    "behavior": [
+      "单选、框选多张图片以半锁定标签跟随当前选区；取消选择移除对应半锁定项。",
+      "点击输入框或开始输入后，将当时的半锁定图片固定为参考图；之后切换选区保留已锁定项。",
+      "按画布实例ID去重，保持引用顺序；半锁定与锁定标签连续显示图片1、图片2等编号。",
+      "半锁定转锁定只触发一次500ms扫光；反复聚焦不重播，减少动态效果时直接切换。",
+      "移除标签仅移除引用；若该画布实例仍被选中，同时取消其选中，防止半锁定项立即回填。",
+      "生成中及失败占位不带入；发送使用当时显示的图片顺序，提交成功清空输入引用和选区。"
+    ],
+    "assets": [
+      {
+        "file": "public/assets/design-workbench/agent-composer-20261029/close.svg",
+        "source": "https://www.figma.com/api/mcp/asset/ba37e5e6-49ea-4af5-b0c3-1ea46386ccd1.svg",
+        "slot": "参考图标签关闭",
+        "width": 16,
+        "height": 16
+      },
+      {
+        "file": "public/assets/design-workbench/agent-composer-20261029/add.svg",
+        "source": "https://www.figma.com/api/mcp/asset/5f4a59f6-503f-44f5-b271-86d958d35ab4.svg",
+        "slot": "添加附件按钮",
+        "width": 24,
+        "height": 24
+      },
+      {
+        "file": "public/assets/design-workbench/agent-composer-20261029/submit.svg",
+        "source": "https://www.figma.com/api/mcp/asset/0e99046e-6f64-4452-9d8d-c8155c329cd0.svg",
+        "slot": "发送按钮",
+        "width": 24,
+        "height": 24
+      }
+    ],
+    "dynamicImagery": "缩略图使用当前画布或用户添加的实际图片，不使用设计稿中的占位示意图。",
+    "verification": "已读取设计节点与设计截图并保留原SVG；按用户要求未运行测试、构建或浏览器检查。"
+  }
+}

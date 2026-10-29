@@ -41,6 +41,7 @@ import { canGenerateMaterialWorkflow, createMaterialWorkflow, materialReferenceL
 import { ImageConnection } from './ImageConnection';
 import { canGenerateVideoWorkflow, normalizeVideoWorkflowSettings, createVideoWorkflow, removeVideoWorkflowSources, videoReferenceLimits, videoWorkflowBox, videoWorkflowReferences, videoWorkflowSourceIds, videoWorkflowSize, videoWorkflowTitle, type VideoWorkflow, type VideoReference } from '../video-workflow';
 import { arrangeVideoWorkflowMedia, reconcileVideoWorkflowLayout, type VideoLayoutState } from '../video-workflow-layout';
+import { centerVideoFlowAddition } from '../video-flow-addition-layout';
 import { bindCompletedTaskResults, createFashionVideoDemoResult, createMaterialDemoResults, createVideoDemoResult, demoPlaceholderSize } from '../video-workspace-demo';
 import { cropMaterialGrid, gridCropExample } from '../grid-crop';
 import { copyVideoCanvasSelection, pasteVideoCanvasSelection, prepareVideoCanvasMedia, readCanvasMedia, sizeVideoCanvasMedia, type VideoCanvasMedia } from '../video-canvas-media';
@@ -218,7 +219,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   const outsideView = items.length > 0 && !items.some(image => image.x * view.zoom + view.x < canvasSize.width && (image.x + image.width) * view.zoom + view.x > 0 && image.y * view.zoom + view.y < canvasSize.height && (image.y + image.height) * view.zoom + view.y > 0);
   const shownReturn = usePresence(outsideView ? true : null);
 
-  const replace = useCallback((next: Snapshot) => {
+  const replace = useCallback((next: Snapshot, centerCompletedResults = false) => {
+    const beforeSettlement = next;
     // Task settlement is independent of canvas undo. Restored snapshots resolve
     // old slots to their finished result or failure, never a stranded spinner.
     const images = withProjectCoverOrder(next.images.map(image => {
@@ -237,7 +239,10 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const workflows = next.workflows.map(normalizeVideoWorkflowSettings);
     const normalized = workflows.some((node, index) => node !== next.workflows[index]) ? { ...next, workflows } : next;
     const grouped = { ...normalized, layout: reconcileVideoWorkflowLayout(normalized.images, normalized.workflows, normalized.materialWorkflows, normalized.upscaleWorkflows, normalized.layout) };
-    current.current = grouped; setSnapshot(grouped);
+    // Only live settlement opts in. Undo/redo still resolves task state without
+    // rearranging a historical snapshot or adding another undo entry.
+    const settled = centerCompletedResults ? centerVideoFlowAddition(beforeSettlement, grouped) : grouped;
+    current.current = settled; setSnapshot(settled);
   }, []);
   // Apply the current media sizing rule to an already-open preview as well.
   useEffect(() => { replace(current.current); }, [replace]);
@@ -246,6 +251,9 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     history.current.future = [];
   }, []);
   const commit = useCallback((next: Snapshot) => { saveUndo(); replace(next); }, [replace, saveUndo]);
+  function commitFlowAddition(previous: Snapshot, next: Snapshot) {
+    commit(centerVideoFlowAddition(previous, next));
+  }
   function setProjectCoverFromMenu() {
     const previous = current.current;
     const target = previous.images.find(image => image.id === canvasMenu?.imageId);
@@ -527,8 +535,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     // Toolbar nodes keep their source's center even when they overlap.
     // Only an empty node without an explicit position avoids existing content.
     while (!source && !point && scene.some(item => node.x < item.x + item.width + 40 && node.x + size.width + 40 > item.x && node.y < item.y + item.height + 40 && node.y + size.height + 40 > item.y)) node.y += size.height + 40;
-    commit({ ...previous, workflows: [...previous.workflows, node], selected: [node.id] });
-    if (canvas.current && !point) animateView(fitImages([...(source ? [source] : []), videoWorkflowBox(node)], canvas.current.clientWidth, canvas.current.clientHeight));
+    commitFlowAddition(previous, { ...previous, workflows: [...previous.workflows, node], selected: [node.id] });
+    if (canvas.current && !point) animateView(fitImages([...(source ? [source] : []), videoWorkflowBox(current.current.workflows.find(item => item.id === node.id) ?? node)], canvas.current.clientWidth, canvas.current.clientHeight));
     canvas.current?.focus({ preventScroll: true });
   }
   function addMultiSelectionWorkflow(action: VideoMultiAction) {
@@ -552,11 +560,14 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     node.y = bounds.y + (bounds.height - size.height) / 2;
     // One editor and all source bindings form one undoable action; reuse canvas media.
     if (action === 'professional') {
-      commit({ ...previous, workflows: [...previous.workflows, node as VideoWorkflow], selected: [node.id] });
+      commitFlowAddition(previous, { ...previous, workflows: [...previous.workflows, node as VideoWorkflow], selected: [node.id] });
     } else {
-      commit({ ...previous, materialWorkflows: [...(previous.materialWorkflows ?? []), node as MaterialWorkflow], selected: [node.id] });
+      commitFlowAddition(previous, { ...previous, materialWorkflows: [...(previous.materialWorkflows ?? []), node as MaterialWorkflow], selected: [node.id] });
     }
-    if (canvas.current) animateView(fitImages([...selection.media, { ...node, ...size, name: '', url: '' }], canvas.current.clientWidth, canvas.current.clientHeight));
+    if (canvas.current) {
+      const addedNode = sceneItems(current.current).find(item => item.id === node.id)!;
+      animateView(fitImages([...selection.media, addedNode], canvas.current.clientWidth, canvas.current.clientHeight));
+    }
     canvas.current?.focus({ preventScroll: true });
   }
   function updateMaterialWorkflow(id: string, patch: Partial<MaterialWorkflow>) {
@@ -584,8 +595,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       kind, source,
     );
     while (!source && !point && scene.some(item => node.x < item.x + item.width + 40 && node.x + size.width + 40 > item.x && node.y < item.y + item.height + 40 && node.y + size.height + 40 > item.y)) node.y += size.height + 40;
-    commit({ ...previous, materialWorkflows: [...(previous.materialWorkflows ?? []), node], selected: [node.id] });
-    if (canvas.current && !point) animateView(fitImages([...(source ? [source] : []), materialWorkflowBox(node)], canvas.current.clientWidth, canvas.current.clientHeight));
+    commitFlowAddition(previous, { ...previous, materialWorkflows: [...(previous.materialWorkflows ?? []), node], selected: [node.id] });
+    if (canvas.current && !point) animateView(fitImages([...(source ? [source] : []), materialWorkflowBox(current.current.materialWorkflows?.find(item => item.id === node.id) ?? node)], canvas.current.clientWidth, canvas.current.clientHeight));
     canvas.current?.focus({ preventScroll: true });
   }
   function addUpscaleWorkflow(sourceId: string) {
@@ -595,8 +606,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const node = createVideoUpscaleWorkflow(source), size = videoUpscaleWorkflowSize();
     node.x = source.x + source.width + 80;
     node.y = source.y + (source.height - size.height) / 2;
-    commit({ ...previous, upscaleWorkflows: [...(previous.upscaleWorkflows ?? []), node], selected: [node.id] });
-    if (canvas.current) animateView(fitImages([source, videoUpscaleWorkflowBox(node)], canvas.current.clientWidth, canvas.current.clientHeight));
+    commitFlowAddition(previous, { ...previous, upscaleWorkflows: [...(previous.upscaleWorkflows ?? []), node], selected: [node.id] });
+    if (canvas.current) animateView(fitImages([source, videoUpscaleWorkflowBox(current.current.upscaleWorkflows?.find(item => item.id === node.id) ?? node)], canvas.current.clientWidth, canvas.current.clientHeight));
     canvas.current?.focus({ preventScroll: true });
   }
   function updateUpscaleWorkflow(id: string, patch: Partial<VideoUpscaleWorkflow>) {
@@ -612,17 +623,19 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       const output = { ...result,
         x: editor ? editor.x + editor.width + 80 : bounds ? bounds.x + bounds.width + 240 : 0,
         y: editor ? editor.y + (editor.height - result.height) / 2 : bounds?.y ?? 0 };
-      // Keep the existing scene in place and reserve room for the entire batch.
-      while (occupied.some(item => output.x < item.x + item.width + 40 && output.x + output.width + 40 > item.x
+      // Standalone template results retain their placement. Connected results
+      // stay centered in the local flow pass, even if other content overlaps.
+      while (!editor && occupied.some(item => output.x < item.x + item.width + 40 && output.x + output.width + 40 > item.x
         && output.y < item.y + item.height + 40 && output.y + output.height + 40 > item.y)) {
         output.y += output.height + 40;
       }
       added.push(output); occupied.push(output);
     }
-    commit({ ...previous, images: [...previous.images, ...added], selected: added.map(result => result.id) });
+    commitFlowAddition(previous, { ...previous, images: [...previous.images, ...added], selected: added.map(result => result.id) });
     const element = canvas.current;
     if (element && activeRef.current) {
-      animateView(fitImages([...previous.images.filter(image => sourceIds.includes(image.id)), ...(editor ? [editor] : []), ...added], element.clientWidth, element.clientHeight));
+      const focusIds = new Set([...sourceIds, ...added.map(result => result.id), ...(editor ? [editor.id] : [])]);
+      animateView(fitImages(sceneItems(current.current).filter(item => focusIds.has(item.id)), element.clientWidth, element.clientHeight));
       element.focus({ preventScroll: true });
     }
   }
@@ -672,9 +685,9 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       }
       task.status = 'completed';
       task.results = withProjectCoverOrder(task.results, latest.images);
-      // Retain canvas IDs and positions; finished videos use their actual
-      // aspect ratio. Submission remains a single undo operation.
-      replace(latest);
+      // Finished videos use their actual ratio. Recenter only result branches
+      // whose dimensions changed, without moving the camera or adding history.
+      replace(latest, true);
       const thumbnailUrl = results.find(result => result.id === slots[0].id)?.url;
       setTasks(previousTasks => previousTasks.map(task => task.id === id ? { ...task, status: 'completed', thumbnailUrl } : task));
     }, DEMO_TASK_DURATION);
@@ -796,12 +809,13 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   }
   function confirmCanvasReference() {
     if (!canvasReference || !activeRef.current) return;
-    const next = bindCanvasReferences(current.current, canvasReference.target, canvasReference.ids);
+    const previous = current.current;
+    const next = bindCanvasReferences(previous, canvasReference.target, canvasReference.ids);
     if (!next) {
       notify(locale === 'zh-CN' ? '素材或节点已变化，请重新选择。' : locale === 'ja' ? '素材またはノードが変更されました。選び直してください。' : 'The assets or node have changed. Select again.', 'error');
       setCanvasReference({ ...canvasReference, ids: [] }); return;
     }
-    commit(next); closeCanvasReference();
+    commitFlowAddition(previous, next); closeCanvasReference();
   }
   function openMaterialReference(id: string, field: MaterialWorkflowUpload['field'], source: 'upload' | 'canvas') {
     const node = current.current.materialWorkflows?.find(item => item.id === id);
@@ -850,11 +864,12 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       : field === 'endFrame' ? { ...node, endFrame: bound }
       : { ...node, references: [...node.references, bound] };
     // Media creation and binding share one snapshot, including undo/redo.
-    commit({ ...previous, images, workflows: previous.workflows.map(item => item.id === node.id ? updated : item) });
+    commitFlowAddition(previous, { ...previous, images, workflows: previous.workflows.map(item => item.id === node.id ? updated : item) });
     setWorkflowUpload(null);
     if (canvas.current) {
       const sourceIds = new Set(videoWorkflowSourceIds(updated));
-      animateView(fitImages([...images.filter(item => sourceIds.has(item.id)), videoWorkflowBox(updated)], canvas.current.clientWidth, canvas.current.clientHeight));
+      const nextNode = current.current.workflows.find(item => item.id === node.id) ?? updated;
+      animateView(fitImages([...current.current.images.filter(item => sourceIds.has(item.id)), videoWorkflowBox(nextNode)], canvas.current.clientWidth, canvas.current.clientHeight));
     }
   }
   function referenceImageUploadLimitMessage(remaining: number) {
@@ -890,11 +905,12 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       staged = { ...staged, images };
     }
     // Place the entire batch before committing, so inputs avoid each other and undo together.
-    commit({ ...staged, materialWorkflows: (previous.materialWorkflows ?? []).map(item => item.id === node.id ? updated : item) });
+    commitFlowAddition(previous, { ...staged, materialWorkflows: (previous.materialWorkflows ?? []).map(item => item.id === node.id ? updated : item) });
     setWorkflowUpload(null);
     if (canvas.current) {
       const sourceIds = new Set(materialWorkflowSourceIds(updated));
-      animateView(fitImages([...staged.images.filter(item => sourceIds.has(item.id)), materialWorkflowBox(updated)], canvas.current.clientWidth, canvas.current.clientHeight));
+      const nextNode = current.current.materialWorkflows?.find(item => item.id === node.id) ?? updated;
+      animateView(fitImages([...current.current.images.filter(item => sourceIds.has(item.id)), materialWorkflowBox(nextNode)], canvas.current.clientWidth, canvas.current.clientHeight));
     }
   }
   function applyVideoWorkflowImages(uploaded: Omit<CanvasImage, 'x' | 'y'>[], expectedTarget: WorkflowUpload) {
@@ -924,11 +940,12 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       staged = { ...staged, images };
     }
     // Create and bind the entire selection in one undoable change.
-    commit({ ...staged, workflows: previous.workflows.map(item => item.id === node.id ? updated : item) });
+    commitFlowAddition(previous, { ...staged, workflows: previous.workflows.map(item => item.id === node.id ? updated : item) });
     setWorkflowUpload(null);
     if (canvas.current) {
       const sourceIds = new Set(videoWorkflowSourceIds(updated));
-      animateView(fitImages([...staged.images.filter(item => sourceIds.has(item.id)), videoWorkflowBox(updated)], canvas.current.clientWidth, canvas.current.clientHeight));
+      const nextNode = current.current.workflows.find(item => item.id === node.id) ?? updated;
+      animateView(fitImages([...current.current.images.filter(item => sourceIds.has(item.id)), videoWorkflowBox(nextNode)], canvas.current.clientWidth, canvas.current.clientHeight));
     }
   }
   function applyWorkflowImage(uploaded: Omit<CanvasImage, 'x' | 'y'>, expectedTarget: WorkflowUpload) {
@@ -958,9 +975,12 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       rememberVideo(reference);
       const { images, source } = placeWorkflowMedia(videoUpscaleWorkflowBox(node), prepareVideoCanvasMedia(reference));
       const updated = { ...node, video: { ...reference, sourceImageId: source.id } };
-      commit({ ...previous, images, upscaleWorkflows: (previous.upscaleWorkflows ?? []).map(item => item.id === node.id ? updated : item) });
+      commitFlowAddition(previous, { ...previous, images, upscaleWorkflows: (previous.upscaleWorkflows ?? []).map(item => item.id === node.id ? updated : item) });
       setWorkflowUpload(null);
-      if (canvas.current) animateView(fitImages([source, videoUpscaleWorkflowBox(updated)], canvas.current.clientWidth, canvas.current.clientHeight));
+      if (canvas.current) {
+        const nextNode = current.current.upscaleWorkflows?.find(item => item.id === node.id) ?? updated;
+        animateView(fitImages([current.current.images.find(item => item.id === source.id) ?? source, videoUpscaleWorkflowBox(nextNode)], canvas.current.clientWidth, canvas.current.clientHeight));
+      }
       return;
     }
     const node = target?.editor !== 'material' && target?.field === 'references' && target.kind === 'video' && target === expectedTarget && current.current.workflows.find(item => item.id === target.id);
@@ -1126,7 +1146,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
               setCanvasMenu({ kind: 'image', imageId: image.id, x: event.clientX, y: event.clientY, worldX: (event.clientX - rect.left - viewport.x) / viewport.zoom, worldY: (event.clientY - rect.top - viewport.y) / viewport.zoom });
             }}
             onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || canvasReference && event.key === ' ')) { event.preventDefault(); if (canvasReference) { event.stopPropagation(); toggleCanvasReference(image.id); return; } replace({ ...current.current, selected: event.shiftKey ? current.current.selected.includes(image.id) ? current.current.selected.filter(id => id !== image.id) : [...current.current.selected, image.id] : [image.id] }); } }}>
-            <CanvasMediaFilename name={image.name} url={image.video?.url ?? image.url} kind={image.video || ['mp4', 'webm', 'mov', 'm4v'].includes(image.generatedFile?.extension ?? '') ? 'video' : 'image'} />
+            {!image.generation && <CanvasMediaFilename name={image.name} url={image.video?.url ?? image.url} kind={image.video || ['mp4', 'webm', 'mov', 'm4v'].includes(image.generatedFile?.extension ?? '') ? 'video' : 'image'} />}
             {image.projectCover && isProjectCoverCandidate(image) && <CanvasProjectCoverBadge locale={locale} />}
             {image.generation ? <CanvasGenerationPlaceholder locale={locale} failed={image.generation.status === 'failed'} /> : <>
             {!canvasReference && (image.video ? <Button variant="tonal" className="image-preview-button video-canvas-play nodrag nopan" title={m.play} aria-label={`${m.play} · ${image.name}`} data-node-id="97:6653" onClick={event => { event.stopPropagation(); setVideoPreview(image.video!); }}><VideoIcon name="playVideo" size={20} /></Button>

@@ -5,10 +5,12 @@ import { Button, Icon } from './ui';
 import type { CanvasImage } from '../useCanvas';
 import { messages, type Locale } from '../i18n';
 import { useLocale } from '../LocaleContext';
+import { createViewerWheelZoom } from '../viewer-wheel-zoom';
 
+export type FullImageViewerImage = Pick<CanvasImage, 'url' | 'name' | 'width' | 'height'>;
 type Props = {
   details?: ReactNode; content?: ReactNode;
-  image: Pick<CanvasImage, 'url' | 'name' | 'width' | 'height'>; locale: Locale; phase: 'enter' | 'exit'; onClose: () => void;
+  image: FullImageViewerImage; locale: Locale; phase: 'enter' | 'exit'; onClose: () => void;
   images?: { url: string; name: string }[]; selectedIndex?: number; onSelect?: (index: number) => void;
 };
 export function FullImageViewer({ image, locale, phase, onClose, images = [], selectedIndex = 0, onSelect, details, content }: Props) {
@@ -20,6 +22,7 @@ export function FullImageViewer({ image, locale, phase, onClose, images = [], se
   const gesture = useRef<{ pointer: number; clientX: number; clientY: number; x: number; y: number } | null>(null);
   const [position, setPosition] = useState({ x: 0, y: 0, zoom: 1 });
   const current = useRef(position); current.current = position;
+  const wheelZoom = useRef(createViewerWheelZoom());
   const [dragging, setDragging] = useState(false);
   const [size, setSize] = useState({ width: window.innerWidth, height: window.innerHeight });
   const t = messages[locale];
@@ -27,6 +30,7 @@ export function FullImageViewer({ image, locale, phase, onClose, images = [], se
     setPosition({ x: 0, y: 0, zoom: 1 });
     gesture.current = null;
     setDragging(false);
+    wheelZoom.current.reset();
   }, [image.url]);
   useEffect(() => {
     thumbnails.current?.querySelector('[aria-current="true"]')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
@@ -47,9 +51,10 @@ export function FullImageViewer({ image, locale, phase, onClose, images = [], se
       const rect = element.getBoundingClientRect();
       const px = event.clientX - rect.left - rect.width / 2;
       const py = event.clientY - rect.top - rect.height / 2;
-      const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? rect.height : 1);
+      const factor = wheelZoom.current.factor(event, rect.height);
+      if (factor === 1) return;
       setPosition(previous => {
-        const zoom = Math.max(.1, Math.min(8, previous.zoom * Math.exp(-Math.max(-600, Math.min(600, delta)) * .0015)));
+        const zoom = Math.max(.1, Math.min(8, previous.zoom * factor));
         const ratio = zoom / previous.zoom;
         return { zoom, x: px - (px - previous.x) * ratio, y: py - (py - previous.y) * ratio };
       });
@@ -73,7 +78,9 @@ export function FullImageViewer({ image, locale, phase, onClose, images = [], se
     gesture.current = null; setDragging(false);
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
   };
-  const fit = Math.min((details ? 556 : 800) / image.width, (details ? 726 : 800) / image.height, Math.max(1, size.width - (size.width <= 680 ? 32 : 80)) / image.width, Math.max(1, size.height - 160) / image.height);
+  const fit = details
+    ? Math.min(556 / image.width, 726 / image.height, Math.max(1, size.width - (size.width <= 680 ? 32 : 80)) / image.width, Math.max(1, size.height - 160) / image.height)
+    : Math.min(size.width / image.width, size.height / image.height);
   // The canvas workbench disables pointer events; mount outside it so the
   // thumbnail buttons and image gestures receive their own pointer events.
   return createPortal(<dialog ref={dialog} className={`full-image-viewer${hasGallery ? ' full-image-viewer--gallery' : ''}${details ? ' full-image-viewer--task' : ''}`} data-phase={phase} data-node-id="68:27657" inert={phase === 'exit'} aria-label={`${t.viewFull} · ${image.name}`}

@@ -11,9 +11,9 @@ export function intersectsViewport(bounds: Bounds, viewport: Size) {
   return bounds.x < viewport.width && bounds.y < viewport.height && bounds.x + bounds.width > 0 && bounds.y + bounds.height > 0;
 }
 
-export function canvasToolbarPosition(bounds: Bounds, camera: Camera, viewport: Size, toolbar: Size, rightInset = 16) {
+export function canvasToolbarPosition(bounds: Bounds, camera: Camera, viewport: Size, toolbar: Size, rightInset = 16, topInset = 0) {
   const box = screenBounds(bounds, camera);
-  const above = box.y - toolbar.height - 16;
+  const above = box.y - toolbar.height - 16 - topInset;
   const top = above >= 0 ? above : box.y + box.height + 16;
   return {
     left: Math.max(toolbar.width / 2 + 16, Math.min(box.x + box.width / 2, viewport.width - rightInset - toolbar.width / 2)),

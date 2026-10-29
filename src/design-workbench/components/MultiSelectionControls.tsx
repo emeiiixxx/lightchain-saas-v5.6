@@ -7,6 +7,7 @@ import { selectionBounds, type Alignment, type Bounds } from '../canvas-selectio
 import { downloadSelection } from '../download-selection';
 import { CanvasArrangeMenu } from './CanvasArrangeMenu';
 import { canvasToolbarPosition } from '../canvas-toolbar';
+import { IMAGE_FILENAME_TOP_SPACE } from '../canvas-renderer';
 import type { CanvasImage, useCanvas } from '../useCanvas';
 import { Button, Divider, Icon } from './ui';
 
@@ -97,7 +98,7 @@ export function MultiSelectionControls({ board, onNotify }: { board: Board; onNo
     <div className="element-selection" style={{ left: frame.x * board.camera.zoom + board.camera.x, top: frame.y * board.camera.zoom + board.camera.y, width: frame.width * board.camera.zoom, height: frame.height * board.camera.zoom, transform: `rotate(${frame.rotation ?? 0}deg)` }}>
       {['tl', 't', 'tr', 'l', 'r', 'bl', 'b', 'br', 'rotate'].map(handle => <button key={handle} type="button" data-canvas-ui className={`selection-handle handle-${handle}`} aria-label={t(handle === 'rotate' ? '旋转选中图片' : '调整选中图片尺寸')} onPointerDown={event => start(event, handle)} onPointerMove={move} onPointerUp={end} onPointerCancel={end} onLostPointerCapture={end}>{handle === 'rotate' && <Icon name="canvas-imgIcon0201" size={16} />}</button>)}
     </div>
-    <div ref={toolbar} className="element-toolbar multi-selection-toolbar wb-surface" data-canvas-ui role="toolbar" aria-label={t('多选工具栏')} style={canvasToolbarPosition(bounds, board.camera, board.size, toolbarSize)}>
+    <div ref={toolbar} className="element-toolbar multi-selection-toolbar wb-surface" data-canvas-ui role="toolbar" aria-label={t('多选工具栏')} style={canvasToolbarPosition(bounds, board.camera, board.size, toolbarSize, 16, IMAGE_FILENAME_TOP_SPACE)}>
       {!grouped && <><div className="element-menu-anchor" data-workbench-menu>
         <Button aria-haspopup="menu" aria-expanded={arrangeOpen} aria-controls="multi-selection-arrange" onClick={() => { setAlignOpen(false); setDownloadOpen(false); setArrangeOpen(value => !value); }} onKeyDown={event => {
           if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;

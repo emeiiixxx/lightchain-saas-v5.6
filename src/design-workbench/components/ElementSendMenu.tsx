@@ -1,12 +1,14 @@
-import { useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useLocale } from '../LocaleContext';
 import { usePresence } from '../usePresence';
 import { useHoverDismiss } from '../useHoverDismiss';
 import { modelDestinations, sendDestinations, type SendDestinationId } from '../send-destinations';
 import { Button, Icon } from './ui';
 
-export function ElementSendMenu({ open, onToggle, onClose, onSend, withLabel = false, disabled = false }: { disabled?: boolean; withLabel?: boolean; open: boolean; onToggle: () => void; onClose: () => void; onSend: (destination: SendDestinationId) => void }) {
+export function ElementSendMenu({ open, onToggle, onClose, onSend, withLabel = false, disabled = false, icon }: { icon?: ReactNode; disabled?: boolean; withLabel?: boolean; open: boolean; onToggle: () => void; onClose: () => void; onSend: (destination: SendDestinationId) => void }) {
   const { locale } = useLocale();
+  const menuId = useId();
+  const modelMenuId = useId();
   const label = locale === 'en' ? 'Send to' : locale === 'ja' ? '送信先' : '发送至';
   const text = (item: { zh: string; en: string; ja: string }) => locale === 'en' ? item.en : locale === 'ja' ? item.ja : item.zh;
   const trigger = useRef<HTMLDivElement>(null);
@@ -82,25 +84,25 @@ export function ElementSendMenu({ open, onToggle, onClose, onSend, withLabel = f
   return <div ref={trigger} className={`element-menu-anchor${withLabel ? ' element-send-with-label' : ''}`} data-workbench-menu onPointerEnter={cancelClose} onPointerLeave={event => {
     if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) modelHover.schedule();
   }}>
-    <Button disabled={disabled} className="workbench-tool element-menu-trigger" aria-label={label} title={withLabel ? undefined : label} aria-haspopup="menu" aria-expanded={open} aria-controls="element-send-menu" onClick={onToggle} onKeyDown={event => {
+    <Button disabled={disabled} className="workbench-tool element-menu-trigger" aria-label={label} title={withLabel ? undefined : label} aria-haspopup="menu" aria-expanded={open} aria-controls={menuId} onClick={onToggle} onKeyDown={event => {
       if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
       event.preventDefault(); if (!open) onToggle();
       const last = event.key === 'ArrowUp';
       requestAnimationFrame(() => { const items = panel.current?.querySelectorAll<HTMLButtonElement>(':scope > button'); items?.[last ? items.length - 1 : 0]?.focus(); });
-    }}><Icon name="element-send" size={withLabel ? 16 : 20} />{withLabel && <span>{label}</span>}</Button>
-    {shown.value && <div ref={panel} id="element-send-menu" className="element-design-menu element-send-menu" popover="manual" role="menu" aria-label={label} data-canvas-ui data-workbench-menu data-phase={shown.phase} inert={shown.phase === 'exit'} onPointerEnter={cancelClose} onPointerLeave={event => {
+    }}>{icon ?? <Icon name="element-send" size={withLabel ? 16 : 20} />}{withLabel && <span>{label}</span>}</Button>
+    {shown.value && <div ref={panel} id={menuId} className="element-design-menu element-send-menu" popover="manual" role="menu" aria-label={label} data-canvas-ui data-workbench-menu data-phase={shown.phase} inert={shown.phase === 'exit'} onPointerEnter={cancelClose} onPointerLeave={event => {
       if (!(event.relatedTarget instanceof Node) || !submenu.current?.contains(event.relatedTarget)) modelHover.schedule();
     }} onKeyDown={event => {
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close(); trigger.current?.querySelector('button')?.focus(); return; }
       navigate(event);
     }}>
       {sendDestinations.map(item => 'children' in item
-        ? <Button key={item.id} role="menuitem" aria-haspopup="menu" aria-expanded={open && modelOpen} aria-controls="element-send-model-menu" onPointerEnter={() => activateItem(true)} onClick={enterModel} onKeyDown={event => {
+        ? <Button key={item.id} role="menuitem" aria-haspopup="menu" aria-expanded={open && modelOpen} aria-controls={modelMenuId} onPointerEnter={() => activateItem(true)} onClick={enterModel} onKeyDown={event => {
           if (event.key === 'ArrowRight') { event.preventDefault(); event.stopPropagation(); enterModel(); }
         }}><span>{text(item)}</span><Icon name="menu-41-2700-imgStyleLinearNameChevronRight" size={16} /></Button>
         : <Button key={item.id} role="menuitem" onPointerEnter={() => activateItem(false)} onFocus={event => { if (event.currentTarget.matches(':focus-visible')) activateItem(false); }} onClick={() => send(item.id)}><span>{text(item)}</span></Button>)}
     </div>}
-    {shownModel.value && <div ref={submenu} id="element-send-model-menu" className="element-design-menu element-send-menu element-send-submenu" data-phase={shownModel.phase} inert={shownModel.phase === 'exit'} popover="manual" role="menu" aria-label={text(sendDestinations[1])} data-canvas-ui data-workbench-menu onPointerEnter={cancelClose} onPointerLeave={event => {
+    {shownModel.value && <div ref={submenu} id={modelMenuId} className="element-design-menu element-send-menu element-send-submenu" data-phase={shownModel.phase} inert={shownModel.phase === 'exit'} popover="manual" role="menu" aria-label={text(sendDestinations[1])} data-canvas-ui data-workbench-menu onPointerEnter={cancelClose} onPointerLeave={event => {
       const next = event.relatedTarget;
       if (!(next instanceof Node) || (!panel.current?.contains(next) && !event.currentTarget.contains(next))) modelHover.schedule();
     }} onKeyDown={event => {

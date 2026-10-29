@@ -1,0 +1,87 @@
+/* Figma 25:16718 / 25:17058: 56px banner overlaps the composer by 12px. */
+/* Keep the overlap outside the clipping layer so the full banner remains
+   behind the composer's rounded corners, including during expansion. */
+.agent-request-status-slot { display: grid; grid-template-rows: 0fr; margin-bottom: 0; opacity: 0; transition: grid-template-rows var(--motion-duration) var(--motion-easing), margin-bottom var(--motion-duration) var(--motion-easing), opacity var(--motion-duration) var(--motion-easing); }
+.agent-request-status-slot[data-open='true'] { grid-template-rows: 1fr; margin-bottom: -12px; opacity: 1; }
+.agent-request-status-clip { min-height: 0; overflow: hidden; }
+.agent-request-status { height: 56px; padding: 8px 12px; border-radius: var(--radius-xl) var(--radius-xl) 0 0; background: var(--alpha-brand-10); backdrop-filter: blur(30px); color: var(--text-primary); transition: background-color var(--motion-duration) var(--motion-easing), color var(--motion-duration) var(--motion-easing); }
+[data-theme='dark'] .agent-request-status[data-tone='thinking'] { color: var(--text-on-brand-white); }
+.agent-request-status[data-tone='error'] { background: var(--surface-danger); color: var(--status-danger); }
+.agent-request-status-content { display: flex; align-items: center; gap: 0; height: 32px; min-width: 0; }
+.agent-request-status[data-tone='error'] .agent-request-status-content { gap: 4px; }
+.agent-request-status-label { min-width: 0; flex: 1; font-size: 14px; line-height: 20px; font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.agent-request-status .agent-request-retry { flex: none; min-width: 24px; height: 24px; padding: 0 8px; border-radius: 4px; font-size: 12px; line-height: 20px; font-weight: 500; }
+.agent-send-stop { width: 24px; height: 24px; display: grid; place-items: center; position: relative; z-index: 1; }
+.agent-send-stop::before { content: ''; width: 15px; height: 15px; border-radius: 2.5px; background: currentColor; }
+
+.agent-thinking-artwork { position: relative; display: block; flex: none; width: 30px; height: 30px; }
+.agent-thinking-artwork img { display: block; max-width: none; }
+.agent-thinking-face { position: absolute; left: 6.75px; top: 7.125px; }
+.agent-thinking-eye { position: absolute; top: 10.5px; width: 1px; height: 2.5px; border-radius: 1.5px; background: #12cdc2; animation: agent-thinking-eye-scale 3701ms linear infinite, agent-thinking-eye-offset 3701ms linear infinite; }
+.agent-thinking-eye--left { left: 12.5px; }
+.agent-thinking-eye--right { left: 15.5px; }
+.agent-thinking-question { position: absolute; left: 18.261px; top: 4.104px; width: 5.15064px; height: 7.59125px; display: grid; place-items: center; }
+.agent-thinking-question > img { transform: rotate(10deg); animation: agent-thinking-question 3701ms linear infinite; }
+.agent-thinking-star { position: absolute; left: 18.2px; top: 4.2px; width: 8px; height: 8px; opacity: 0; scale: .75; animation: agent-thinking-star-opacity 3701ms linear infinite, agent-thinking-star-scale 3701ms linear infinite; }
+.agent-thinking-star > img { transform: scale(.25); transform-origin: top left; }
+.agent-thinking-star--small { left: 15.4px; top: 2.5px; width: 5px; height: 5px; scale: .65; animation-name: agent-thinking-small-opacity, agent-thinking-small-scale; }
+.agent-thinking-star--small > img { transform: scale(.15625); }
+
+/* All tracks share the original 3701ms timeline from Figma 25:16721. */
+@keyframes agent-thinking-eye-scale {
+  0% { scale: 1 1; animation-timing-function: linear; }
+  13.51% { scale: 1 1; animation-timing-function: ease-out; }
+  21.62% { scale: 1 .2; animation-timing-function: ease-out; }
+  29.75% { scale: 1 1; animation-timing-function: linear; }
+  43.26% { scale: 1 1; animation-timing-function: ease-out; }
+  48.66% { scale: 1 .8; animation-timing-function: linear; }
+  91.89% { scale: 1 .8; animation-timing-function: ease-out; }
+  100% { scale: 1 1; }
+}
+@keyframes agent-thinking-eye-offset {
+  0%, 43.26% { translate: 0 0; animation-timing-function: ease-out; }
+  48.66% { translate: .5px .5px; animation-timing-function: linear; }
+  91.89% { translate: .5px .5px; animation-timing-function: ease-out; }
+  100% { translate: 0 0; }
+}
+@keyframes agent-thinking-question {
+  0%, 43.26% { opacity: 1; transform: translate(0, 0) rotate(10deg); animation-timing-function: ease-out; }
+  48.66% { opacity: 0; transform: translate(1.68px, 1.322px) rotate(20deg); animation-timing-function: linear; }
+  91.89% { opacity: 0; transform: translate(1.68px, 1.322px) rotate(20deg); animation-timing-function: ease-out; }
+  100% { opacity: 1; transform: translate(0, 0) rotate(10deg); }
+}
+@keyframes agent-thinking-star-opacity {
+  0%, 43.26% { opacity: 0; animation-timing-function: ease-out; }
+  46.47% { opacity: 1; animation-timing-function: ease-out; }
+  52.15% { opacity: .35; animation-timing-function: ease-out; }
+  57.82% { opacity: 1; animation-timing-function: ease-out; }
+  65.39% { opacity: .65; animation-timing-function: ease-out; }
+  70.28%, 100% { opacity: 0; }
+}
+@keyframes agent-thinking-star-scale {
+  0%, 43.26% { scale: .75; animation-timing-function: ease-out; }
+  46.47% { scale: 1.15; animation-timing-function: ease-out; }
+  52.15% { scale: .92; animation-timing-function: ease-out; }
+  57.82% { scale: 1.08; animation-timing-function: ease-out; }
+  70.28%, 99.99% { scale: .8; }
+  100% { scale: .75; }
+}
+@keyframes agent-thinking-small-opacity {
+  0%, 49.72% { opacity: 0; animation-timing-function: ease-out; }
+  53.5% { opacity: 1; animation-timing-function: ease-out; }
+  58.9% { opacity: .3; animation-timing-function: ease-out; }
+  63.77% { opacity: .95; animation-timing-function: ease-out; }
+  69.71%, 100% { opacity: 0; }
+}
+@keyframes agent-thinking-small-scale {
+  0%, 49.72% { scale: .65; animation-timing-function: ease-out; }
+  53.5% { scale: 1.1; animation-timing-function: ease-out; }
+  58.9% { scale: .78; animation-timing-function: ease-out; }
+  63.77% { scale: 1; animation-timing-function: ease-out; }
+  69.71%, 99.99% { scale: .72; }
+  100% { scale: .65; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .agent-request-status-slot, .agent-request-status { transition: none; }
+  .agent-thinking-artwork *, .agent-thinking-artwork *::before { animation: none; }
+}

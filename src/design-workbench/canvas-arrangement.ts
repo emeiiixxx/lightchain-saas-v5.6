@@ -1,4 +1,5 @@
 import type { Bounds } from './canvas-selection';
+import { CANVAS_IMAGE_GAP } from './canvas-spacing';
 
 export const canvasLayouts = [
   { value: 'compact', label: '紧凑分布', en: 'Compact arrangement', ja: 'コンパクト配置' },
@@ -8,7 +9,7 @@ export const canvasLayouts = [
 
 export type CanvasLayout = typeof canvasLayouts[number]['value'];
 
-export const arrangementGap = 40;
+export const arrangementGap = CANVAS_IMAGE_GAP;
 
 /** Positions use world coordinates relative to the selection's top-left corner. */
 export function arrangeBoxes(boxes: Bounds[], layout: CanvasLayout, aspectRatio: number) {

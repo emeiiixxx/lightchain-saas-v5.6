@@ -50,17 +50,50 @@ export default function App() {
   const [projectUpdatedAt, setProjectUpdatedAt] = useState(Date.now);
   useEffect(() => { setProjectUpdatedAt(Date.now()); writeDemoState('project-title', title); }, [board.images, title]);
   const replaceTarget = useRef<string | null>(null);
+  const additionPoint = useRef<{ x: number; y: number } | undefined>(undefined);
+  const uploadRequest = useRef(0);
+  const [pickerSession, setPickerSession] = useState(0);
+  const clearUploadRequest = useCallback(() => {
+    uploadRequest.current++;
+    additionPoint.current = undefined;
+    replaceTarget.current = null;
+  }, []);
+  const closeUpload = () => { clearUploadRequest(); setModal(null); };
+  useEffect(() => {
+    const leave = () => { clearUploadRequest(); setModal(current => current === 'upload' ? null : current); };
+    const routeChanged = () => { if (window.parent.location.hash.split('?')[0] !== '#/design-workspace') leave(); };
+    window.addEventListener('lc-v56-design:leave-project', leave);
+    if (window.parent !== window) window.parent.addEventListener('hashchange', routeChanged);
+    return () => {
+      window.removeEventListener('lc-v56-design:leave-project', leave);
+      if (window.parent !== window) window.parent.removeEventListener('hashchange', routeChanged);
+      clearUploadRequest();
+    };
+  }, [clearUploadRequest]);
   const shownModal = usePresence(modal);
   const shownToast = usePresence(toast);
   const shownWelcome = usePresence(!board.images.length ? true : null);
   const shownToolbar = usePresence(board.images.length ? true : null);
   const shownDrop = usePresence(dragging && board.images.length ? true : null);
-  const chooseFiles = () => { replaceTarget.current = null; setModal('upload'); };
-  const replaceImage = () => { replaceTarget.current = board.selected; setModal('upload'); };
-  const confirmImages = (items: Omit<CanvasImage, 'x' | 'y'>[]) => {
-    if (replaceTarget.current && items[0]) { const item = items[0]; board.updateSelected({ image: item.image, url: item.url, name: item.name, mimeType: item.mimeType, width: item.image.naturalWidth, height: item.image.naturalHeight }); }
-    else board.addImages(items);
-    setModal(null);
+  const chooseFiles = (point?: { x: number; y: number }) => {
+    clearUploadRequest();
+    additionPoint.current = point ? { ...point } : undefined;
+    setPickerSession(uploadRequest.current);
+    setModal('upload');
+  };
+  const replaceImage = () => {
+    clearUploadRequest();
+    replaceTarget.current = board.selected;
+    setPickerSession(uploadRequest.current);
+    setModal('upload');
+  };
+  const confirmImages = (items: Omit<CanvasImage, 'x' | 'y'>[], session: number) => {
+    // A decoded selection from a cancelled/replaced picker cannot reuse a new
+    // request's placement point, even before the closing animation unmounts it.
+    if (session !== uploadRequest.current || modal !== 'upload') return;
+    if (replaceTarget.current && items[0]) { const item = items[0]; board.updateSelected({ image: item.image, url: item.url, name: item.name, mimeType: item.mimeType, width: item.image.naturalWidth, height: item.image.naturalHeight, generatedFile: undefined, origin: 'upload', generatedAt: undefined, taskResultId: undefined, generationPlacement: undefined }); }
+    else board.addImages(items, { point: additionPoint.current });
+    closeUpload();
   };
 
   return <div className="app-shell">
@@ -71,13 +104,13 @@ export default function App() {
       {shownWelcome.value && <section data-phase={shownWelcome.phase} inert={shownWelcome.phase === 'exit'} className="welcome" aria-label={t("开始设计")}>
         <h1>{t("Hello✨ 设计从这里开始")}</h1>
         <p>{t("请先点击下方上传线稿图 / 款式图 / 图案 / 面料图")}</p>
-        <DefaultPageUpload dragging={dragging} onUpload={chooseFiles} />
+        <DefaultPageUpload dragging={dragging} onUpload={() => chooseFiles()} />
       </section>}
       {shownDrop.value && <div data-phase={shownDrop.phase} className="drop-overlay">{t("松开，将图片添加到画布")}</div>}
       <div className={`workbench ${board.images.length ? '' : 'workbench-empty'}`}><Workbench uploads={uploads} onRememberUpload={rememberUpload} board={board} open={panel} onOpenChange={setPanel} phase={shownToolbar.phase} onUpload={chooseFiles} onReplace={replaceImage} onHelp={() => setModal('help')} onNotify={notify} /></div>
     </main>
     {shownToast.value && <Toast notice={shownToast.value} phase={shownToast.phase} />}
-    {shownModal.value === 'upload' && <AssetPicker locale={locale} phase={shownModal.phase} uploads={uploads} onUpload={rememberUpload} onClose={() => setModal(null)} onConfirm={image => confirmImages([image])} onConfirmBatch={replaceTarget.current ? undefined : confirmImages} />}
+    {shownModal.value === 'upload' && <AssetPicker key={pickerSession} locale={locale} phase={shownModal.phase} uploads={uploads} onUpload={rememberUpload} onClose={closeUpload} onConfirm={image => confirmImages([image], pickerSession)} onConfirmBatch={replaceTarget.current ? undefined : items => confirmImages(items, pickerSession)} />}
     {shownModal.value && shownModal.value !== 'upload' && <Dialog phase={shownModal.phase} title={shownModal.value === 'project' ? t("项目概览") : shownModal.value === 'help' ? t("画布操作指南") : shownModal.value === 'support' ? t("联系客服") : t("积分账户")} onClose={() => setModal(null)}>{shownModal.value === 'project' ? <><div className="project-card-preview-area"><ProjectCard name={title} coverUrl={board.projectCover?.url} updatedAt={projectUpdatedAt} onNameChange={setTitle} onOpen={() => setModal(null)} onMoreAction={() => notify(demoNotice(locale))} /></div><p className="text-xs leading-5 text-muted">{t("当前 Demo 项目保存在此浏览器中，暂不支持跨浏览器同步。")}</p><div className="flex justify-end mt-6"><Button variant="outline" onClick={() => setModal(null)}>{t("返回画布")}</Button></div></> : shownModal.value === 'help' ? <div className="help-content"><p>{t("点击素材卡，或者将图片拖入画布，开始设计。")}</p><dl><dt>{t("平移画布")}</dt><dd>{t("空格 + 拖动 / 手形工具 / 中键拖动 / 滚轮")}</dd><dt>{t("缩放画布")}</dt><dd>{t("⌘ / Ctrl / Option / Alt + 滚轮，或触控板捏合")}</dd><dt>{t("移动图片")}</dt><dd>{t("按住图片拖动")}</dd><dt>{t("恢复 100% / 适应画布")}</dt><dd>1 / 2</dd><dt>{t("删除选中图片")}</dt><dd>Delete / Backspace</dd><dt>{t("撤销上传、移动、删除")}</dt><dd>⌘ / Ctrl + Z</dd></dl><p className="muted">{t("当前 Demo 的图片保存在此浏览器中。")}</p></div> : shownModal.value === 'support' ? <p className="muted">{t("当前为设计生产工作台 Demo，暂未接入在线客服。")}</p> : <div><p className="muted">{t("演示账户可用积分")}</p><p className="text-3xl font-medium my-4">99,999</p><p className="muted">{t("当前 Demo 暂未接入积分购买。")}</p></div>}</Dialog>}
   </div>;
 }

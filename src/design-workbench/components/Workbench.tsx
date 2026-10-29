@@ -1,5 +1,5 @@
 import { useInputMemory } from '../useInputMemory';
-import { readDemoState, writeDemoState, restoreDemoUrls } from '../demo-storage';
+import { readDemoState, writeDemoState, restoreDemoUrls, rememberDemoAsset } from '../demo-storage';
 import { retryRecordTarget } from '../retry-record';
 import { PrintPlacementDialog } from './PrintPlacementDialog';
 import { TextEditDialog } from './TextEditDialog';
@@ -16,7 +16,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type 
 import { Button, Divider, Icon } from './ui';
 import { usePresence } from '../usePresence';
 import { ElementMenu } from './ElementMenu';
-import { FullImageViewer } from './FullImageViewer';
+import { FullImageViewer, type FullImageViewerImage } from './FullImageViewer';
 import { ImageContextMenu } from './ImageContextMenu';
 import { ShortcutsPanel } from './ShortcutsPanel';
 import { QuickEditComposer, createQuickEditDraft, type QuickEditDraft, type CanvasEditTool } from './QuickEditComposer';
@@ -26,11 +26,17 @@ import { type CanvasImage, useCanvas } from '../useCanvas';
 import { TaskResultPlaceholder } from './TaskResultPlaceholder';
 import { GeneratingPlaceholder } from './GeneratingPlaceholder';
 import { initialDemoRecords, PROMO_TASK_SEED_VERSION, restoreTaskExamples } from '../promo-task-records';
-import { prepareDemoResults } from '../demo-generation';
+import { agentDemoOutput, demoOutputSize, prepareDemoResults, type DemoOutput } from '../demo-generation';
+import { runAgentImageSequence } from '../agent-image-sequence';
 import { MultiSelectionControls } from './MultiSelectionControls';
 import { CanvasArrangeMenu } from './CanvasArrangeMenu';
+import { AgentArtwork, AgentConversation, demoConversation, type AgentMessage, type AgentImageResult } from './AgentConversation';
+import { AgentRequestStatus } from './AgentRequestStatus';
+import { AgentComposerAttachments, type AgentComposerAttachment } from './AgentComposerAttachments';
+import { useAgentRequests, type AgentRequest } from '../useAgentRequests';
 import { imageBounds } from '../canvas-selection';
 import { canvasToolbarPosition, intersectsViewport, screenBounds } from '../canvas-toolbar';
+import { IMAGE_FILENAME_TOP_SPACE } from '../canvas-renderer';
 
 async function restoreTextEditTags(record: GenerationRecord): Promise<GenerationRecord> {
   const input = record.textEdit;
@@ -48,16 +54,8 @@ async function restoreTextEditTags(record: GenerationRecord): Promise<Generation
 }
 
 type Board = ReturnType<typeof useCanvas>;
-type Props = { board: Board; open: boolean; onOpenChange: (open: boolean) => void; phase: 'enter' | 'exit'; onUpload: () => void; onReplace: () => void; onHelp: () => void; onNotify: Notify; uploads: LibraryImage[]; onRememberUpload: (image: LibraryImage) => void };
-type AgentMessage = { role: 'user' | 'assistant'; text: string; images?: string[]; demo?: boolean };
-const demoConversation: AgentMessage[] = [
-  { role: 'user', text: '参考这件连衣裙，保留版型和收腰，换成浅蓝色条纹面料。', images: ['/assets/design-workbench/generation-record-imgImageAsset1.jpg'], demo: true },
-  { role: 'assistant', text: '可以。会保留 V 领、腰线和灯笼袖，先给你一个浅蓝条纹方向。', images: ['/assets/design-workbench/generation-record-imgAsset4.jpg'], demo: true },
-  { role: 'user', text: '条纹再细一点，袖口保持蓬松，裙摆自然垂下。', demo: true },
-  { role: 'assistant', text: '已调整条纹密度和袖口比例。你也可以对比浅紫、雾绿两种配色。', images: ['/assets/design-workbench/generation-record-imgAsset5.jpg', '/assets/design-workbench/generation-record-imgAsset6.jpg'], demo: true },
-  { role: 'user', text: '雾绿这版更接近想要的效果。再看一下正面细节。', images: ['/assets/design-workbench/generation-record-imgAsset6.jpg'], demo: true },
-  { role: 'assistant', text: '这是当前方向的正面参考。领口、腰线和袖口都沿用前面的要求。', images: ['/assets/design-workbench/generation-record-imgAsset6.jpg'], demo: true },
-];
+type ComposerAttachment = AgentComposerAttachment & { canvasImageId?: string; lockedAt?: number };
+type Props = { board: Board; open: boolean; onOpenChange: (open: boolean) => void; phase: 'enter' | 'exit'; onUpload: (point?: { x: number; y: number }) => void; onReplace: () => void; onHelp: () => void; onNotify: Notify; uploads: LibraryImage[]; onRememberUpload: (image: LibraryImage) => void };
 function Tool({ id, icon, label, active, onClick, disabled, size = 20 }: { id?: string; icon: string; label: string; active?: boolean; onClick: () => void; disabled?: boolean; size?: number }) {
   return <Button id={id} aria-label={label} title={label} aria-pressed={active} className={`workbench-tool ${active ? 'is-active' : ''}`} disabled={disabled} onClick={onClick}><Icon name={icon} size={size} /></Button>;
 }
@@ -107,20 +105,96 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
   const [bottomToolsSize, setBottomToolsSize] = useState({ bottom: 0, zoom: 0 });
   const [tab, setTab] = useState<'agent' | 'properties'>('agent');
   const [prompt, setPrompt] = useState('');
-  const [attachments, setAttachments] = useState<{ id: string; file: File; kind: 'file' | 'image' }[]>([]);
+  const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
+  const pinnedCanvasIds = new Set(attachments.flatMap(item => item.canvasImageId ? [item.canvasImageId] : []));
+  const canvasImagesById = new Map(board.images.map(item => [item.id, item]));
+  // Selection is a live preview until the user enters the composer. Keep the
+  // canvas ID, not the URL: separate instances of the same image stay distinct.
+  const provisionalAttachments = board.selectedIds.flatMap<ComposerAttachment>(id => {
+    const item = canvasImagesById.get(id);
+    return item && !item.generating && !item.generationFailed && !pinnedCanvasIds.has(id)
+      ? [{ id: `canvas:${id}`, canvasImageId: id, name: item.name, kind: 'image', url: item.url, provisional: true }]
+      : [];
+  });
+  const composerAttachments = [...attachments, ...provisionalAttachments];
+  const lockCanvasReferences = () => {
+    if (board.locked || !board.restored || !provisionalAttachments.length) return;
+    const lockedAt = Date.now();
+    setAttachments(previous => {
+      const pinned = new Set(previous.flatMap(item => item.canvasImageId ? [item.canvasImageId] : []));
+      const added = provisionalAttachments.filter(item => !pinned.has(item.canvasImageId!));
+      return added.length ? [...previous, ...added.map(item => ({ ...item, provisional: false, locking: true, lockedAt }))] : previous;
+    });
+  };
+  useEffect(() => {
+    const ends = attachments.flatMap(item => item.locking && item.lockedAt !== undefined ? [item.lockedAt + 500] : []);
+    if (!ends.length) return;
+    const timer = setTimeout(() => {
+      const now = Date.now();
+      setAttachments(previous => previous.map(item => item.locking && item.lockedAt !== undefined && item.lockedAt + 500 <= now
+        ? { ...item, locking: false } : item));
+    }, Math.max(0, Math.min(...ends) - Date.now()));
+    return () => clearTimeout(timer);
+  }, [attachments]);
+  const removeComposerAttachment = (id: string) => {
+    const item = composerAttachments.find(attachment => attachment.id === id);
+    setAttachments(previous => previous.filter(attachment => attachment.id !== id));
+    // Clearing the selection prevents a removed reference from immediately
+    // returning as a provisional chip. This never deletes the canvas image.
+    if (item?.canvasImageId && board.selectedIds.includes(item.canvasImageId)) {
+      board.selectMany(board.selectedIds.filter(selectedId => selectedId !== item.canvasImageId));
+    }
+  };
+  const attachmentUrls = useRef(new Set<string>());
+  useEffect(() => () => { attachmentUrls.current.forEach(url => URL.revokeObjectURL(url)); }, []);
   const fileInput = useRef<HTMLInputElement>(null);
   const imageInput = useRef<HTMLInputElement>(null);
   const addAttachments = (input: HTMLInputElement, kind: 'file' | 'image') => {
     const files = Array.from(input.files ?? []).filter(file => kind === 'file' || file.type.startsWith('image/'));
-    setAttachments(prev => [...prev, ...files.map(file => ({ id: crypto.randomUUID(), file, kind }))]);
+    const added = files.map(file => {
+      const url = kind === 'image' ? URL.createObjectURL(file) : undefined;
+      if (url) {
+        attachmentUrls.current.add(url);
+        // Accepted Agent tasks retain reference URLs in their local records.
+        void rememberDemoAsset(url, file).catch(() => { /* Keep this session usable when local storage is unavailable. */ });
+      }
+      return { id: crypto.randomUUID(), name: file.name, kind, url };
+    });
+    setAttachments(prev => [...prev, ...added]);
     input.value = '';
     textarea.current?.focus();
   };
-  const [conversation, setConversation] = useState<AgentMessage[]>(() => [...demoConversation]);
+  const [conversationId, setConversationId] = useState('agent-demo-20261028');
+  const [conversation, setConversation] = useState<AgentMessage[]>(() => demoConversation.map(message => ({ ...message, conversationId: 'agent-demo-20261028' })));
+  const [conversationsRestored, setConversationsRestored] = useState(false);
   const [agentScrolling, setAgentScrolling] = useState(false);
   const agentScrollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (agentScrollTimer.current) clearTimeout(agentScrollTimer.current); }, []);
   const [savedConversations, setSavedConversations] = useState<AgentMessage[][]>([]);
+  useEffect(() => {
+    let active = true;
+    const saved = readDemoState<{ activeId: string; conversation: AgentMessage[]; savedConversations: AgentMessage[][] } | null>('agent-conversations', null);
+    void restoreDemoUrls(saved).then(value => {
+      if (!active) return;
+      if (value) {
+        setConversationId(value.activeId);
+        setConversation(value.conversation.map(message => ({ ...message, conversationId: value.activeId })));
+        setSavedConversations(value.savedConversations.map((messages, index) => {
+          const id = messages.find(message => message.conversationId)?.conversationId ?? `agent-history-${index}`;
+          return messages.map(message => ({ ...message, conversationId: id }));
+        }));
+      }
+      setConversationsRestored(true);
+    }).catch(() => { if (active) setConversationsRestored(true); });
+    return () => { active = false; };
+  }, []);
+  useEffect(() => {
+    if (conversationsRestored) writeDemoState('agent-conversations', { activeId: conversationId, conversation, savedConversations });
+  }, [conversationId, conversation, savedConversations, conversationsRestored]);
+  const archiveConversation = (nextId?: string) => setSavedConversations(previous => {
+    const retained = previous.filter(messages => messages[0]?.conversationId !== conversationId && messages[0]?.conversationId !== nextId);
+    return conversation.length ? [...retained, conversation] : retained;
+  });
   const [menu, setMenu] = useState<string | null>(null);
   const [minimapOpen, setMinimapOpen] = useState(false);
   const shownMinimap = usePresence(minimapOpen && !board.locked ? true : null);
@@ -178,14 +252,95 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     return () => { active = false; };
   }, []);
   useEffect(() => { if (recordsRestored) writeDemoState('tasks', { seedVersion: PROMO_TASK_SEED_VERSION, records: generationRecords, archived: [...archivedRecords.current] }); }, [generationRecords, recordsRestored]);
-  const openLeftPanel = (value: LeftPanelTab) => { setLeftTab(value); if (value === 'assets' || board.selectedIds.length > 0) onNotify(demoNotice(locale)); };
-  // Demo submissions stand in for new generation records until generation is connected.
-  const recordGenerationRequest = (request: string, title = "AI助手") => {
-    setConversation(previous => [...previous, { role: 'user', text: request }, { role: 'assistant', text: '已记录设计需求。当前为交互 Demo，暂未接入 AI 生成。' }]);
-    const inputImage = board.images.find(image => image.id === board.selected);
+  const openLeftPanel = (value: LeftPanelTab) => { setLeftTab(value); if (value === 'layers' && board.selectedIds.length > 0) onNotify(demoNotice(locale)); };
+  const updateAgentRecord = (id: string, update: (record: GenerationRecord) => GenerationRecord) => {
+    setGenerationRecords(previous => previous.map(record => record.id === id ? update(record) : record));
+    const archived = archivedRecords.current.get(id);
+    if (archived) archivedRecords.current.set(id, update(archived));
+  };
+  const runAgentBatch = (id: string, title: string, settings: DemoOutput, agentConversationId: string, startIndex: number, first?: CanvasImage) => {
+    activeAgentBatches.current.add(id);
+    void runAgentImageSequence({
+      count: settings.count, startIndex,
+      active: () => generationMounted.current,
+      start: index => {
+        const placeholder = index === startIndex && first ? first : board.beginGeneration(undefined, 1, {
+          name: title, taskRecordId: id, outputSize: demoOutputSize(settings), placement: 'agent', agentConversationId, generationIndex: index,
+        })[0];
+        if (!placeholder) return undefined;
+        if (placeholder !== first) updateAgentRecord(id, record => ({
+          ...record, generating: true, agentStartedCount: index + 1,
+          images: [...record.images, { id: placeholder.id, url: placeholder.url, height: 92 * placeholder.height / placeholder.width, status: 'generating' }],
+        }));
+        return placeholder;
+      },
+      generate: async (index, placeholder) => {
+        const delay = new Promise<void>(resolve => {
+          const timer = setTimeout(() => { generationTimers.current.delete(timer); resolve(); }, 3000);
+          generationTimers.current.add(timer);
+        });
+        const [assets] = await Promise.all([prepareDemoResults({ ...settings, count: 1, startIndex: index }), delay]);
+        return { ...assets[0], name: placeholder.name };
+      },
+      settle: (index, placeholder, result) => {
+        board.finishGeneration([placeholder.id], result ? [result] : null, true);
+        updateAgentRecord(id, record => ({
+          ...record, generating: index + 1 < settings.count,
+          images: record.images.map(image => image.id === placeholder.id ? {
+            ...image, status: result ? 'success' : 'failed',
+            ...(result ? { url: result.url, height: 92 * result.height / result.width } : {}),
+          } : image),
+        }));
+        if (!result) onNotify('生成失败，请重试', 'error');
+      },
+    }).finally(() => {
+      activeAgentBatches.current.delete(id);
+      if (generationMounted.current) updateAgentRecord(id, record => ({ ...record, generating: false }));
+    });
+  };
+  const acceptAgentRequest = async ({ id, text: request, title, images, settings: requestedSettings, conversationId: agentConversationId }: AgentRequest, current: () => boolean) => {
+    if (board.locked || !board.restored || !recordsRestored) return false;
+    let settings = requestedSettings;
+    // Auto uses the first reference's actual ratio. Until decoded, thinking stays
+    // visible and neither the conversation nor canvas gets a guessed-size tile.
+    if ((!settings.ratio || settings.ratio === 'auto') && images[0]) {
+      const reference = await prepareMainImage({ id: images[0], url: images[0], name: '参考图' });
+      settings = { ...settings, sourceSize: { width: reference.width, height: reference.height } };
+    }
+    if (!current() || !generationMounted.current) return false;
+    const placeholders = board.beginGeneration(undefined, 1, { name: title, taskRecordId: id, outputSize: demoOutputSize(settings), placement: 'agent', agentConversationId, generationIndex: 0 });
+    if (!placeholders.length) return false;
+    const bindTask = (messages: AgentMessage[]) => messages.map(message => message.requestId === id ? { ...message, taskId: id } : message);
+    setConversation(bindTask);
+    setSavedConversations(previous => previous.map(bindTask));
     const now = new Date();
     const time = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    setGenerationRecords(previous => [{ id: crypto.randomUUID(), title, time, prompt: request, pending: true, tags: inputImage ? [{ label: '服装图', image: inputImage.url }] : [], images: [] }, ...previous]);
+    setGenerationRecords(previous => [{
+      id, title, time, prompt: request, canvasEntry: 'agent', replayable: true, agentConversationId, agentSettings: settings, agentStartedCount: 1,
+      generating: true, count: settings.count, ratio: settings.ratio, resolution: settings.resolution,
+      resultRatio: `${placeholders[0].width} / ${placeholders[0].height}`,
+      tags: images.map(image => ({ label: '参考图', image })),
+      images: placeholders.map(item => ({ id: item.id, url: item.url, height: 92 * item.height / item.width, status: 'generating' })),
+    }, ...previous]);
+    runAgentBatch(id, title, settings, agentConversationId, 0, placeholders[0]);
+    return true;
+  };
+  const agentRequests = useAgentRequests(acceptAgentRequest);
+  const activeAgentRequestId = conversation.find(message => message.requestId && agentRequests.states[message.requestId])?.requestId;
+  const agentRequestState = activeAgentRequestId ? agentRequests.states[activeAgentRequestId] : null;
+  const recordGenerationRequest = (request: string, title = 'AI助手', images: string[] = [], settings = agentDemoOutput(request)) => {
+    if (board.locked || !board.restored || !recordsRestored || !conversationsRestored || activeAgentRequestId) return false;
+    const id = crypto.randomUUID();
+    setConversation(previous => [...previous, { role: 'user', text: request, images, conversationId }, { role: 'assistant', text: '', requestId: id, conversationId }]);
+    agentRequests.submit({ id, text: request, title, images, settings, conversationId });
+    return true;
+  };
+  const stopAgentRequest = () => {
+    if (!activeAgentRequestId) return;
+    agentRequests.stop(activeAgentRequestId);
+    const stopReply = (messages: AgentMessage[]) => messages.map(message => message.requestId === activeAgentRequestId ? { ...message, text: '已停止', requestId: undefined } : message);
+    setConversation(stopReply);
+    setSavedConversations(previous => previous.map(stopReply));
   };
   const [printPlacement, setPrintPlacement] = useState<{ source: CanvasImage; draft: QuickEditDraft } | null>(null);
   const shownPrintPlacement = usePresence(printPlacement);
@@ -216,6 +371,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
   // R02 persists changed inputs silently; exit and submit also retry any pending save.
   const inputMemory = useInputMemory(localEdit ? `${localEditTool}:${localEdit}` : quickEdit ? `quick:${quickEdit}` : null);
   const generationTimers = useRef(new Set<ReturnType<typeof setTimeout>>());
+  const activeAgentBatches = useRef(new Set<string>());
   const retryingResults = useRef(new Set<string>());
   const generatingSources = useRef(new Set<string>());
   const generationMounted = useRef(true);
@@ -229,11 +385,13 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     };
   }, []);
   const finishDemoBatch = (recordId: string, placeholders: CanvasImage[], results: Omit<CanvasImage, 'x' | 'y'>[]) => {
-    // Demo only: batches of four always include one retryable failure.
+    // Existing quick-edit examples retain their retryable failure; Agent tasks
+    // complete all reserved slots unless asset preparation actually fails.
+    const simulateFailure = results.length === 4 && placeholders[0]?.generationPlacement !== 'agent';
     const images: GenerationRecord['images'] = results.map((result, index) => ({
       id: placeholders[index].id, url: result.url,
-      height: results.length === 4 && index === 2 ? 92 * placeholders[index].height / placeholders[index].width : 92 * result.image.naturalHeight / result.image.naturalWidth,
-      status: results.length === 4 && index === 2 ? 'failed' : 'success',
+      height: simulateFailure && index === 2 ? 92 * placeholders[index].height / placeholders[index].width : 92 * result.image.naturalHeight / result.image.naturalWidth,
+      status: simulateFailure && index === 2 ? 'failed' : 'success',
     }));
     board.finishGeneration(placeholders.map(item => item.id), results.map((result, index) => images[index].status === 'failed' ? null : result), true);
     setGenerationRecords(previous => previous.map(record => record.id === recordId ? { ...record, generating: false, images: images.filter(image => record.images.some(current => current.id === image.id)) } : record));
@@ -254,7 +412,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     const selectionPreview = await textSelectionPreview(loadedInput.image, input.region);
     if (!generationMounted.current) return;
     const id = crypto.randomUUID();
-    const placeholders = board.beginGeneration(sourceId, 1, { name: '文字编辑', taskRecordId: id, sourceSize: input });
+    const placeholders = board.beginGeneration(sourceId, 1, { name: '文字编辑', taskRecordId: id, sourceSize: input, outputSize: { width: input.width, height: input.height } });
     if (!placeholders.length) throw new Error('generation_unavailable');
     if (sourceId) generatingSources.current.add(sourceId);
     const now = new Date();
@@ -284,25 +442,27 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     if (!source || generatingSources.current.has(sourceId)) return;
     const count = Math.min(4, Math.max(1, Number(draft.count) || 1));
     const id = crypto.randomUUID();
-    const placeholders = board.beginGeneration(sourceId, count, { taskRecordId: id });
+    const settings = { ratio: draft.ratio, resolution: draft.resolution, sourceSize: { width: source.image.naturalWidth, height: source.image.naturalHeight }, count };
+    const sourceIds = [sourceId, ...draft.references.flatMap(reference => board.images.some(item => item.id === reference.id) ? [reference.id] : [])];
+    if (independent) closeLocalEdit();
+    const placeholders = board.beginGeneration(sourceId, count, { name: independent ? localEditTool : '快捷编辑', taskRecordId: id, sourceIds, outputSize: demoOutputSize(settings) });
     if (!placeholders.length) return;
     generatingSources.current.add(sourceId);
     const now = new Date();
     const time = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     const isPrint = independent && localEditTool === '印花上身';
     const supportsPrompt = !isPrint;
-    setGenerationRecords(previous => [{ id, replayable: true, sourceId, title: independent ? `款式 - ${localEditTool}` : '快捷编辑', time, supportsPrompt, printMode: isPrint ? (draft.printMode ?? 'position') : undefined, prompt: supportsPrompt ? (draft.value.trim() || undefined) : undefined, generating: true, count, resultHeight: 92 * placeholders[0].height / placeholders[0].width, ratio: draft.ratio, resolution: draft.resolution, tags: [{ label: '服装图', image: source.url }, ...draft.references.map(ref => ({ label: independent && localEditTool === 'AI试衣' ? '模特图' : independent && localEditTool === '印花上身' ? '印花图' : '参考图', image: ref.url })), ...(isPrint ? [{ label: draft.printMode === 'repeat' ? '满印' : '指定位置' }] : [])], images: placeholders.map(item => ({ id: item.id, url: item.url, height: 92 * item.height / item.width, status: 'generating' })) }, ...previous]);
-    if (!independent) setConversation(previous => [...previous, { role: 'user', text: request }, { role: 'assistant', text: '已记录设计需求。当前为交互 Demo，暂未接入 AI 生成。' }]);
+    setGenerationRecords(previous => [{ id, replayable: true, sourceId, sourceIds, title: independent ? `款式 - ${localEditTool}` : '快捷编辑', time, supportsPrompt, printMode: isPrint ? (draft.printMode ?? 'position') : undefined, prompt: supportsPrompt ? (draft.value.trim() || undefined) : undefined, generating: true, count, resultHeight: 92 * placeholders[0].height / placeholders[0].width, ratio: draft.ratio, resolution: draft.resolution, tags: [{ label: '服装图', image: source.url }, ...draft.references.map(ref => ({ label: independent && localEditTool === 'AI试衣' ? '模特图' : independent && localEditTool === '印花上身' ? '印花图' : '参考图', image: ref.url })), ...(isPrint ? [{ label: draft.printMode === 'repeat' ? '满印' : '指定位置' }] : [])], images: placeholders.map(item => ({ id: item.id, url: item.url, height: 92 * item.height / item.width, status: 'generating' })) }, ...previous]);
+    if (!independent) setConversation(previous => [...previous, { role: 'user', text: request, conversationId }, { role: 'assistant', text: '已记录设计需求。当前为交互 Demo，暂未接入 AI 生成。', conversationId }]);
     setQuickEdit(null);
     // Place loading tiles directly to the source's right, allowing overlaps.
-    if (independent) closeLocalEdit();
     // Decode in parallel with the demo delay, so loading starts immediately and lasts 3s.
     const delay = new Promise<void>(resolve => {
       const timer = setTimeout(() => { generationTimers.current.delete(timer); resolve(); }, 3000);
       generationTimers.current.add(timer);
     });
     try {
-      const [assets] = await Promise.all([prepareDemoResults({ ratio: draft.ratio, resolution: draft.resolution, sourceSize: { width: source.image.naturalWidth, height: source.image.naturalHeight }, count }), delay]);
+      const [assets] = await Promise.all([prepareDemoResults(settings), delay]);
       if (!generationMounted.current) return;
       const results = assets.slice(0, count);
       finishDemoBatch(id, placeholders, results);
@@ -325,7 +485,10 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     if (!placeholder) throw new Error('retry_unavailable');
     retryingResults.current.add(key);
     retryingResults.current.add(targetKey);
-    if (target.isNew) setGenerationRecords(previous => [target.record, ...previous]);
+    if (target.isNew) {
+      setGenerationRecords(previous => [target.record, ...previous]);
+      if (record.canvasEntry === 'agent') setConversation(previous => [...previous, { role: 'assistant', text: '', taskId: target.record.id, conversationId }]);
+    }
     const updateStatus = (status: 'generating' | 'failed' | 'success', loaded?: Omit<CanvasImage, 'x' | 'y'>) => {
       const patch = { status, ...(loaded ? { url: loaded.url } : {}), height: loaded ? 92 * loaded.image.naturalHeight / loaded.image.naturalWidth : 92 * placeholder.height / placeholder.width };
       const archived = archivedRecords.current.get(target.record.id);
@@ -344,7 +507,9 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     try {
       const retryOutput = record.textEdit
         ? renderTextEdit(record.textEdit, record.prompt ?? '').then(url => prepareMainImage({ id: result.id!, url, name: t(record.title) }))
-        : prepareMainImage({ id: result.id, url: result.url, name: `${t(record.title)} ${index + 1}` });
+        : record.demoOutputUrls?.length
+        ? prepareMainImage({ id: result.id!, url: result.url, name: placeholder.name })
+        : prepareDemoResults({ count: 1, startIndex: placeholder.generationIndex ?? index, ratio: record.ratio, resolution: record.resolution, sourceSize: placeholder, outputSize: { width: placeholder.width, height: placeholder.height } }).then(assets => ({ ...assets[0], name: placeholder.name }));
       const [loaded] = await Promise.all([retryOutput, delay]);
       if (generationMounted.current) {
         board.finishGeneration([placeholder.id], [loaded]);
@@ -368,6 +533,11 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
   };
   const regenerateRecord = async (record: GenerationRecord) => {
     if (!record.replayable || record.generating || record.pending) return;
+    if (record.canvasEntry === 'agent') {
+      const settings: DemoOutput = record.agentSettings ?? { count: record.count ?? Math.max(1, record.images.length), ratio: record.ratio, resolution: record.resolution, sourceSize: { width: 2, height: 3 } };
+      recordGenerationRequest(record.prompt ?? '', record.title, record.tags.flatMap(tag => tag.image ? [tag.image] : []), settings);
+      return;
+    }
     if (record.textEdit) {
       try { await generateTextEdit(record.textEdit, record.prompt ?? '', record.sourceId); }
       catch { onNotify('提交失败，请重试', 'error'); }
@@ -387,7 +557,18 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       }
       if (!generationMounted.current) return;
     }
-    const placeholders = board.beginGeneration(source?.id ?? record.sourceId, count, { name: record.title, taskRecordId: id, sourceSize });
+    const settings: DemoOutput = { ratio: record.ratio, resolution: record.resolution, sourceSize: source ? { width: source.image.naturalWidth, height: source.image.naturalHeight } : sourceSize ?? { width: 2, height: 3 }, count };
+    let fixedOutputs: Omit<CanvasImage, 'x' | 'y'>[] | undefined;
+    if (record.demoOutputUrls?.length) {
+      const outputUrls = record.demoOutputUrls;
+      try { fixedOutputs = await Promise.all(Array.from({ length: count }, (_, index) => {
+        const url = outputUrls[index % outputUrls.length];
+        return prepareMainImage({ id: url, url, name: record.title });
+      })); }
+      catch { onNotify('图片加载失败，请重试', 'error'); return; }
+      if (!generationMounted.current) return;
+    }
+    const placeholders = board.beginGeneration(source?.id ?? record.sourceId, count, { name: record.title, taskRecordId: id, sourceSize, sourceIds: record.sourceIds, outputSize: demoOutputSize(settings), outputSizes: fixedOutputs?.map(item => ({ width: item.width, height: item.height })) });
     if (!placeholders.length) return;
     const now = new Date();
     const time = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -397,13 +578,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       generationTimers.current.add(timer);
     });
     try {
-      const outputUrls = record.demoOutputUrls;
-      const outputRequest = outputUrls?.length
-        ? Promise.all(Array.from({ length: count }, (_, index) => {
-          const url = outputUrls[index % outputUrls.length];
-          return prepareMainImage({ id: url, url, name: record.title });
-        }))
-        : prepareDemoResults({ ratio: record.ratio, resolution: record.resolution, sourceSize: source ? { width: source.image.naturalWidth, height: source.image.naturalHeight } : sourceSize ?? placeholders[0], count });
+      const outputRequest = fixedOutputs ? Promise.resolve(fixedOutputs) : prepareDemoResults(settings);
       const [assets] = await Promise.all([outputRequest, delay]);
       if (!generationMounted.current) return;
       const results = Array.from({ length: count }, (_, index) => assets[index % assets.length]);
@@ -417,20 +592,31 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
   useEffect(() => {
     if (!recordsRestored || !board.restored) return;
     for (const record of [...generationRecords, ...archivedRecords.current.values()]) {
+      if (record.canvasEntry === 'agent' && record.generating && record.agentSettings) {
+        const batchKey = `batch:${record.id}`;
+        if (activeAgentBatches.current.has(record.id) || resumedResults.current.has(batchKey)) continue;
+        resumedResults.current.add(batchKey);
+        const pending = record.images.find(result => result.status === 'generating');
+        const tile = pending && board.images.find(image => image.taskResultId === `${record.id}:${pending.id}` && image.generating);
+        if (pending && !tile) updateAgentRecord(record.id, value => ({ ...value, images: value.images.map(image => image.id === pending.id ? { ...image, status: 'failed' } : image) }));
+        const nextIndex = tile?.generationIndex ?? (tile ? Math.max(0, (record.agentStartedCount ?? record.images.length) - 1) : record.agentStartedCount ?? record.images.length);
+        runAgentBatch(record.id, record.title, record.agentSettings, record.agentConversationId ?? `legacy-agent:${record.id}`, nextIndex, tile || undefined);
+        continue;
+      }
       for (const result of record.images) {
         const key = `${record.id}:${result.id}`;
         const tile = board.images.find(image => image.taskResultId === key && image.generating);
         if (!tile || result.status !== 'generating' || resumedResults.current.has(key)) continue;
         // Only recover placeholders loaded from storage, not currently running submissions.
-        if (generationTimers.current.size || retryingResults.current.size || generatingSources.current.size) continue;
+        if (generationTimers.current.size || activeAgentBatches.current.size || retryingResults.current.size || generatingSources.current.size) continue;
         resumedResults.current.add(key);
         const demoUrl = record.demoOutputUrls?.[record.images.indexOf(result) % record.demoOutputUrls.length];
         const recoveredAssets = record.textEdit
           ? renderTextEdit(record.textEdit, record.prompt ?? '').then(url => prepareMainImage({ id: url, url, name: record.title })).then(asset => [asset])
-          : demoUrl ? prepareMainImage({ id: demoUrl, url: demoUrl, name: record.title }).then(asset => [asset]) : prepareDemoResults({ ratio: record.ratio, resolution: record.resolution, sourceSize: tile, count: 1 });
+          : demoUrl ? prepareMainImage({ id: demoUrl, url: demoUrl, name: record.title }).then(asset => [asset]) : prepareDemoResults({ ratio: record.ratio, resolution: record.resolution, sourceSize: tile, outputSize: { width: tile.width, height: tile.height }, startIndex: tile.generationIndex ?? record.images.indexOf(result), count: 1 });
         void recoveredAssets.then(assets => {
           if (!generationMounted.current) return;
-          const loaded = assets[0];
+          const loaded = record.canvasEntry === 'agent' ? { ...assets[0], name: tile.name } : assets[0];
           board.finishGeneration([tile.id], [loaded], true);
           const complete = (item: GenerationRecord) => ({ ...item, generating: false, images: item.images.map(image => image.id === result.id ? { ...image, url: loaded.url, height: 92 * loaded.image.naturalHeight / loaded.image.naturalWidth, status: 'success' as const } : image) });
           setGenerationRecords(previous => previous.map(item => item.id === record.id ? complete(item) : item));
@@ -443,7 +629,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
   const quickEditVisible = usePresence(quickEdit === board.selected ? quickEdit : null);
   const rotationLocked = !!localEdit || !!quickEdit;
   useEffect(() => { setQuickEdit(null); }, [board.selected]);
-  const [preview, setPreview] = useState(false);
+  const [preview, setPreview] = useState<FullImageViewerImage | null>(null);
   const shownPanel = usePresence(open ? true : null);
   const switcherRef = useRef<HTMLDivElement>(null);
   const [indicatorStyle, setIndicatorStyle] = useState<CSSProperties>({ visibility: 'hidden' });
@@ -472,7 +658,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
   const shownMenu = usePresence(menu);
   const zoomPercent = Math.round(board.camera.zoom * 100);
   const zoomOptions = [...new Set([10, 30, 50, 100, 200, zoomPercent])].sort((a, b) => a - b);
-  const shownPreview = usePresence(preview ? true : null);
+  const shownPreview = usePresence(preview);
   const textarea = useRef<HTMLTextAreaElement>(null);
   const selected = board.images.find(i => i.id === board.selected);
   const selectedInView = !!selected && intersectsViewport(screenBounds(imageBounds(selected), board.camera), board.size);
@@ -510,6 +696,34 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     board.updateSelected({ width, height, x: item.x + item.width / 2 + ox * Math.cos(angle) - oy * Math.sin(angle) - width / 2, y: item.y + item.height / 2 + ox * Math.sin(angle) + oy * Math.cos(angle) - height / 2 }, false);
   };
   const unavailable = () => { setMenu(null); onNotify(demoNotice(locale)); };
+  const agentMessages = conversation.filter(message => !message.requestId || message.taskId || message.text).map(message => {
+    if (!message.taskId) return { ...message, results: message.results?.map(result => ({ ...result, agentConversationId: result.agentConversationId ?? message.conversationId ?? conversationId, ...board.lookupImageFilename(result.id) })) };
+    const record = generationRecords.find(record => record.id === message.taskId) ?? archivedRecords.current.get(message.taskId);
+    return { ...message, results: record?.images.map((result, index): AgentImageResult => ({
+      id: `${record.id}:${result.id}`, agentConversationId: record.agentConversationId ?? message.conversationId ?? conversationId, url: result.url, name: `${record.title} · ${index + 1}.png`,
+      width: 92, height: result.height, status: result.status,
+      ...board.lookupImageFilename(`${record.id}:${result.id}`),
+    })) };
+  });
+  const sendAgentResultsToCanvas = async (results: AgentImageResult[], loaded?: HTMLImageElement) => {
+    if (board.locked || !board.restored || !results.length) return;
+    // Existing results can be focused even if their old conversation URL is no
+    // longer loadable; placement always uses the current canvas instance.
+    if (board.focusAgentResults(results.map(result => result.id))) return;
+    try {
+      const assets = await Promise.all(results.map(async result => {
+        const existing = board.images.find(item => item.taskResultId === result.id);
+        const image = existing?.image ?? (results.length === 1 ? loaded : undefined);
+        const asset = image
+          ? { image, url: image.currentSrc || image.src, width: image.naturalWidth, height: image.naturalHeight, name: result.name }
+          : await prepareMainImage({ id: crypto.randomUUID(), url: result.url, name: result.name });
+        return { ...asset, id: crypto.randomUUID(), taskResultId: result.id, agentConversationId: result.agentConversationId ?? conversationId };
+      }));
+      if (!generationMounted.current) return;
+      const outcome = board.addAgentImages(assets, { agentConversationId: results[0].agentConversationId ?? conversationId });
+      if (outcome.addedCount) onNotify(t('已发送至画布'), 'success');
+    } catch { onNotify(t('图片加载失败，请重试'), 'error'); }
+  };
   const elementAction = (label: string, entry: string) => {
     if (label === '款式' && ['局部修改', '印花上身'].includes(entry) && selected) {
       setMenu(null); setQuickEdit(null);
@@ -529,13 +743,20 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     {board.images.filter(item => item.generating !== undefined).map(item => <GeneratingPlaceholder key={item.id} active={!!item.generating} zoom={board.camera.zoom} suspended={board.isolationActive} style={{ left: item.x * board.camera.zoom + board.camera.x, top: item.y * board.camera.zoom + board.camera.y, width: item.width * board.camera.zoom, height: item.height * board.camera.zoom, visibility: board.isolationActive ? 'hidden' : 'visible' }} />)}
     {board.images.filter(item => item.generationFailed).map(item => <div key={item.id} className="canvas-failed-result" style={{ position: 'absolute', pointerEvents: 'none', left: item.x * board.camera.zoom + board.camera.x, top: item.y * board.camera.zoom + board.camera.y, width: item.width * board.camera.zoom, height: item.height * board.camera.zoom, transform: `rotate(${item.rotation ?? 0}deg)`, visibility: board.isolationActive ? 'hidden' : 'visible' }}><div className="canvas-failed-result-content" style={{ width: item.width, height: item.height, transform: `scale(${board.camera.zoom})`, transformOrigin: 'top left' }}><TaskResultPlaceholder status="failed" size="large" onRetry={item.taskResultId ? () => retryCanvasImage(item.taskResultId!) : undefined} /></div></div>)}
     {board.marquee && <div className="canvas-marquee" aria-hidden="true" style={{ left: board.marquee.x * board.camera.zoom + board.camera.x, top: board.marquee.y * board.camera.zoom + board.camera.y, width: board.marquee.width * board.camera.zoom, height: board.marquee.height * board.camera.zoom }} />}
+    {board.images.filter(item => board.selectedIds.includes(item.id) && !item.generating && !item.generationFailed).map(item => {
+      const box = screenBounds(imageBounds(item), board.camera);
+      return <div key={`filename:${item.id}`} className="canvas-selected-filename" style={{ left: box.x, top: box.y - IMAGE_FILENAME_TOP_SPACE, width: box.width }}>
+        <span className="canvas-selected-filename-icon" aria-hidden="true" />
+        <span className="canvas-selected-filename-text">{item.name}</span>
+      </div>;
+    })}
     {board.selectedIds.length > 1 && !board.marquee && <MultiSelectionControls key={board.selectedIds.join('|')} board={board} onNotify={onNotify} />}
     {!leftTab && <div className="left-tools wb-surface" data-canvas-ui data-phase="enter" role="toolbar" aria-label={t("画布功能栏")}>
       <Tool icon="canvas-imgIconEditor7" label={t("图层")} disabled={!!localEdit} size={24} onClick={() => openLeftPanel('layers')} />
       <Tool icon="canvas-imgIconSystem6" label={t("资产")} size={24} onClick={() => openLeftPanel('assets')} />
       <Tool id="canvas-task-entry" icon="canvas-imgIcon2" label={t("任务")} size={24} onClick={() => openLeftPanel('history')} />
     </div>}
-    <CanvasLeftPanel layersDisabled={!!localEdit} tab={leftTab} hasSelectedElement={board.selectedIds.length > 0} onTabChange={openLeftPanel} onClose={() => setLeftTab(null)} records={generationRecords} uploads={uploads} onUpload={onRememberUpload} onNotify={onNotify} onRegenerate={record => void regenerateRecord(record)} onDeleteRecord={id => { const record = generationRecords.find(item => item.id === id); if (record && !archivedRecords.current.has(id)) archivedRecords.current.set(id, record); setGenerationRecords(previous => previous.filter(record => record.id !== id)); }} onDeleteResult={(id, index) => setGenerationRecords(previous => previous.flatMap(record => {
+    <CanvasLeftPanel layersDisabled={!!localEdit} tab={leftTab} hasSelectedElement={board.selectedIds.length > 0} onTabChange={openLeftPanel} onClose={() => setLeftTab(null)} records={generationRecords} uploads={uploads} onUpload={onRememberUpload} onAddImages={() => onUpload()} onNotify={onNotify} onRegenerate={record => void regenerateRecord(record)} onDeleteRecord={id => { const record = generationRecords.find(item => item.id === id); if (record && !archivedRecords.current.has(id)) archivedRecords.current.set(id, record); setGenerationRecords(previous => previous.filter(record => record.id !== id)); }} onDeleteResult={(id, index) => setGenerationRecords(previous => previous.flatMap(record => {
       if (record.id !== id) return [record];
       if (!archivedRecords.current.has(id)) archivedRecords.current.set(id, record);
       const images = record.images.filter((_, imageIndex) => imageIndex !== index);
@@ -545,7 +766,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     <div ref={bottomToolsRef} className="bottom-tools wb-surface" data-canvas-ui data-phase={phase} role="toolbar" aria-label={t("画布工具栏")} style={{ '--bottom-tools-shift': `${bottomToolsShift}px`, '--bottom-tools-bottom': `${bottomToolsBottom}px` } as CSSProperties}>
       <Tool disabled={!!localEdit} icon="canvas-imgIconEditor" label={t("选择 V")} active={board.effectiveMode === 'select'} onClick={() => board.setMode('select')} /><Tool disabled={!!localEdit} icon="canvas-imgIconEditor1" label={t("抓手 H")} active={board.effectiveMode === 'hand'} onClick={() => board.setMode('hand')} />
       <Tool icon="canvas-imgIconEditor2" label={t("撤销")} disabled={!!localEdit || !board.canUndo} onClick={board.undo} /><Tool icon="canvas-imgIconEditor3" label={t("重做")} disabled={!!localEdit || !board.canRedo} onClick={board.redo} /><Divider vertical />
-      <Tool disabled={!!localEdit} icon="canvas-imgIconEditor4" label={t("添加矩形")} onClick={unavailable} /><Tool disabled={!!localEdit} icon="canvas-imgIconEditor5" label={t("添加画框")} onClick={unavailable} /><Tool disabled={!!localEdit} icon="canvas-imgIconEditor6" label={t("添加文字")} onClick={unavailable} /><Tool disabled={!!localEdit} icon="canvas-imgIconSystem5" label={t("上传图片")} onClick={onUpload} /><Divider vertical /><Tool disabled={!!localEdit} icon="canvas-imgIconBusinessApparelDesign1" label={t("工艺单")} onClick={unavailable} />
+      <Tool disabled={!!localEdit} icon="canvas-imgIconEditor4" label={t("添加矩形")} onClick={unavailable} /><Tool disabled={!!localEdit} icon="canvas-imgIconEditor5" label={t("添加画框")} onClick={unavailable} /><Tool disabled={!!localEdit} icon="canvas-imgIconEditor6" label={t("添加文字")} onClick={unavailable} /><Tool disabled={!!localEdit} icon="canvas-imgIconSystem5" label={t("上传图片")} onClick={() => onUpload()} /><Divider vertical /><Tool disabled={!!localEdit} icon="canvas-imgIconBusinessApparelDesign1" label={t("工艺单")} onClick={unavailable} />
     </div>
     <div ref={zoomToolsRef} className={`zoom-tools ${open ? 'with-panel' : ''}`} data-canvas-ui data-phase={phase}>
       <div className="zoom-pill wb-surface" data-workbench-menu><Tool icon="canvas-imgIconEditor8" label={t("缩小")} disabled={!!localEdit} onClick={() => board.zoomAt(board.camera.zoom / 1.2, undefined, { animate: true, duration: 200 })} /><Button className="zoom-trigger" disabled={!!localEdit} aria-haspopup="true" aria-expanded={menu === 'zoom'} aria-controls="canvas-zoom-menu" onClick={() => toggleMenu('zoom')}><span>{Math.round(board.camera.zoom * 100)}%</span><Icon name="zoom-chevron-up" size={16} /></Button><Tool icon="canvas-imgIconEditor9" label={t("放大")} disabled={!!localEdit} onClick={() => board.zoomAt(board.camera.zoom * 1.2, undefined, { animate: true, duration: 200 })} />{shownMenu.value === 'zoom' && <div id="canvas-zoom-menu" className="workbench-menu zoom-menu" data-phase={shownMenu.phase} inert={shownMenu.phase === 'exit'}>{zoomOptions.map(n => <button key={n} aria-pressed={n === zoomPercent} onClick={() => { board.zoomAt(n / 100, undefined, { animate: true }); setMenu(null); }}><span className="zoom-option-label">{n}%</span>{n === zoomPercent && <Icon name="check" size={16} />}</button>)}<button onClick={() => { board.fit({ animate: true }); setMenu(null); }}><span className="zoom-option-label">{t("适应屏幕")}</span></button></div>}</div>
@@ -570,7 +791,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       <div className="element-selection" style={{ left: selected.x * board.camera.zoom + board.camera.x, top: selected.y * board.camera.zoom + board.camera.y, width: selected.width * board.camera.zoom, height: selected.height * board.camera.zoom, transform: `rotate(${selected.rotation ?? 0}deg)` }}>
         {['tl', 't', 'tr', 'l', 'r', 'bl', 'b', 'br', ...(quickEdit ? [] : ['rotate'])].map(handle => localEdit ? <span key={handle} className={`selection-handle handle-${handle}`} aria-hidden="true">{handle === 'rotate' && <Icon name="canvas-imgIcon0201" size={16} />}</span> : <button key={handle} data-canvas-ui className={`selection-handle handle-${handle}`} aria-label={handle === 'rotate' ? t("旋转图片") : t("调整图片尺寸")} onPointerDown={e => startTransform(e, handle)} onPointerMove={moveTransform} onPointerUp={e => { transform.current = null; delete e.currentTarget.dataset.rotating; }} onPointerCancel={e => { transform.current = null; delete e.currentTarget.dataset.rotating; }} onLostPointerCapture={e => { transform.current = null; delete e.currentTarget.dataset.rotating; }}>{handle === 'rotate' && <Icon name="canvas-imgIcon0201" size={16} />}</button>)}
       </div>
-      {shownElementToolbar.value === selected.id && <div ref={toolbarRef} className="element-toolbar wb-surface" data-canvas-ui data-phase={shownElementToolbar.phase} inert={shownElementToolbar.phase === 'exit'} role="toolbar" aria-label={t("元素工具栏")} style={canvasToolbarPosition(imageBounds(selected), board.camera, board.size, toolbarSize, open ? 432 : 16)}>
+      {shownElementToolbar.value === selected.id && <div ref={toolbarRef} className="element-toolbar wb-surface" data-canvas-ui data-phase={shownElementToolbar.phase} inert={shownElementToolbar.phase === 'exit'} role="toolbar" aria-label={t("元素工具栏")} style={canvasToolbarPosition(imageBounds(selected), board.camera, board.size, toolbarSize, open ? 432 : 16, IMAGE_FILENAME_TOP_SPACE)}>
         <Button icon="canvas-imgIconBusinessAi1" aria-expanded={quickEdit === selected.id} onClick={() => { setQuickEdit(quickEdit === selected.id ? null : selected.id); setMenu(null); }}>{t("快捷编辑")}</Button><Divider vertical />
         {elementMenu('款式', 'element-fashion')}{elementMenu('印花', 'element-pattern')}{elementMenu('面料', 'element-fabric')}{elementMenu('线稿', 'element-line')}
         <div className="element-menu-anchor" data-workbench-menu>
@@ -583,7 +804,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
         <Button onClick={() => { setQuickEdit(null); setMenu(null); setTextEdit(selected); }}><Icon name="text-edit/text-edit" size={20} />{t('文字编辑')}</Button><Divider vertical />
         <div className="element-toolbar-actions" onPointerLeave={() => setHoveredToolbarAction(null)}>
           <span className="element-toolbar-action-hover" aria-hidden="true" style={{ transform: `translateX(${(hoveredToolbarAction ?? lastHoveredToolbarAction.current) * 36}px)`, opacity: hoveredToolbarAction === null ? 0 : 1 }} />
-          <div className="element-toolbar-action" onPointerEnter={() => hoverToolbarAction(0)}><Tool icon="element-preview" label={t("查看大图")} onClick={() => setPreview(true)} /></div>
+          <div className="element-toolbar-action" onPointerEnter={() => hoverToolbarAction(0)}><Tool icon="element-preview" label={t("查看大图")} onClick={() => setPreview({ url: selected.url, name: selected.name, width: selected.image.naturalWidth || selected.width, height: selected.image.naturalHeight || selected.height })} /></div>
           <div className="element-toolbar-action" onPointerEnter={() => hoverToolbarAction(1)}><Tool icon="asset-center" label={t("收藏到资源库")} onClick={unavailable} /></div>
           <div className="element-toolbar-action" onPointerEnter={() => hoverToolbarAction(2)}><DownloadFormatMenu withLabel={false} open={menu === 'download'} onToggle={() => toggleMenu('download')} onClose={() => setMenu(null)} onSelect={format => void board.downloadImage(format)} /></div>
           <div className="element-toolbar-action" onPointerEnter={() => hoverToolbarAction(3)}><ElementSendMenu open={menu === 'send'} onToggle={() => toggleMenu('send')} onClose={() => setMenu(null)} onSend={unavailable} /></div>
@@ -591,7 +812,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       </div>}
     </>}
     {shownPanel.value && <aside id="canvas-right-sidebar" className={`right-panel ${tab === 'properties' ? 'properties-panel' : ''}`} data-canvas-ui data-phase={shownPanel.phase} inert={shownPanel.phase === 'exit'}>
-      <header className="right-panel-header"><div ref={switcherRef} className="right-panel-switcher" role="tablist" aria-label={t("右侧面板")}><span className="switcher-indicator" style={indicatorStyle} aria-hidden="true" />{(['agent', 'properties'] as const).map((value, i) => <button key={value} role="tab" id={`panel-tab-${value}`} aria-controls="right-panel-content" aria-selected={tab === value} tabIndex={tab === value ? 0 : -1} onClick={() => setTab(value)} onKeyDown={e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const next = tab === 'agent' ? 'properties' : 'agent'; setTab(next); document.getElementById(`panel-tab-${next}`)?.focus(); } }}><Icon name={i ? 'prop-imgLeftSlot1' : 'prop-imgLeftSlot'} size={16} />{i ? t("图层属性") : t("AI助手")}</button>)}</div><Tool icon="sidebar" label={t("收起右侧栏")} size={24} onClick={() => onOpenChange(false)} /></header>
+      <header className="right-panel-header"><div ref={switcherRef} className="right-panel-switcher" role="tablist" aria-label={t("右侧面板")}><span className="switcher-indicator" style={indicatorStyle} aria-hidden="true" />{(['agent', 'properties'] as const).map((value, i) => <button key={value} role="tab" id={`panel-tab-${value}`} aria-controls="right-panel-content" aria-selected={tab === value} tabIndex={tab === value ? 0 : -1} onClick={() => setTab(value)} onKeyDown={e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const next = tab === 'agent' ? 'properties' : 'agent'; setTab(next); document.getElementById(`panel-tab-${next}`)?.focus(); } }}><AgentArtwork name={i ? 'properties' : 'assistant'} />{i ? t("图层属性") : t("AI助手")}</button>)}</div><Button className="workbench-tool" aria-label={t("收起右侧栏")} title={t("收起右侧栏")} onClick={() => onOpenChange(false)}><AgentArtwork name="sidebar" size={24} /></Button></header>
       <div id="right-panel-content" role="tabpanel" aria-labelledby={`panel-tab-${tab}`} className="right-panel-content">
         {tab === 'properties' ? <div className="properties-content" inert={!!localEdit}><ImageProperties board={board} onNotify={onNotify} rotationLocked={rotationLocked} onReplace={onReplace} onAction={entry => entry === t("局部编辑") ? elementAction("款式", "局部修改") : unavailable()} /></div> : <>
           <div className="conversation-bar">
@@ -601,7 +822,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
                 event.preventDefault(); setMenu('conversations');
                 const last = event.key === 'ArrowUp';
                 requestAnimationFrame(() => { const items = document.querySelectorAll<HTMLButtonElement>('#conversation-history-menu button'); items[last ? items.length - 1 : 0]?.focus(); });
-              }}>{t("新对话")}<Icon name="toolbar-2907-chevron-down" className="conversation-chevron" size={16} /></Button>
+              }}>{t("轻链设计助理")}<span className="conversation-chevron"><AgentArtwork name="chevron-down" /></span></Button>
               {shownMenu.value === 'conversations' && <div id="conversation-history-menu" className="element-design-menu conversation-history-menu" role="menu" aria-label={t("新对话")} data-phase={shownMenu.phase} inert={shownMenu.phase === 'exit'} onKeyDown={event => {
                 if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); setMenu(null); document.querySelector<HTMLButtonElement>('.conversation-trigger')?.focus(); return; }
                 if (event.key === 'Tab') { setMenu(null); return; }
@@ -610,31 +831,29 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
                 const items = Array.from(event.currentTarget.querySelectorAll('button'));
                 const index = items.indexOf(event.target as HTMLButtonElement);
                 items[event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
-              }}>{savedConversations.length ? savedConversations.map((c, i) => <Button role="menuitem" key={i} onClick={() => { setConversation(c); setMenu(null); document.querySelector<HTMLButtonElement>('.conversation-trigger')?.focus(); }}><span className="conversation-history-title">{t(c[0].text).slice(0, 25)}</span></Button>) : <p className="conversation-history-empty" role="status">{t("暂无历史对话")}</p>}</div>}
+              }}>{savedConversations.length ? savedConversations.map((c, i) => <Button role="menuitem" key={i} onClick={() => { const id = c[0]?.conversationId ?? crypto.randomUUID(); archiveConversation(id); setConversationId(id); setConversation(c); setMenu(null); document.querySelector<HTMLButtonElement>('.conversation-trigger')?.focus(); }}><span className="conversation-history-title">{t(c[0].text || '参考图片').slice(0, 25)}</span></Button>) : <p className="conversation-history-empty" role="status">{t("暂无历史对话")}</p>}</div>}
             </div>
-            <Tool icon="canvas-imgIcon4" label={t("新建对话")} size={24} onClick={() => { setMenu(null); if (conversation.length) setSavedConversations(prev => [...prev, conversation]); setConversation([]); setPrompt(''); setAttachments([]); }} />
+            <Button className="workbench-tool" aria-label={t("新建对话")} title={t("新建对话")} onClick={() => { setMenu(null); archiveConversation(); setConversationId(crypto.randomUUID()); setConversation([]); setPrompt(''); setAttachments([]); }}><AgentArtwork name="new-chat" size={24} /></Button>
           </div>
           <div className="agent-content" data-scrolling={agentScrolling} onScroll={event => {
             const element = event.currentTarget;
             setAgentScrolling(element.scrollHeight > element.clientHeight);
             if (agentScrollTimer.current) clearTimeout(agentScrollTimer.current);
             agentScrollTimer.current = setTimeout(() => setAgentScrolling(false), 600);
-          }}>{conversation.length ? <div className="agent-thread">
-            {conversation[0].demo && <span className="agent-demo-caption">{t('演示对话')}</span>}
-            {conversation.map((message, i) => <div className={`agent-turn agent-turn--${message.role}`} key={i}>
-              <span className="agent-turn-label">{message.role === 'user' ? t('我') : t('AI助手')}</span>
-              <div className="agent-turn-bubble">
-                <p>{t(message.text)}</p>
-                {!!message.images?.length && <div className="agent-turn-images">{message.images.map((src, imageIndex) => <img key={`${src}-${imageIndex}`} src={src} alt={t(message.role === 'user' ? '参考图片' : '示例结果图')} loading={i > 1 ? 'lazy' : 'eager'} />)}</div>}
-              </div>
-            </div>)}
-          </div> : <><h2>{t("今天你想设计什么？")}</h2><p>{t("从下方输入你的设计需求，或上传/从画布中选择图片进行修改与设计")}</p><div className="agent-suggestions">{[t("多款融合"), t("面料套版"), t("单款裂变"), t("印花设计"), t("工艺单素材包")].map(text => <button key={text} onClick={() => action(text)}><span className="suggestion-idea"><Icon name="suggestion-idea" size={20} /></span><span className="suggestion-label">{text}</span><span className="suggestion-add"><Icon name="suggestion-add" size={20} /></span></button>)}</div></>}</div>
-          <div className="agent-input-area"><div className="agent-composer">
-            {attachments.length > 0 && <div className="agent-attachments">{attachments.map(item => <div className="agent-attachment-chip" key={item.id}><span className={`agent-attachment-icon agent-attachment-icon--${item.kind}`}><Icon name={`agent-add-${item.kind}`} size={16} /></span><span title={item.file.name}>{item.file.name}</span><Button aria-label={`${t("移除")} ${item.file.name}`} onClick={() => setAttachments(prev => prev.filter(a => a.id !== item.id))}><Icon name="close" size={12} /></Button></div>)}</div>}
-            <textarea ref={textarea} aria-label={t("设计需求")} placeholder={t("上传产品图，然后向我说出设计需求")} value={prompt} onChange={e => setPrompt(e.target.value)} />
+          }}>{conversation.length ? <AgentConversation conversationId={conversationId} messages={agentMessages} onPreview={setPreview} onNotify={onNotify} onUnavailable={unavailable} canvasLocked={board.locked || !board.restored} onSendToCanvas={sendAgentResultsToCanvas} onRetry={retryCanvasImage} onReference={src => {
+            setAttachments(previous => [...previous, { id: crypto.randomUUID(), name: `${t('参考图片')}.jpg`, kind: 'image', url: src }]);
+            textarea.current?.focus();
+          }} /> : <><h2>{t("今天你想设计什么？")}</h2><p>{t("从下方输入你的设计需求，或上传/从画布中选择图片进行修改与设计")}</p><div className="agent-suggestions">{[t("多款融合"), t("面料套版"), t("单款裂变"), t("印花设计"), t("工艺单素材包")].map(text => <button key={text} onClick={() => action(text)}><span className="suggestion-idea"><Icon name="suggestion-idea" size={20} /></span><span className="suggestion-label">{text}</span><span className="suggestion-add"><Icon name="suggestion-add" size={20} /></span></button>)}</div></>}</div>
+          <div className="agent-input-area">
+            <AgentRequestStatus state={agentRequestState} disabled={board.locked || !board.restored || !recordsRestored} onRetry={() => { if (activeAgentRequestId) agentRequests.retry(activeAgentRequestId); }} />
+            <div className="agent-composer" onPointerDownCapture={event => {
+              if (event.target instanceof Element && !event.target.closest('button, .agent-composer-attachments, [data-workbench-menu]')) lockCanvasReferences();
+            }}>
+            <AgentComposerAttachments items={composerAttachments} onRemove={removeComposerAttachment} disabled={board.locked || !board.restored} />
+            <textarea ref={textarea} aria-label={t("设计需求")} placeholder={t("上传产品图，然后向我说出设计需求")} value={prompt} onFocus={lockCanvasReferences} onChange={e => { lockCanvasReferences(); setPrompt(e.target.value); }} />
             <div className="agent-input-footer">
               <div className="agent-attachment-anchor" data-workbench-menu>
-                <Button variant="outline" className="agent-add" onClick={() => toggleMenu('attachments')} aria-label={t("添加附件")} aria-haspopup="menu" aria-expanded={menu === 'attachments'} aria-controls="agent-attachment-menu"><Icon name="canvas-imgIcon5" size={24} /></Button>
+                <Button variant="outline" className="agent-add" onClick={() => toggleMenu('attachments')} aria-label={t("添加附件")} aria-haspopup="menu" aria-expanded={menu === 'attachments'} aria-controls="agent-attachment-menu"><Icon name="agent-composer-20261029/add" size={24} /></Button>
                 {shownMenu.value === 'attachments' && <div id="agent-attachment-menu" className="agent-attachment-menu" role="menu" aria-label={t("上传类型")} data-phase={shownMenu.phase} inert={shownMenu.phase === 'exit'}>
                   <button type="button" role="menuitem" onClick={() => { setMenu(null); fileInput.current?.click(); }}><span className="agent-attachment-icon agent-attachment-icon--file"><Icon name="agent-add-file" size={16} /></span><span>{t("文件")}</span></button>
                   <button type="button" role="menuitem" onClick={() => { setMenu(null); imageInput.current?.click(); }}><span className="agent-attachment-icon agent-attachment-icon--image"><Icon name="agent-add-image" size={16} /></span><span>{t("图片")}</span></button>
@@ -642,7 +861,11 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
                 <input ref={fileInput} hidden type="file" multiple aria-label={t("选择要上传的文件")} onChange={e => addAttachments(e.currentTarget, 'file')} />
                 <input ref={imageInput} hidden type="file" accept="image/*" multiple aria-label={t("选择要上传的图片")} onChange={e => addAttachments(e.currentTarget, 'image')} />
               </div>
-              <button className="agent-send" disabled={!prompt.trim() && !attachments.length} aria-label={t("发送设计需求")} data-tooltip={t("发送设计需求")} onClick={() => { recordGenerationRequest([prompt.trim(), ...attachments.map(item => `${t("附件：")}${item.file.name}`)].filter(Boolean).join('\n')); setPrompt(''); setAttachments([]); }}><span className="agent-send-glyph"><Icon name="agent-send-arrow" size={24} /></span></button>
+              <button type="button" className="agent-send" disabled={agentRequestState === 'thinking' || (!activeAgentRequestId && (board.locked || !board.restored || !recordsRestored || (!prompt.trim() && !composerAttachments.length)))} aria-label={t(activeAgentRequestId && agentRequestState !== 'thinking' ? '停止请求' : '发送设计需求')} data-tooltip={t(activeAgentRequestId && agentRequestState !== 'thinking' ? '停止请求' : '发送设计需求')} onClick={() => {
+                if (activeAgentRequestId) { stopAgentRequest(); return; }
+                const submitted = recordGenerationRequest([prompt.trim(), ...composerAttachments.filter(item => item.kind === 'file').map(item => `${t('附件：')}${item.name}`)].filter(Boolean).join('\n'), 'AI助手', composerAttachments.flatMap(item => item.url ? [item.url] : []));
+                if (submitted) { setPrompt(''); setAttachments([]); board.selectMany([]); }
+              }}>{activeAgentRequestId && agentRequestState !== 'thinking' ? <span className="agent-send-stop" aria-hidden="true" /> : <Icon name="agent-composer-20261029/submit" size={24} />}</button>
             </div>
           </div></div>
         </>}
@@ -663,6 +886,6 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     }} />}
     {shownTextEdit.value && <TextEditDialog key={shownTextEdit.value.id} source={shownTextEdit.value} phase={shownTextEdit.phase} onClose={() => setTextEdit(null)} onSubmit={(input, prompt) => generateTextEdit(input, prompt, shownTextEdit.value!.id)} />}
     <ImageContextMenu board={board} onUpload={onUpload} />
-    {shownPreview.value && selected && <FullImageViewer key={selected.id} image={selected} locale={locale} phase={shownPreview.phase} onClose={() => setPreview(false)} />}
+    {shownPreview.value && <FullImageViewer image={shownPreview.value} locale={locale} phase={shownPreview.phase} onClose={() => setPreview(null)} />}
   </>;
 }
