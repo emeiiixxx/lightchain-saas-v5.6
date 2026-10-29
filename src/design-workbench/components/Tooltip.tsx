@@ -101,7 +101,7 @@ export function TooltipHost() {
   }, [target, id]);
   useLayoutEffect(() => {
     if (!shown.value || !ref.current) return;
-    const { anchor } = shown.value;
+    const { anchor, bounds } = shown.value;
     const tip = ref.current;
     // Top layer avoids clipping by canvas transforms, toolbar overflow and dialogs.
     if (!tip.matches(':popover-open')) tip.showPopover();
@@ -109,7 +109,6 @@ export function TooltipHost() {
     const position = () => {
       if (!anchor.isConnected || !shouldShowTooltip(anchor) || anchor.closest('[inert]') || (anchor.closest('dialog') && !anchor.closest('dialog')!.open)) { setTarget(null); return; }
       const anchorRect = anchor.getBoundingClientRect();
-      const bounds = shown.value.bounds;
       const a = bounds ? new DOMRect(anchorRect.left + bounds.x, anchorRect.top + bounds.y, bounds.width, bounds.height) : anchorRect;
       const w = window.innerWidth, h = window.innerHeight;
       const side = anchor.closest('.canvas-side-toolbar, .left-tools') && w - a.right > tip.offsetWidth + 16 ? 'right' : a.top >= tip.offsetHeight + 12 ? 'top' : 'bottom';
