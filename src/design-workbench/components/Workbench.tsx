@@ -32,6 +32,7 @@ import { MultiSelectionControls } from './MultiSelectionControls';
 import { CanvasArrangeMenu } from './CanvasArrangeMenu';
 import { AgentArtwork, AgentConversation, demoConversation, type AgentMessage, type AgentImageResult } from './AgentConversation';
 import { AgentRequestStatus } from './AgentRequestStatus';
+import { AgentInputArea } from './AgentInputArea';
 import { AgentComposerAttachments, type AgentComposerAttachment } from './AgentComposerAttachments';
 import { useAgentRequests, type AgentRequest } from '../useAgentRequests';
 import { imageBounds } from '../canvas-selection';
@@ -852,6 +853,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
             </div>
             <Button className="workbench-tool" aria-label={t("新建对话")} title={t("新建对话")} onClick={() => { setMenu(null); archiveConversation(); setConversationId(crypto.randomUUID()); setConversation([]); setPrompt(''); setAttachments([]); }}><AgentArtwork name="new-chat" size={24} /></Button>
           </div>
+          <div className="agent-chat-body">
           <div className="agent-content" data-scrolling={agentScrolling} onScroll={event => {
             const element = event.currentTarget;
             setAgentScrolling(element.scrollHeight > element.clientHeight);
@@ -863,7 +865,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
               : [...previous, { id: source ? `canvas:${source.id}` : crypto.randomUUID(), canvasImageId: source?.id, name: source?.name ?? `${t('参考图片')}.jpg`, kind: 'image', url: src }]);
             textarea.current?.focus();
           }} /> : <><h2>{t("今天你想设计什么？")}</h2><p>{t("从下方输入你的设计需求，或上传/从画布中选择图片进行修改与设计")}</p><div className="agent-suggestions">{[t("多款融合"), t("面料套版"), t("单款裂变"), t("印花设计"), t("工艺单素材包")].map(text => <button key={text} onClick={() => action(text)}><span className="suggestion-idea"><Icon name="suggestion-idea" size={20} /></span><span className="suggestion-label">{text}</span><span className="suggestion-add"><Icon name="suggestion-add" size={20} /></span></button>)}</div></>}</div>
-          <div className="agent-input-area">
+          <AgentInputArea>
             <AgentRequestStatus state={agentRequestState} disabled={board.locked || !board.restored || !recordsRestored} onRetry={() => { if (activeAgentRequestId) agentRequests.retry(activeAgentRequestId); }} />
             <div className="agent-composer" onPointerDownCapture={event => {
               if (event.target instanceof Element && !event.target.closest('button, .agent-composer-attachments, [data-workbench-menu]')) lockCanvasReferences();
@@ -886,7 +888,8 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
                 if (submitted) { setPrompt(''); setAttachments([]); board.selectMany([]); }
               }}>{activeAgentRequestId && agentRequestState !== 'thinking' ? <span className="agent-send-stop" aria-hidden="true" /> : <Icon name="agent-composer-20261029/submit" size={24} />}</button>
             </div>
-          </div></div>
+          </div></AgentInputArea>
+          </div>
         </>}
       </div>
     </aside>}

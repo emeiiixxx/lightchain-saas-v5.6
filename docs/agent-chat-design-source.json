@@ -328,6 +328,13 @@
     }
   },
   "canvasSelectionComposer": {
+    "inputArea": {
+      "nodeId": "50:17659",
+      "designUrl": "https://www.figma.com/design/A3oI9FzDPseUH4ybk7mA3H/Lightchain-SaaS-v5.6.0?node-id=50-17659&m=dev",
+      "background": "输入区叠在聊天滚动内容上方，从 Background/alpha 向下渐变至 Background/default。原节点为渐进背景模糊，Figma半径自上而下0至40；CSS使用0至20px的分层遮罩近似。输入框本身保持不透明 Control/fill/default。",
+      "scrolling": "发送消息后滚至最新内容；状态卡片展开时持续跟随底部并留出44px净高度。用户向上查看历史后停止跟随，再次发送或主动滚到底部时恢复。",
+      "statusCard": "高56px，与输入框重叠12px；200ms ease-out 展开收起。滚动区底部按整个输入区实时高度预留空间，滚至最新时消息位于状态卡片上方。"
+    },
     "nodeId": "50:17684",
     "designUrl": "https://www.figma.com/design/A3oI9FzDPseUH4ybk7mA3H/Lightchain-SaaS-v5.6.0?node-id=50-17684&m=dev",
     "retrievedOn": "2026-10-29",

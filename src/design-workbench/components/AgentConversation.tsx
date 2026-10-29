@@ -139,6 +139,8 @@ export function AgentConversation({ conversationId, messages, onPreview, onRefer
 }) {
   const { t } = useLocale();
   const thread = useRef<HTMLDivElement>(null);
+  const scrollToLatest = useRef<(() => void) | null>(null);
+  const userMessageCount = messages.reduce((count, message) => count + (message.role === 'user' ? 1 : 0), 0);
   useLayoutEffect(() => {
     const container = thread.current?.parentElement;
     if (!container) return;
@@ -146,8 +148,11 @@ export function AgentConversation({ conversationId, messages, onPreview, onRefer
     let previousTop = container.scrollTop;
     const onScroll = () => {
       const top = container.scrollTop;
-      // Any upward movement pauses following, including a small first step.
-      keepAtBottom = top >= previousTop && container.scrollHeight - top - container.clientHeight <= 2;
+      const atBottom = container.scrollHeight - top - container.clientHeight <= 2;
+      // The thinking card grows the reserved bottom space as it expands. A
+      // temporary gap must not disable following before ResizeObserver pins it.
+      if (atBottom) keepAtBottom = true;
+      else if (top < previousTop) keepAtBottom = false;
       previousTop = top;
     };
     const onWheel = (event: WheelEvent) => { if (event.deltaY < 0) keepAtBottom = false; };
@@ -159,6 +164,10 @@ export function AgentConversation({ conversationId, messages, onPreview, onRefer
       container.scrollTop = container.scrollHeight;
       previousTop = container.scrollTop;
     };
+    scrollToLatest.current = () => {
+      keepAtBottom = true;
+      pin();
+    };
     pin();
     container.addEventListener('scroll', onScroll, { passive: true });
     container.addEventListener('wheel', onWheel, { passive: true });
@@ -167,14 +176,20 @@ export function AgentConversation({ conversationId, messages, onPreview, onRefer
     observer.observe(thread.current!);
     observer.observe(container);
     return () => {
+      scrollToLatest.current = null;
       observer.disconnect();
       container.removeEventListener('scroll', onScroll);
       container.removeEventListener('wheel', onWheel);
       container.removeEventListener('click', onDisclosureClick, true);
     };
-    // Message arrays also change on unrelated parent renders (including scroll
-    // bar visibility). Only a different conversation resets the reading state.
+    // Keep reading state through assistant updates and unrelated parent renders,
+    // including the scrollbar visibility updates caused by scrolling itself.
   }, [conversationId]);
+  useLayoutEffect(() => {
+    // Sending a new user message explicitly resumes following. Assistant output,
+    // image loads and generation status updates must not interrupt history reading.
+    scrollToLatest.current?.();
+  }, [conversationId, userMessageCount]);
   return <div ref={thread} className="agent-thread" role="log" aria-label={messages[0]?.demo ? t('演示对话') : t('AI助手')} aria-live="polite">
     {messages.map((message, index) => <div className={`agent-turn agent-turn--${message.role}`} key={index} aria-label={message.role === 'user' ? t('我') : t('AI助手')}>
       {message.role === 'user' ? <div className="agent-turn-bubble">

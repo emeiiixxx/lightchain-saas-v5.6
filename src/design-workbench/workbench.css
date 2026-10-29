@@ -86,7 +86,8 @@ body:has(.handle-rotate[data-rotating='true']), body:has(.handle-rotate[data-rot
 .conversation-bar { height: 56px; flex: none; padding: 12px; display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1; }
 .conversation-bar > .lc-button, .conversation-trigger { font-size: 14px; font-weight: 500; height: 40px; padding: 0 12px; gap: 8px; }
 .conversation-bar > .workbench-tool { width: 40px; padding: 0; }
-.agent-content { flex: 1; min-height: 0; padding: 16px 12px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: transparent transparent; transition: scrollbar-color var(--motion-duration) var(--motion-easing); }
+.agent-chat-body { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.agent-content { flex: 1; min-height: 0; padding: 16px 12px calc(var(--agent-input-height, 160px) + 16px); overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: transparent transparent; transition: scrollbar-color var(--motion-duration) var(--motion-easing); }
 .agent-content::-webkit-scrollbar { width: 8px; }
 .agent-content::-webkit-scrollbar-thumb { background: transparent; border-radius: 8px; transition: background-color var(--motion-duration) var(--motion-easing); }
 .agent-content[data-scrolling='true'] { scrollbar-color: var(--border-medium) transparent; }
@@ -96,7 +97,18 @@ body:has(.handle-rotate[data-rotating='true']), body:has(.handle-rotate[data-rot
 .agent-suggestions { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .agent-suggestions > button { display: flex; align-items: center; gap: 4px; padding: 0 16px; height: 40px; background: var(--state-default); border-radius: var(--radius-l); font-size: 14px; font-weight: 500; color: var(--text-secondary); }
 
-.agent-input-area { flex: none; padding: 12px; background: linear-gradient(transparent, var(--background-default)); backdrop-filter: blur(20px); }
+/* Figma 50:17659: progressive background blur (Figma 0–40, CSS 0–20px).
+   The scroll surface extends behind this overlay so there is content to blur. */
+.agent-input-area { position: absolute; z-index: 2; inset: auto 0 0; padding: 12px; pointer-events: none; }
+.agent-input-backdrop { position: absolute; z-index: 0; inset: 0; pointer-events: none; }
+.agent-input-backdrop > span { position: absolute; inset: 0; -webkit-backdrop-filter: blur(var(--agent-blur)); backdrop-filter: blur(var(--agent-blur)); -webkit-mask-image: var(--agent-blur-mask); mask-image: var(--agent-blur-mask); }
+.agent-input-backdrop > span:nth-child(1) { --agent-blur: 4px; --agent-blur-mask: linear-gradient(to bottom, transparent 0%, #000 20%, transparent 40%); }
+.agent-input-backdrop > span:nth-child(2) { --agent-blur: 8px; --agent-blur-mask: linear-gradient(to bottom, transparent 20%, #000 40%, transparent 60%); }
+.agent-input-backdrop > span:nth-child(3) { --agent-blur: 12px; --agent-blur-mask: linear-gradient(to bottom, transparent 40%, #000 60%, transparent 80%); }
+.agent-input-backdrop > span:nth-child(4) { --agent-blur: 16px; --agent-blur-mask: linear-gradient(to bottom, transparent 60%, #000 80%, transparent 100%); }
+.agent-input-backdrop > span:nth-child(5) { --agent-blur: 20px; --agent-blur-mask: linear-gradient(to bottom, transparent 80%, #000 100%); }
+.agent-input-backdrop::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, var(--background-alpha), var(--background-default)); }
+.agent-input-area > :is(.agent-request-status-slot, .agent-composer) { position: relative; z-index: 1; pointer-events: auto; }
 .agent-composer { position: relative; padding: 12px; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--border-weak); border-radius: var(--radius-xl); background: var(--control-fill-default); }
 .agent-composer::before {
   content: ''; position: absolute; inset: -1px; z-index: 1;
@@ -112,7 +124,7 @@ body:has(.handle-rotate[data-rotating='true']), body:has(.handle-rotate[data-rot
 .agent-composer textarea { width: 100%; height: 65px; resize: none; background: transparent; border: 0; outline: none; font: inherit; font-size: 14px; line-height: 20px; color: var(--text-primary); }
 .agent-composer textarea::placeholder { color: var(--text-placeholder); }
 /* Figma 50:17684: inward stroke, 24px tags, 64px text, 40px actions. */
-.agent-input-area > .agent-composer { border: 0; box-shadow: inset 0 0 0 1px var(--border-weak); }
+.agent-input-area > .agent-composer { border: 0; background: var(--control-fill-default); box-shadow: inset 0 0 0 1px var(--border-weak); }
 .agent-input-area > .agent-composer::before { inset: 0; }
 .agent-input-area > .agent-composer:focus-within { box-shadow: none; }
 .agent-input-area > .agent-composer > textarea { height: 64px; min-height: 64px; padding: 0; color: var(--text-secondary); }
