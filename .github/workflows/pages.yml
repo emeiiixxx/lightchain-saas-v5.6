@@ -21,7 +21,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
+      # Avoid cache restore stalls when Actions cache egress is rate-limited.
       - run: npm ci
       - run: node scripts/build-pages.mjs
       - uses: actions/configure-pages@v5
