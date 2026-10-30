@@ -19,7 +19,7 @@ export function EditableFilename({ name, onRename, autoEdit = false, onEditingEn
     if (save && value && value + suffix !== name) onRename?.(value + suffix);
     setEditing(false); onEditingEnd?.();
   };
-  return <span className={`editable-filename nodrag nopan ${className}`} data-tooltip={editing ? undefined : name}
+  return <span className={`editable-filename nodrag nopan ${className}`} data-tooltip={editing ? undefined : name} data-tooltip-position="pointer"
     onDoubleClick={event => {
       if (!onRename) return;
       event.preventDefault(); event.stopPropagation(); if (editing) return; finished.current = false; setDraft(basename); setEditing(true);

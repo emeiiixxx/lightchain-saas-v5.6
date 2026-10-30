@@ -1,28 +1,35 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { usePresence } from '../usePresence';
+import { pointerTooltipPosition } from '../tooltip-position';
 
-type Target = { anchor: HTMLElement; label: string; container: HTMLElement };
+type Target = { anchor: HTMLElement; label: string; container: HTMLElement; followPointer: boolean };
 // Delegated events cover native disabled buttons without adding layout wrappers.
 export function TooltipHost() {
   const id = useId();
   const [target, setTarget] = useState<Target | null>(null);
   const shown = usePresence(target);
   const ref = useRef<HTMLDivElement>(null);
+  const pointer = useRef({ x: 0, y: 0 });
   useEffect(() => {
     const anchorOf = (node: EventTarget | null) => node instanceof Element ? node.closest<HTMLElement>('[data-tooltip]') : null;
-    const show = (anchor: HTMLElement | null) => {
+    const show = (anchor: HTMLElement | null, event?: PointerEvent) => {
       if (!anchor || anchor.closest('[inert]')) return;
       const label = anchor.dataset.tooltip;
-      if (label) setTarget(current => current?.anchor === anchor && current.label === label ? current : { anchor, label, container: anchor.closest('dialog') ?? document.body });
+      const followPointer = Boolean(event && anchor.dataset.tooltipPosition === 'pointer');
+      if (event) pointer.current = { x: event.clientX, y: event.clientY };
+      if (label) setTarget(current => current?.anchor === anchor && current.label === label && current.followPointer === followPointer
+        ? current : { anchor, label, container: anchor.closest('dialog') ?? document.body, followPointer });
     };
     const hide = () => setTarget(null);
-    const over = (e: PointerEvent) => { if (e.pointerType !== 'touch' && !e.buttons) show(anchorOf(e.target)); };
+    const over = (e: PointerEvent) => { if (e.pointerType !== 'touch' && !e.buttons) show(anchorOf(e.target), e); };
+    const move = (e: PointerEvent) => { if (e.pointerType !== 'touch' && !e.buttons) pointer.current = { x: e.clientX, y: e.clientY }; };
     const out = (e: PointerEvent) => { if (anchorOf(e.target) !== anchorOf(e.relatedTarget)) hide(); };
     const focus = (e: FocusEvent) => { const anchor = anchorOf(e.target); if (document.documentElement.dataset.focusNavigation === 'keyboard' && anchor?.matches(':focus-visible')) show(anchor); };
     const key = (e: KeyboardEvent) => { if (e.key === 'Escape') hide(); };
     document.addEventListener('pointerover', over, true);
     document.addEventListener('pointerout', out, true);
+    document.addEventListener('pointermove', move, true);
     document.addEventListener('pointerdown', hide, true);
     document.addEventListener('focusin', focus, true);
     document.addEventListener('focusout', hide, true);
@@ -33,6 +40,7 @@ export function TooltipHost() {
     return () => {
       document.removeEventListener('pointerover', over, true);
       document.removeEventListener('pointerout', out, true);
+      document.removeEventListener('pointermove', move, true);
       document.removeEventListener('pointerdown', hide, true);
       document.removeEventListener('focusin', focus, true);
       document.removeEventListener('focusout', hide, true);
@@ -51,7 +59,7 @@ export function TooltipHost() {
   }, [target, id]);
   useLayoutEffect(() => {
     if (!shown.value || !ref.current) return;
-    const { anchor } = shown.value;
+    const { anchor, followPointer } = shown.value;
     const tip = ref.current;
     // Optional per-trigger width for multiline guidance; other tooltips still hug content.
     const width = Number(anchor.dataset.tooltipWidth);
@@ -63,6 +71,13 @@ export function TooltipHost() {
       if (!anchor.isConnected || anchor.closest('[inert]') || (anchor.closest('dialog') && !anchor.closest('dialog')!.open)) { setTarget(null); return; }
       const a = anchor.getBoundingClientRect();
       const w = window.innerWidth, h = window.innerHeight;
+      if (followPointer) {
+        tip.dataset.side = 'pointer';
+        const { left, top } = pointerTooltipPosition(pointer.current, tip.offsetWidth, tip.offsetHeight, w, h);
+        tip.style.left = `${left}px`; tip.style.top = `${top}px`;
+        if (target) frame = requestAnimationFrame(position);
+        return;
+      }
       const preferRight = anchor.dataset.tooltipSide === 'right' || anchor.closest('.canvas-side-toolbar');
       const side = preferRight && w - a.right > tip.offsetWidth + 16 ? 'right' : a.top >= tip.offsetHeight + 12 ? 'top' : 'bottom';
       tip.dataset.side = side;

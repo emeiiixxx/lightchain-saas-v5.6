@@ -3,6 +3,7 @@ import { resolveProjectCover } from './project-cover';
 import type { Notify } from './notification';
 import { CanvasIsolationCache, IMAGE_FILENAME_TOP_SPACE, paintCanvasImage, paintCanvasImageFilename, paintCanvasScene, type CanvasPalette } from './canvas-renderer';
 import { nextCanvasTime, orderArrangementUnits } from './canvas-order';
+import { moveCanvasLayer, type CanvasLayerEdge, type CanvasLayerTarget } from './canvas-layers';
 import { MOTION_DURATION, easeOut } from './motion';
 import { generationFocusMotion, type GenerationFocusViewport } from './generation-focus-motion';
 import { downloadSelection } from './download-selection';
@@ -597,6 +598,15 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     remember(state.images); const next = [...state.images]; const [item] = next.splice(index, 1); next.splice(target, 0, item);
     live.current.images = next; setImages(next);
   }, [remember, finishPlacement]);
+  const reorderLayer = useCallback((source: CanvasLayerTarget, target: CanvasLayerTarget, edge: CanvasLayerEdge) => {
+    if (lock.current) return;
+    finishPlacement();
+    const state = live.current;
+    const next = moveCanvasLayer(state.images, source, target, edge);
+    if (next === state.images) return;
+    remember(state.images);
+    live.current.images = next; setImages(next);
+  }, [remember, finishPlacement]);
   const setCover = useCallback((imageId: string) => {
     finishPlacement();
     const state = live.current;
@@ -1096,5 +1106,5 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     setMode('select'); setShapeTool(kind); setSelected(null); setContextMenu(null);
     canvasRef.current?.focus({ preventScroll: true });
   }, [restored, cancelShape, finishPlacement, setSelected]);
-  return { shapeTool, selectShapeTool, restored, lookupImageFilename, projectCover, isolationActive: isolation.amount > 0 && images.some(image => image.id === isolation.id && !image.generating), locked, setInteractionLocked, setQuickEditing, blankClickVersion, setIsolatedImageId, editingViewport, focusImage, focusAgentResults, addAgentImages, selectedIds, hoveredId, marquee, selectMany, updateImages, renameImage, groupSelection, alignSelection, contextMenu, setContextMenu, copySelected, paste, reorder, setCover, resetCover, downloadImage, size, mode, effectiveMode, setMode: chooseMode, beginEdit, updateSelected, duplicate, arrange, redo, canUndo: !images.some(image => image.generating) && history.current.length > 0, canRedo: !images.some(image => image.generating) && future.current.length > 0, historyVersion, canvasRef, images, selected, setSelected, camera, panning, upload, addImages, beginGeneration, beginResultRetry, finishGeneration, zoomAt, navigateMinimap, fit, returnToContent, removeSelected, undo };
+  return { shapeTool, selectShapeTool, restored, lookupImageFilename, projectCover, isolationActive: isolation.amount > 0 && images.some(image => image.id === isolation.id && !image.generating), locked, setInteractionLocked, setQuickEditing, blankClickVersion, setIsolatedImageId, editingViewport, focusImage, focusAgentResults, addAgentImages, selectedIds, hoveredId, marquee, selectMany, updateImages, renameImage, groupSelection, alignSelection, contextMenu, setContextMenu, copySelected, paste, reorder, reorderLayer, setCover, resetCover, downloadImage, size, mode, effectiveMode, setMode: chooseMode, beginEdit, updateSelected, duplicate, arrange, redo, canUndo: !images.some(image => image.generating) && history.current.length > 0, canRedo: !images.some(image => image.generating) && future.current.length > 0, historyVersion, canvasRef, images, selected, setSelected, camera, panning, upload, addImages, beginGeneration, beginResultRetry, finishGeneration, zoomAt, navigateMinimap, fit, returnToContent, removeSelected, undo };
 }

@@ -662,8 +662,10 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     }
   }
   function taskResults(task: CanvasTask) {
-    const ids = new Set(task.resultIds ?? demoTaskRecords.current.get(task.id)?.results.map(result => result.id) ?? []);
-    return current.current.images.filter(image => !image.generation && (ids.has(image.id) || image.generatedTaskId === task.id));
+    const resultIds = task.resultIds ?? demoTaskRecords.current.get(task.id)?.results.map(result => result.id);
+    const ids = new Set(resultIds ?? []);
+    return current.current.images.filter(image => !image.generation
+      && (resultIds !== undefined ? ids.has(image.id) : image.generatedTaskId === task.id));
   }
   function focusTaskResults(task: CanvasTask) {
     const element = canvas.current;
@@ -692,7 +694,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     }));
     const task: DemoTaskRecord = { editorId, timer: null, status: 'running', results: boundResults };
     demoTaskRecords.current.set(id, task);
-    setTasks(previous => [{ id, status: 'running', createdAt: new Date().toISOString(), resultIds: boundResults.map(result => result.id), resultFiles: boundResults.map(result => ({ id: result.id, name: result.name })) }, ...previous]);
+    setTasks(previous => [{ id, status: 'running', createdAt: new Date().toISOString(), resultIds: boundResults.map(result => result.id), resultFiles: boundResults.map(result => ({ id: result.id, name: result.name, thumbnailUrl: result.url })) }, ...previous]);
     appendDemoPlaceholders(previous, editor, sourceIds, placeholders);
     task.timer = window.setTimeout(() => {
       if (task.status !== 'running') return;
@@ -1262,7 +1264,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
         </div>
       </div>}
       <CanvasChrome locale={locale} mode={effectiveMode} onMode={setMode} zoom={view.zoom} view={view} canvasSize={canvasSize} images={items} tasks={tasks} onRenameMedia={renameImage} showSmartSearch={false}
-          taskListNodeId="165:30270" onSelectTask={task => { if (!canvasReference) focusTaskResults(task); }} canSelectTask={task => !canvasReference && taskResults(task).length > 0}
+          taskListNodeId="74:20493" onSelectTask={task => { if (!canvasReference) focusTaskResults(task); }} canSelectTask={task => !canvasReference && taskResults(task).length > 0}
           sideActions={<>
             <Button className="canvas-icon-button" aria-label={t.platformAssets} disabled={!!canvasReference} onClick={openAssets}><Icon name="platformIcon" size={24} /></Button>
             <Button className="canvas-icon-button" aria-label={v.videoTemplates} title={v.videoTemplates} disabled={!!canvasReference} onClick={() => setModal('templates')}><VideoIcon name="templates" size={24} /></Button>

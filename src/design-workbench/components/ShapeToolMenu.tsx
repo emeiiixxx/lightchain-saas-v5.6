@@ -16,7 +16,7 @@ const shapes: { kind: ShapeKind; label: string }[] = [
   { kind: 'arrow', label: '箭头' },
 ];
 
-function ShapeIcon({ kind }: { kind: ShapeKind }) {
+export function ShapeIcon({ kind }: { kind: ShapeKind }) {
   return <svg className="shape-tool-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     {kind === 'rectangle' && <rect x="4" y="4" width="16" height="16" rx="2" />}
     {kind === 'ellipse' && <circle cx="12" cy="12" r="8" />}

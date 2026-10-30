@@ -564,8 +564,25 @@ html:not([lang='zh-CN']) .shortcuts-panel { width: 400px; }
 .canvas-stage > canvas.is-drawing-shape { cursor: crosshair; }
 
 .canvas-layer-list { padding: 8px; }
-.canvas-layer-row { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 8px; border-radius: 6px; color: var(--text-secondary); font-size: 12px; cursor: pointer; }
+.canvas-layer-row { position: relative; display: flex; align-items: center; gap: 8px; height: 32px; margin-bottom: 4px; padding: 6px 8px 6px 28px; border-radius: 4px; color: var(--text-primary); font-size: 14px; line-height: 20px; cursor: pointer; user-select: none; }
+.canvas-layer-row[draggable='true'] { cursor: grab; }
 .canvas-layer-row:hover { background: var(--state-hover); }
-.canvas-layer-row.is-selected { background: var(--state-selected); box-shadow: inset 0 0 0 1px var(--border-brand); }
-.canvas-layer-thumbnail { display: block; width: 32px; height: 32px; flex: 0 0 32px; object-fit: contain; overflow: hidden; position: relative; }
+.canvas-layer-row.is-selected { color: var(--text-brand); background: var(--state-selected); }
+.canvas-layer-row.is-dragging { opacity: .4; cursor: grabbing; }
+.canvas-layer-row:focus-visible { outline: 1px solid var(--border-brand); outline-offset: -1px; }
+.canvas-layer-row--group { padding-left: 4px; background: var(--state-hover); }
+.canvas-layer-row--child { padding-left: 52px; }
+.canvas-layer-icon { display: inline-flex; flex: 0 0 20px; width: 20px; height: 20px; color: var(--text-tertiary); }
+.canvas-layer-row.is-selected .canvas-layer-icon { color: inherit; }
+.canvas-layer-name, .canvas-layer-row > .editable-filename { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.canvas-layer-row > .editable-filename { color: inherit; }
+.canvas-layer-toggle { display: grid; place-items: center; flex: 0 0 16px; width: 16px; height: 20px; padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; }
+.canvas-layer-toggle svg { transition: transform 200ms ease-out; }
+.canvas-layer-toggle[aria-expanded='false'] svg { transform: rotate(-90deg); }
+.canvas-layer-group { position: relative; }
+.canvas-layer-list [data-drop-edge]::after { content: ''; position: absolute; z-index: 1; left: 4px; right: 4px; height: 2px; background: var(--border-brand); pointer-events: none; }
+.canvas-layer-list [data-drop-edge='before']::after { top: -3px; }
+.canvas-layer-list [data-drop-edge='after']::after { bottom: -3px; }
+.canvas-layer-row--child[data-drop-edge]::after { left: 52px; }
+@media (prefers-reduced-motion: reduce) { .canvas-layer-toggle svg { transition: none; } }
 .workbench > .canvas-selected-filename[data-canvas-ui] { pointer-events: auto; }

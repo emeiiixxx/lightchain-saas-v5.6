@@ -1,5 +1,9 @@
 // Workspace copy: Simplified Chinese key, English, Japanese.
 export const workspaceCopy: Record<string, readonly [string, string]> = {
+'无需修改，Demo不作演示': ['No changes needed. Not demonstrated in this demo.', '変更不要のため、デモでは実演しません。'],
+'分组': ['Group ', 'グループ'],
+'展开分组': ['Expand group', 'グループを展開'],
+'收起分组': ['Collapse group', 'グループを折りたたむ'],
 '拖动复制': ['Drag to duplicate', 'ドラッグで複製'],
 'Option + 左键拖动': ['Option + left-drag', 'Option＋左ドラッグ'],
 'Alt + 左键拖动': ['Alt + left-drag', 'Alt＋左ドラッグ'],

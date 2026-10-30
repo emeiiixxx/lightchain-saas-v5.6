@@ -27,5 +27,5 @@ export function resolveImageTaskSlots(images: CanvasImage[], records: ReadonlyMa
 export function canvasImageTaskResults(images: CanvasImage[], task: CanvasTask): CanvasImage[] {
   const ids = new Set(task.resultIds ?? []);
   return images.filter(image => !image.nodeOnly && !image.generation
-    && (ids.has(image.id) || image.generatedTaskId === task.id));
+    && (task.resultIds !== undefined ? ids.has(image.id) : image.generatedTaskId === task.id));
 }

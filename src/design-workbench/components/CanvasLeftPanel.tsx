@@ -2,7 +2,9 @@ import { GenerationRecordTags } from './GenerationRecordTags';
 import type { TextEditInput } from '../text-edit';
 import { recordHasPrompt, recordHasPromptActions } from '../generation-record-display';
 import { TaskDetailPanel } from './TaskDetailPanel';
-import { EditableFilename } from '../../components/EditableFilename';
+import { CanvasLayerList } from './CanvasLayerList';
+import type { CanvasLayerEdge, CanvasLayerTarget } from '../canvas-layers';
+import { canvasMediaFilename } from '../../canvas-media-filename';
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLocale } from '../LocaleContext';
 import type { Notify } from '../notification';
@@ -41,7 +43,7 @@ export type GenerationRecord = {
   images: { id?: string; url: string; height: number; status?: 'failed' | 'generating' | 'success' }[];
 };
 
-function RecordResults({ record, eager, onOpen }: { record: GenerationRecord; eager: boolean; onOpen: (index: number) => void }) {
+function RecordResults({ record, eager, onOpen, getResultName }: { record: GenerationRecord; eager: boolean; onOpen: (index: number) => void; getResultName: (index: number) => string }) {
   const { t } = useLocale();
   const aspectRatio = useRecordResultRatio(record);
   const count = record.images.length || record.count || 1;
@@ -49,7 +51,7 @@ function RecordResults({ record, eager, onOpen }: { record: GenerationRecord; ea
     {record.images.length ? record.images.map((item, index) => <div className="generation-record-result" key={item.id ?? `${item.url}-${index}`} style={{ aspectRatio }}>
       {item.status === 'failed' || item.status === 'generating'
         ? <TaskResultPlaceholder status={item.status} />
-        : <button className="generation-record-result-open" type="button" aria-label={`${t('查看大图')} · ${t(record.title)} ${index + 1}`} onClick={() => onOpen(index)}><ProgressiveImage src={item.url} alt="" eager={eager} fit="contain" /></button>}
+        : <button className="generation-record-result-open" type="button" aria-label={`${t('查看大图')} · ${t(record.title)} ${index + 1}`} data-tooltip={getResultName(index)} data-tooltip-position="pointer-stationary" onClick={() => onOpen(index)}><ProgressiveImage src={item.url} alt="" eager={eager} fit="contain" /></button>}
     </div>) : Array.from({ length: count }, (_, index) => <div className="generation-record-loading" key={index} style={{ aspectRatio }}><GeneratingPlaceholder style={{ inset: 0 }} /></div>)}
   </div>;
 }
@@ -59,8 +61,10 @@ const tabs = [
   { value: 'history', label: '任务', en: 'Tasks', ja: 'タスク', icon: 'generation-record-imgDefaultIcon2' },
 ] as const;
 
-export function CanvasLeftPanel({ tab, images, selectedIds, onSelectImage, onRenameImage, onTabChange, onClose, records, uploads, onUpload, onAddImages, onNotify, onRegenerate, onDeleteRecord, onDeleteResult, layersDisabled = false }: {
-  images: CanvasImage[]; selectedIds: string[]; onSelectImage: (id: string) => void; onRenameImage: (id: string, name: string) => void; layersDisabled?: boolean; onAddImages: () => void;
+export function CanvasLeftPanel({ tab, images, selectedIds, onSelectImage, onRenameImage, onReorderLayer, lookupImageFilename, onTabChange, onClose, records, uploads, onUpload, onNotify, onRegenerate, onDeleteRecord, onDeleteResult, layersDisabled = false, layerReorderDisabled = false }: {
+  images: CanvasImage[]; selectedIds: string[]; onSelectImage: (id: string) => void; onRenameImage: (id: string, name: string) => void; layersDisabled?: boolean; layerReorderDisabled?: boolean;
+  onReorderLayer: (source: CanvasLayerTarget, target: CanvasLayerTarget, edge: CanvasLayerEdge) => void;
+  lookupImageFilename: (resultId: string) => { name: string } | undefined;
   tab: LeftPanelTab | null; onTabChange: (tab: LeftPanelTab) => void; onClose: () => void;
   records: GenerationRecord[]; uploads: LibraryImage[]; onUpload: (image: LibraryImage) => void; onNotify: Notify;
   onRegenerate: (record: GenerationRecord) => void; onDeleteRecord: (id: string) => void; onDeleteResult: (id: string, index: number) => void;
@@ -97,6 +101,13 @@ export function CanvasLeftPanel({ tab, images, selectedIds, onSelectImage, onRen
   const copyPrompt = async (text: string) => {
     try { await navigator.clipboard.writeText(text); onNotify('提示词已复制', 'success'); }
     catch { onNotify('复制失败，请重试', 'error'); }
+  };
+  const resultName = (record: GenerationRecord, index: number) => {
+    const result = record.images[index];
+    if (!result) return '';
+    return (result.id ? lookupImageFilename(`${record.id}:${result.id}`)?.name
+      ?? images.find(image => image.id === result.id)?.name : undefined)
+      ?? canvasMediaFilename(`${t(record.title)} ${index + 1}`, result.url);
   };
   const openImage = async (record: GenerationRecord, index: number, closeOnError = false) => {
     if (!record.images[index] || record.images[index].status === 'failed' || record.images[index].status === 'generating') return;
@@ -151,14 +162,10 @@ export function CanvasLeftPanel({ tab, images, selectedIds, onSelectImage, onRen
         <IconButton className="left-panel-close" size="l" icon="generation-record-imgIcon" aria-label={t('收起左侧栏')} onClick={onClose} />
       </header>
       <div id="left-panel-content" className="left-panel-content" role="tabpanel" aria-labelledby={`left-panel-tab-${shown.value}`}>
-        {shown.value === 'assets' ? <div className="left-panel-placeholder"><Button variant="outline" size="m" disabled={layersDisabled} onClick={onAddImages}><Icon name="canvas-imgIconSystem5" size={20} />{t('添加图片')}</Button></div> : shown.value === 'layers' ? <div className="canvas-layer-list">
-          {!images.length ? <div className="left-panel-placeholder">{t('暂无图层')}</div> : [...images].reverse().map(image => <div key={image.id} className={`canvas-layer-row ${selectedIds.includes(image.id) ? 'is-selected' : ''}`}
-            role="button" tabIndex={0} aria-pressed={selectedIds.includes(image.id)} onClick={() => onSelectImage(image.id)}
-            onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectImage(image.id); } }}>
-            {image.generating || image.generationFailed ? <span className="canvas-layer-thumbnail"><TaskResultPlaceholder status={image.generating ? 'generating' : 'failed'} /></span> : <img className="canvas-layer-thumbnail" src={image.url} alt="" />}
-            {image.generating || image.generationFailed ? <span>{t(image.generating ? '生成中' : '生成失败')}</span> : <EditableFilename name={image.name} onRename={image.shape ? undefined : name => onRenameImage(image.id, name)} />}
-          </div>)}
-        </div> : !allRecords.length ? <div className="generation-record-empty" data-node-id="163:11702">
+        {shown.value === 'assets' ? <div className="left-panel-placeholder">{t('无需修改，Demo不作演示')}</div>
+          : shown.value === 'layers' ? <CanvasLayerList images={images} selectedIds={selectedIds} disabled={layersDisabled || layerReorderDisabled}
+            onSelectImage={onSelectImage} onRenameImage={onRenameImage} onReorder={onReorderLayer} />
+          : !allRecords.length ? <div className="generation-record-empty" data-node-id="163:11702">
           <img src="/assets/design-workbench/task-record-empty.png" alt="" width={128} height={128} />
           <div className="generation-record-empty-copy"><h3>{t('暂无任务记录')}</h3><p>{t('上传图片开始你的设计')}</p></div>
         </div> : <div className="generation-record-list">
@@ -175,14 +182,14 @@ export function CanvasLeftPanel({ tab, images, selectedIds, onSelectImage, onRen
                 </div>}
               </div>}
             </div>
-            {record.generating && !record.images.length && <RecordResults record={record} eager={index === 0} onOpen={() => {}} />}
+            {record.generating && !record.images.length && <RecordResults record={record} eager={index === 0} onOpen={() => {}} getResultName={imageIndex => resultName(record, imageIndex)} />}
             {!record.generating && !record.pending && !record.failed && !record.images.length && <p className="text-xs text-muted">{t('暂无结果图片')}</p>}
-            {!!record.images.length && <RecordResults record={record} eager={index === 0} onOpen={imageIndex => void openImage(record, imageIndex)} />}
+            {!!record.images.length && <RecordResults record={record} eager={index === 0} onOpen={imageIndex => void openImage(record, imageIndex)} getResultName={imageIndex => resultName(record, imageIndex)} />}
           </article>)}
         </div>}
       </div>
     </aside>}
-    {shownPreview.value && previewRecord && <FullImageViewer image={shownPreview.value.image} images={successfulResults.map(item => ({ url: item.url, name: `${t(shownPreview.value!.record.title)} ${item.index + 1}` }))} selectedIndex={successfulResults.findIndex(item => item.index === shownPreview.value!.index)} onSelect={index => void openImage(previewRecord, successfulResults[index].index)} locale={locale} phase={shownPreview.phase} onClose={() => { previewRequest.current++; setPreview(null); }} details={<TaskDetailPanel record={previewRecord} selectedIndex={shownPreview.value.index} active={shownPreview.phase !== 'exit'} onSelect={index => void openImage(previewRecord, index)} onLibrary={() => setLibraryOpen(true)} onSave={(anchor, content) => setSaveTarget({ anchor, content })} onCopy={text => void copyPrompt(text)} onNotify={onNotify} onRegenerate={() => { onRegenerate(previewRecord); previewRequest.current++; setPreview(null); }} onDeleteImage={() => setDeleteTarget({ kind: 'image', record: previewRecord, index: shownPreview.value!.index })} />} />}
+    {shownPreview.value && previewRecord && <FullImageViewer image={shownPreview.value.image} images={successfulResults.map(item => ({ url: item.url, name: `${t(shownPreview.value!.record.title)} ${item.index + 1}` }))} selectedIndex={successfulResults.findIndex(item => item.index === shownPreview.value!.index)} onSelect={index => void openImage(previewRecord, successfulResults[index].index)} locale={locale} phase={shownPreview.phase} onClose={() => { previewRequest.current++; setPreview(null); }} details={<TaskDetailPanel record={previewRecord} getResultName={index => resultName(previewRecord, index)} selectedIndex={shownPreview.value.index} active={shownPreview.phase !== 'exit'} onSelect={index => void openImage(previewRecord, index)} onLibrary={() => setLibraryOpen(true)} onSave={(anchor, content) => setSaveTarget({ anchor, content })} onCopy={text => void copyPrompt(text)} onNotify={onNotify} onRegenerate={() => { onRegenerate(previewRecord); previewRequest.current++; setPreview(null); }} onDeleteImage={() => setDeleteTarget({ kind: 'image', record: previewRecord, index: shownPreview.value!.index })} />} />}
     {shownDelete.value && createPortal(<Dialog title={t('删除确认')} className="task-delete-dialog" closeIcon="task-delete-close" phase={shownDelete.phase} onClose={() => setDeleteTarget(null)}><p className="task-delete-dialog-description">{t(shownDelete.value.kind === 'record' ? '删除这条任务记录？删除后不可恢复，画布图片会保留。' : shownDelete.value.record.images.length === 1 ? '删除最后一张结果图后，该任务记录也会从列表移除。删除后不可恢复，画布图片会保留。' : '从记录中删除这张结果图？删除后不可恢复，画布图片会保留。')}</p><footer className="task-delete-dialog-actions"><Button size="m" variant="secondary" onClick={() => setDeleteTarget(null)}>{t('取消')}</Button><Button size="m" variant="danger" onClick={() => { const target = shownDelete.value!; if (target.kind === 'image') deleteResult(target.record, target.index); else deleteRecord(target.record); setDeleteTarget(null); }}>{t('确认删除')}</Button></footer></Dialog>, document.body)}
     {library.value && createPortal(<PromptLibrary phase={library.phase} entries={entries} uploads={uploads} onUpload={onUpload} onStore={store} onNotify={onNotify} onClose={() => setLibraryOpen(false)} />, document.body)}
     {shownSave.value && createPortal(<SavePrompt anchor={shownSave.value.anchor} phase={shownSave.phase} onClose={() => setSaveTarget(null)} onSave={async name => {

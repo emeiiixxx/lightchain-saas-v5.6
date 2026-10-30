@@ -46,7 +46,7 @@ export function useCanvasFilenameTooltip({ canvasRef, images, selectedIds, camer
     const move = (event: PointerEvent) => {
       if (event.pointerType === 'touch' || event.buttons) { hide(); return; }
       const entry = hit(event);
-      if (entry) showCanvasTooltip({ anchor: canvas, label: entry.item.name, bounds: entry.label! });
+      if (entry) showCanvasTooltip({ anchor: canvas, label: entry.item.name, bounds: entry.label!, pointer: { x: event.clientX, y: event.clientY } });
       else hide();
     };
     const down = (event: PointerEvent) => {

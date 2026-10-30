@@ -21,8 +21,9 @@ type Props = {
   onSave: (anchor: HTMLElement, content: string) => void;
   onCopy: (text: string) => void; onNotify: Notify;
   onRegenerate: () => void; onDeleteImage: () => void;
+  getResultName: (index: number) => string;
 };
-export function TaskDetailPanel({ record, selectedIndex, active, onSelect, onLibrary, onSave, onCopy, onNotify, onRegenerate, onDeleteImage }: Props) {
+export function TaskDetailPanel({ record, selectedIndex, active, onSelect, onLibrary, onSave, onCopy, onNotify, onRegenerate, onDeleteImage, getResultName }: Props) {
   const { t, locale } = useLocale();
   const aspectRatio = useRecordResultRatio(record);
   const [sendOpen, setSendOpen] = useState(false);
@@ -56,7 +57,7 @@ export function TaskDetailPanel({ record, selectedIndex, active, onSelect, onLib
     <div className="task-detail-info">
       <header><div className="task-detail-heading-text"><h2>{t(record.title)}</h2><time>{record.time}</time></div>{record.replayable && <Button className="task-detail-regenerate" variant="outline" size="s" disabled={disabled || record.generating || record.pending} onClick={onRegenerate}><Icon name="task-record-regenerate-small" size={16} />{t('再次生成')}</Button>}</header>
       <nav className="task-detail-thumbnails" aria-label={t('图片缩略图')}>
-        {record.images.map((image, index) => <button type="button" key={`${image.url}-${index}`} style={{ aspectRatio }} aria-label={`${t('查看大图')} · ${index + 1}`} disabled={image.status === 'failed' || image.status === 'generating'} aria-current={index === selectedIndex ? 'true' : undefined} onClick={() => onSelect(index)} onKeyDown={event => {
+        {record.images.map((image, index) => <button type="button" key={`${image.url}-${index}`} style={{ aspectRatio }} aria-label={`${t('查看大图')} · ${index + 1}`} data-tooltip={image.status === 'failed' || image.status === 'generating' ? undefined : getResultName(index)} data-tooltip-position="pointer-stationary" disabled={image.status === 'failed' || image.status === 'generating'} aria-current={index === selectedIndex ? 'true' : undefined} onClick={() => onSelect(index)} onKeyDown={event => {
           if (!['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return;
           event.preventDefault(); event.stopPropagation();
           const step = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : event.key === 'ArrowUp' ? -4 : 4;

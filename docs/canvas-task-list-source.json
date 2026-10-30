@@ -1,0 +1,80 @@
+{
+  "fileKey": "A3oI9FzDPseUH4ybk7mA3H",
+  "nodeId": "74:20493",
+  "date": "2026-10-30",
+  "url": "https://www.figma.com/design/A3oI9FzDPseUH4ybk7mA3H/Lightchain-SaaS-v5.6.0?node-id=74-20493",
+  "component": "src/components/CanvasTaskList.tsx",
+  "styles": "src/canvas-selection.css",
+  "geometry": {
+    "width": 240,
+    "maxHeight": 380,
+    "headerHeight": 40,
+    "contentPadding": 12,
+    "rowGap": 8,
+    "rowHeight": 80,
+    "rowPadding": 8,
+    "thumbnailSize": 64,
+    "imageTextGap": 10,
+    "textGap": 4
+  },
+  "motion": {
+    "nodeId": "74:20489",
+    "rotation": [
+      -360,
+      0
+    ],
+    "durationMs": 3000,
+    "easing": "linear",
+    "repeat": "infinite",
+    "reducedMotion": "static"
+  },
+  "dynamicMedia": "Result images remain data supplied; the sample artwork is not a static UI asset.",
+  "assets": [
+    {
+      "path": "public/assets/canvas-task-list/task.svg",
+      "nodeId": "I74:20515;2219:13572;2211:13547",
+      "width": 20,
+      "height": 20,
+      "slot": "Icon(canvasTaskListIcon), 20x20",
+      "bytes": 1853,
+      "sha256": "ec8614598541475271b69748d824c94c234bfa571a3a707ca136b84cfa8d0b07"
+    },
+    {
+      "path": "public/assets/canvas-task-list/chevron.svg",
+      "nodeId": "I74:20515;2219:13572;2211:13550",
+      "width": 16,
+      "height": 16,
+      "slot": "Icon(canvasTaskListChevron), 16x16",
+      "bytes": 616,
+      "sha256": "193c14027713df326a13f56b19e6dfffa486770c36421a17d576d131420a3404"
+    },
+    {
+      "path": "public/assets/canvas-task-list/generating-green.svg",
+      "nodeId": "I74:20515;2101:4302;74:20497;3126:22468",
+      "width": 189.231,
+      "height": 189.231,
+      "slot": "64x64 placeholder; intrinsic SVG; offset -28.85%",
+      "bytes": 701,
+      "sha256": "3ad16bd57bb0c712bfad46716a7ed538ce3771a03c0880850345fe6d9b5f30e4"
+    },
+    {
+      "path": "public/assets/canvas-task-list/generating-blue.svg",
+      "nodeId": "I74:20515;2101:4302;74:20497;3126:22469",
+      "width": 179.231,
+      "height": 179.231,
+      "slot": "64x64 placeholder; intrinsic SVG; offset -31.47%",
+      "bytes": 710,
+      "sha256": "fa302119631ea7de19eb5c2e3a60cdea0c384232a37af93612ee9d1e5d6e5688"
+    },
+    {
+      "path": "public/assets/canvas-task-list/generating-purple.svg",
+      "nodeId": "I74:20515;2101:4302;74:20497;3126:22470",
+      "width": 165.231,
+      "height": 165.231,
+      "slot": "64x64 placeholder; intrinsic SVG; offset -36.06%",
+      "bytes": 702,
+      "sha256": "d1abda1ccedfdde1515aaf80ce3d9d7b8f6f3005de5b4156dc9c64c6c6255d63"
+    }
+  ],
+  "validation": "Design context, screenshot, motion and source dimensions read. No browser, build or tests run."
+}

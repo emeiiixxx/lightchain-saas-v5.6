@@ -649,7 +649,7 @@ export default function App() {
     imageRef.current = centerAddedFusionBranches(previous, withCanvasOriginOrder([...previous, ...slots], previous));
     selectedRef.current = slots.map(result => result.id);
     setImages(imageRef.current); setSelectedIds(selectedRef.current);
-    setTasks(previousTasks => [{ id, status: 'running', createdAt: new Date().toISOString(), resultIds: results.map(result => result.id), resultFiles: results.map(result => ({ id: result.id, name: result.name })) }, ...previousTasks]);
+    setTasks(previousTasks => [{ id, status: 'running', createdAt: new Date().toISOString(), resultIds: results.map(result => result.id), resultFiles: results.map(result => ({ id: result.id, name: result.name, thumbnailUrl: result.url })) }, ...previousTasks]);
     if (fitResults && canvas.current) {
       const focusIds = new Set([editor.id, ...slots.map(slot => slot.id)]);
       animateView(fitImages(canvasNodes(imageRef.current.filter(item => focusIds.has(item.id))), canvas.current.clientWidth, canvas.current.clientHeight));
