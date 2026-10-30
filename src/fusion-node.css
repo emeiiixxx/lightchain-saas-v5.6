@@ -34,13 +34,13 @@
 .fusion-references--sortable::-webkit-scrollbar { display: none; }
 .fusion-references--sortable > * { width: 64px; height: 64px; }
 .fusion-references--sortable .fusion-reference-wrap .fusion-reference { background: var(--control-fill-hover); }
-.fusion-references--sortable .fusion-reference-wrap { isolation: isolate; overflow: visible; border-radius: 12px; cursor: grab; transition: opacity 200ms ease-out; }
+.fusion-references--sortable .fusion-reference-wrap { isolation: isolate; overflow: visible; border-radius: 12px; cursor: pointer; transition: opacity 200ms ease-out; }
 .fusion-references--sortable .fusion-reference-wrap .fusion-reference-remove { position: absolute; z-index: 2; top: -8px; right: -8px; width: 24px; min-width: 24px; height: 24px; min-height: 24px; padding: 0; border: 0; border-radius: 999px; -webkit-backdrop-filter: blur(var(--background-blur-s)); backdrop-filter: blur(var(--background-blur-s)); opacity: 0; pointer-events: none; transition: opacity 200ms ease-out, background-color 200ms ease-out; }
 .fusion-references--sortable .fusion-reference-wrap:is(:hover, :focus-within) .fusion-reference-remove { opacity: 1; pointer-events: auto; }
 .fusion-references--sortable .fusion-reference-wrap::after { content: ''; position: absolute; inset: 0; border: 2px solid var(--brand-primary); border-radius: inherit; opacity: 0; pointer-events: none; transition: opacity 200ms ease-out; }
 .fusion-references--sortable .fusion-reference-wrap[data-dragging='true'] { opacity: .45; }
 .fusion-references--sortable .fusion-reference-wrap[data-dragging='true']::after { opacity: 1; }
-.fusion-references--sortable[data-reference-sorting='true'] { cursor: grabbing; }
+.fusion-references--sortable[data-reference-sorting='true'] { cursor: pointer; }
 .fusion-references--sortable[data-reference-sorting='true'] .fusion-reference-wrap .fusion-reference-remove { opacity: 0; pointer-events: none; }
 .fusion-reference-number { position: absolute; left: 4px; bottom: 4px; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 999px; background: var(--brand-primary); color: var(--text-on-brand-black); font-size: 12px; line-height: 16px; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .fusion-references--sortable .fusion-reference-wrap, .fusion-references--sortable .fusion-reference-wrap::after, .fusion-references--sortable .fusion-reference-wrap .fusion-reference-remove { transition: none; } }

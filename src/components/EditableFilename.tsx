@@ -8,9 +8,9 @@ const lengthError = () => document.documentElement.lang.startsWith('ja') ? 'フ�
   : document.documentElement.lang.startsWith('en') ? 'File names can contain up to 100 characters' : '文件名最多100个字符';
 
 /** Edit the basename only; the file's real format remains unchanged. */
-export function EditableFilename({ name, onRename, autoEdit = false, onEditingEnd, onValidationError, className = '' }: {
+export function EditableFilename({ name, onRename, autoEdit = false, onEditingEnd, onValidationError, followPointer = false, className = '' }: {
   name: string; onRename?: (name: string) => void; autoEdit?: boolean; onEditingEnd?: () => void;
-  onValidationError?: (message: string) => void; className?: string;
+  onValidationError?: (message: string) => void; followPointer?: boolean; className?: string;
 }) {
   const suffix = name.match(/\.[^.]+$/)?.[0] ?? '';
   const basename = suffix ? name.slice(0, -suffix.length) : name;
@@ -35,7 +35,7 @@ export function EditableFilename({ name, onRename, autoEdit = false, onEditingEn
     if (save && value && value + suffix !== name) onRename?.(value + suffix);
     setEditing(false); onEditingEnd?.();
   };
-  return <span className={`editable-filename nodrag nopan ${className}`} data-tooltip={editing ? undefined : name} data-tooltip-position="pointer"
+  return <span className={`editable-filename nodrag nopan ${className}`} data-tooltip={editing ? undefined : name} data-tooltip-position={followPointer ? 'pointer' : 'pointer-stationary'}
     onDoubleClick={event => {
       if (!onRename) return;
       event.preventDefault(); event.stopPropagation(); if (editing) return; finished.current = false; setInvalid(false); setDraft(basename); setEditing(true);

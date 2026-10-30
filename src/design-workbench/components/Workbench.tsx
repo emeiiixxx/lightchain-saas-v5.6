@@ -767,7 +767,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       const box = screenBounds(imageBounds(item), board.camera);
       return <div key={`filename:${item.id}:${item.id === renamingId}`} data-canvas-ui={item.id === renamingId ? true : undefined} className="canvas-selected-filename" style={{ left: box.x, top: box.y - IMAGE_FILENAME_TOP_SPACE, width: box.width }}>
         <span className="canvas-selected-filename-icon" aria-hidden="true" />
-        {item.id === renamingId ? <EditableFilename name={item.name} autoEdit onRename={name => board.renameImage(item.id, name)} onValidationError={message => onNotify(message, 'error')} onEditingEnd={() => setRenamingId(null)} />
+        {item.id === renamingId ? <EditableFilename name={item.name} autoEdit followPointer onRename={name => board.renameImage(item.id, name)} onValidationError={message => onNotify(message, 'error')} onEditingEnd={() => setRenamingId(null)} />
           : <span className="canvas-selected-filename-text">{item.name}</span>}
       </div>;
     })}

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { usePresence } from '../usePresence';
 import { pointerTooltipPosition } from '../tooltip-position';
 
-type Target = { anchor: HTMLElement; label: string; container: HTMLElement; followPointer: boolean };
+type Target = { anchor: HTMLElement; label: string; container: HTMLElement; followPointer: boolean; fixedPointer?: { x: number; y: number } };
 // Delegated events cover native disabled buttons without adding layout wrappers.
 export function TooltipHost() {
   const id = useId();
@@ -12,18 +12,47 @@ export function TooltipHost() {
   const ref = useRef<HTMLDivElement>(null);
   const pointer = useRef({ x: 0, y: 0 });
   useEffect(() => {
+    let stationaryTimer: number | undefined;
+    let stationaryHover: { anchor: HTMLElement; x: number; y: number } | null = null;
+    const clearStationary = () => {
+      window.clearTimeout(stationaryTimer);
+      stationaryTimer = undefined;
+      stationaryHover = null;
+    };
     const anchorOf = (node: EventTarget | null) => node instanceof Element ? node.closest<HTMLElement>('[data-tooltip]') : null;
     const show = (anchor: HTMLElement | null, event?: PointerEvent) => {
       if (!anchor || anchor.closest('[inert]')) return;
       const label = anchor.dataset.tooltip;
+      if (label && event && anchor.dataset.tooltipPosition === 'pointer-stationary') {
+        const point = { x: event.clientX, y: event.clientY };
+        if (stationaryHover?.anchor === anchor && stationaryHover.x === point.x && stationaryHover.y === point.y) return;
+        clearStationary();
+        stationaryHover = { anchor, ...point };
+        setTarget(null);
+        stationaryTimer = window.setTimeout(() => {
+          stationaryTimer = undefined;
+          if (!anchor.isConnected || !anchor.matches(':hover') || anchor.closest('[inert]') || anchor.dataset.tooltip !== label) return;
+          setTarget({ anchor, label, container: anchor.closest('dialog') ?? document.body, followPointer: true, fixedPointer: point });
+        }, 500);
+        return;
+      }
+      clearStationary();
       const followPointer = Boolean(event && anchor.dataset.tooltipPosition === 'pointer');
       if (event) pointer.current = { x: event.clientX, y: event.clientY };
       if (label) setTarget(current => current?.anchor === anchor && current.label === label && current.followPointer === followPointer
         ? current : { anchor, label, container: anchor.closest('dialog') ?? document.body, followPointer });
     };
-    const hide = () => setTarget(null);
+    const hide = () => { clearStationary(); setTarget(null); };
     const over = (e: PointerEvent) => { if (e.pointerType !== 'touch' && !e.buttons) show(anchorOf(e.target), e); };
-    const move = (e: PointerEvent) => { if (e.pointerType !== 'touch' && !e.buttons) pointer.current = { x: e.clientX, y: e.clientY }; };
+    const move = (e: PointerEvent) => {
+      const anchor = anchorOf(e.target);
+      if (e.pointerType !== 'touch' && !e.buttons && anchor?.dataset.tooltipPosition === 'pointer-stationary') {
+        show(anchor, e);
+        return;
+      }
+      if (stationaryHover) hide();
+      if (e.pointerType !== 'touch' && !e.buttons) pointer.current = { x: e.clientX, y: e.clientY };
+    };
     const out = (e: PointerEvent) => { if (anchorOf(e.target) !== anchorOf(e.relatedTarget)) hide(); };
     const focus = (e: FocusEvent) => { const anchor = anchorOf(e.target); if (document.documentElement.dataset.focusNavigation === 'keyboard' && anchor?.matches(':focus-visible')) show(anchor); };
     const key = (e: KeyboardEvent) => { if (e.key === 'Escape') hide(); };
@@ -38,6 +67,7 @@ export function TooltipHost() {
     document.addEventListener('wheel', hide, true);
     window.addEventListener('blur', hide);
     return () => {
+      clearStationary();
       document.removeEventListener('pointerover', over, true);
       document.removeEventListener('pointerout', out, true);
       document.removeEventListener('pointermove', move, true);
@@ -59,7 +89,7 @@ export function TooltipHost() {
   }, [target, id]);
   useLayoutEffect(() => {
     if (!shown.value || !ref.current) return;
-    const { anchor, followPointer } = shown.value;
+    const { anchor, followPointer, fixedPointer } = shown.value;
     const tip = ref.current;
     // Optional per-trigger width for multiline guidance; other tooltips still hug content.
     const width = Number(anchor.dataset.tooltipWidth);
@@ -73,7 +103,7 @@ export function TooltipHost() {
       const w = window.innerWidth, h = window.innerHeight;
       if (followPointer) {
         tip.dataset.side = 'pointer';
-        const { left, top } = pointerTooltipPosition(pointer.current, tip.offsetWidth, tip.offsetHeight, w, h);
+        const { left, top } = pointerTooltipPosition(fixedPointer ?? pointer.current, tip.offsetWidth, tip.offsetHeight, w, h);
         tip.style.left = `${left}px`; tip.style.top = `${top}px`;
         if (target) frame = requestAnimationFrame(position);
         return;
@@ -93,7 +123,7 @@ export function TooltipHost() {
     position();
     return () => cancelAnimationFrame(frame);
   }, [shown.value, target]);
-  if (!shown.value) return null;
+  if (!shown.value || (shown.value.fixedPointer && !target)) return null;
   return createPortal(<div ref={ref} id={id} role="tooltip" popover="manual" className="lc-tooltip" data-side="top" data-phase={shown.phase} data-node-id="406:2959">
     <div className="lc-tooltip-bubble">{shown.value.label}</div>
     <img className="lc-tooltip-arrow" src="/assets/tooltip/arrow.svg" alt="" aria-hidden="true" width="8" height="4" />
