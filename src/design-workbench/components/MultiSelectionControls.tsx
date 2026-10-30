@@ -19,7 +19,8 @@ const alignments: [Alignment, string][] = [['left', '左对齐'], ['center', '�
 export function MultiSelectionControls({ board, onNotify, onTechPack }: { board: Board; onNotify: Notify; onTechPack: () => void }) {
   const { t, locale } = useLocale();
   const items = board.images.filter(item => board.selectedIds.includes(item.id));
-  const showTechPack = items.length >= 2 && items.length <= 8
+  const grouped = !!items[0]?.groupId && items.every(item => item.groupId === items[0].groupId);
+  const showTechPack = !grouped && items.length >= 2 && items.length <= 8
     && items.every(item => !item.shape && !item.generating && !item.generationFailed);
   const bounds = selectionBounds(items);
   const [transformFrame, setTransformFrame] = useState<Frame | null>(null);
@@ -88,7 +89,6 @@ export function MultiSelectionControls({ board, onNotify, onTechPack }: { board:
     setTransformFrame({ x, y, width, height });
   };
   const end = (event: ReactPointerEvent<HTMLButtonElement>) => { drag.current = null; setTransformFrame(null); delete event.currentTarget.dataset.rotating; };
-  const grouped = !!items[0]?.groupId && items.every(item => item.groupId === items[0].groupId);
   const download = async (format: DownloadFormat) => {
     if (downloadBusy.current) return;
     downloadBusy.current = true; setDownloading(true);

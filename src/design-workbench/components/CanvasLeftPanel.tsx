@@ -61,8 +61,9 @@ const tabs = [
   { value: 'history', label: '任务', en: 'Tasks', ja: 'タスク', icon: 'generation-record-imgDefaultIcon2' },
 ] as const;
 
-export function CanvasLeftPanel({ tab, images, selectedIds, onSelectImage, onRenameImage, onReorderLayer, lookupImageFilename, onTabChange, onClose, records, uploads, onUpload, onNotify, onRegenerate, onDeleteRecord, onDeleteResult, layersDisabled = false, layerReorderDisabled = false }: {
+export function CanvasLeftPanel({ tab, images, selectedIds, onSelectImage, onSelectGroup, onRenameImage, onReorderLayer, lookupImageFilename, onTabChange, onClose, records, uploads, onUpload, onNotify, onRegenerate, onDeleteRecord, onDeleteResult, layersDisabled = false, layerReorderDisabled = false }: {
   images: CanvasImage[]; selectedIds: string[]; onSelectImage: (id: string) => void; onRenameImage: (id: string, name: string) => void; layersDisabled?: boolean; layerReorderDisabled?: boolean;
+  onSelectGroup: (id: string) => void;
   onReorderLayer: (source: CanvasLayerTarget, target: CanvasLayerTarget, edge: CanvasLayerEdge) => void;
   lookupImageFilename: (resultId: string) => { name: string } | undefined;
   tab: LeftPanelTab | null; onTabChange: (tab: LeftPanelTab) => void; onClose: () => void;
@@ -164,7 +165,7 @@ export function CanvasLeftPanel({ tab, images, selectedIds, onSelectImage, onRen
       <div id="left-panel-content" className="left-panel-content" role="tabpanel" aria-labelledby={`left-panel-tab-${shown.value}`}>
         {shown.value === 'assets' ? <div className="left-panel-placeholder">{t('无需修改，Demo不作演示')}</div>
           : shown.value === 'layers' ? <CanvasLayerList images={images} selectedIds={selectedIds} disabled={layersDisabled || layerReorderDisabled}
-            onSelectImage={onSelectImage} onRenameImage={onRenameImage} onReorder={onReorderLayer} />
+            onSelectImage={onSelectImage} onSelectGroup={onSelectGroup} onRenameImage={onRenameImage} onValidationError={message => onNotify(message, 'error')} onReorder={onReorderLayer} />
           : !allRecords.length ? <div className="generation-record-empty" data-node-id="163:11702">
           <img src="/assets/design-workbench/task-record-empty.png" alt="" width={128} height={128} />
           <div className="generation-record-empty-copy"><h3>{t('暂无任务记录')}</h3><p>{t('上传图片开始你的设计')}</p></div>

@@ -568,6 +568,7 @@ html:not([lang='zh-CN']) .shortcuts-panel { width: 400px; }
 .canvas-layer-row[draggable='true'] { cursor: grab; }
 .canvas-layer-row:hover { background: var(--state-hover); }
 .canvas-layer-row.is-selected { color: var(--text-brand); background: var(--state-selected); }
+.canvas-layer-row.is-group-selected { background: var(--state-selected); }
 .canvas-layer-row.is-dragging { opacity: .4; cursor: grabbing; }
 .canvas-layer-row:focus-visible { outline: 1px solid var(--border-brand); outline-offset: -1px; }
 .canvas-layer-row--group { padding-left: 4px; background: var(--state-hover); }

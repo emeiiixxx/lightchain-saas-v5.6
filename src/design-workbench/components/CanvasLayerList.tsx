@@ -10,13 +10,16 @@ type DropPosition = { target: CanvasLayerTarget; edge: CanvasLayerEdge };
 const keyOf = (target: CanvasLayerTarget) => `${target.kind}:${target.id}`;
 const layerDragType = 'application/x-lightchain-canvas-layer';
 
-export function CanvasLayerList({ images, selectedIds, disabled = false, onSelectImage, onRenameImage, onReorder }: {
+export function CanvasLayerList({ images, selectedIds, disabled = false, onSelectImage, onSelectGroup, onRenameImage, onValidationError, onReorder }: {
   images: CanvasImage[]; selectedIds: string[]; disabled?: boolean;
-  onSelectImage: (id: string) => void; onRenameImage: (id: string, name: string) => void;
+  onSelectImage: (id: string) => void; onSelectGroup: (id: string) => void; onRenameImage: (id: string, name: string) => void;
+  onValidationError: (message: string) => void;
   onReorder: (source: CanvasLayerTarget, target: CanvasLayerTarget, edge: CanvasLayerEdge) => void;
 }) {
   const { t } = useLocale();
   const units = useMemo(() => canvasLayerUnits(images), [images]);
+  const selectedGroups = new Set(units.filter(unit => unit.kind === 'group'
+    && unit.images.every(image => selectedIds.includes(image.id))).map(unit => unit.id));
   const groupNumbers = useMemo(() => new Map(units.filter(unit => unit.kind === 'group')
     .sort((a, b) => Math.min(...a.images.map(image => image.groupedAt ?? image.addedAt ?? 0))
       - Math.min(...b.images.map(image => image.groupedAt ?? image.addedAt ?? 0)) || a.id.localeCompare(b.id))
@@ -72,8 +75,9 @@ export function CanvasLayerList({ images, selectedIds, disabled = false, onSelec
   const imageRow = (image: CanvasImage, child = false) => {
     const target: CanvasLayerTarget = { kind: 'image', id: image.id };
     const selected = selectedIds.includes(image.id);
+    const groupSelected = selected && !!image.groupId && selectedGroups.has(image.groupId);
     const isDragging = dragging && (keyOf(dragging) === keyOf(target) || dragging.kind === 'group' && dragging.id === image.groupId);
-    return <div key={image.id} className={`canvas-layer-row${child ? ' canvas-layer-row--child' : ''}${selected ? ' is-selected' : ''}${isDragging ? ' is-dragging' : ''}`}
+    return <div key={image.id} className={`canvas-layer-row${child ? ' canvas-layer-row--child' : ''}${selected ? groupSelected ? ' is-group-selected' : ' is-selected' : ''}${isDragging ? ' is-dragging' : ''}`}
       data-layer-kind="image" data-layer-id={image.id} data-layer-unit={child ? undefined : ''} data-drop-edge={marker(target)}
       role="button" tabIndex={0} aria-pressed={selected} draggable={!disabled}
       onDragStart={event => startDrag(event, target)} onDragEnd={clearDrag}
@@ -82,7 +86,7 @@ export function CanvasLayerList({ images, selectedIds, disabled = false, onSelec
       }}>
       <span className="canvas-layer-icon">{image.shape ? <ShapeIcon kind={image.shape.kind} /> : <Icon name="canvas-image-name" size={20} />}</span>
       {image.generating || image.generationFailed ? <span className="canvas-layer-name">{t(image.generating ? '生成中' : '生成失败')}</span>
-        : <EditableFilename name={image.name} onRename={image.shape ? undefined : name => onRenameImage(image.id, name)} />}
+        : <EditableFilename name={image.name} onRename={image.shape ? undefined : name => onRenameImage(image.id, name)} onValidationError={onValidationError} />}
     </div>;
   };
 
@@ -107,13 +111,13 @@ export function CanvasLayerList({ images, selectedIds, disabled = false, onSelec
     {!images.length ? <div className="left-panel-placeholder">{t('暂无图层')}</div> : units.map(unit => {
       if (unit.kind === 'image') return imageRow(unit.images[0]);
       const open = !collapsed.has(unit.id);
-      const selected = unit.images.every(image => selectedIds.includes(image.id));
+      const selected = selectedGroups.has(unit.id);
       const isDragging = dragging?.kind === 'group' && dragging.id === unit.id;
       return <div key={`group:${unit.id}`} className="canvas-layer-group" data-layer-unit="" data-layer-kind="group" data-layer-id={unit.id} data-drop-edge={marker(unit)}>
         <div className={`canvas-layer-row canvas-layer-row--group${selected ? ' is-selected' : ''}${isDragging ? ' is-dragging' : ''}`}
           role="button" tabIndex={0} aria-pressed={selected} draggable={!disabled} onDragStart={event => startDrag(event, unit)} onDragEnd={clearDrag}
-          onClick={() => onSelectImage(unit.images[0].id)} onKeyDown={event => {
-            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectImage(unit.images[0].id); }
+          onClick={() => onSelectGroup(unit.id)} onKeyDown={event => {
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectGroup(unit.id); }
           }}>
           <button type="button" className="canvas-layer-toggle" aria-label={t(open ? '收起分组' : '展开分组')} aria-expanded={open}
             onClick={event => { event.stopPropagation(); setCollapsed(previous => { const next = new Set(previous); if (open) next.add(unit.id); else next.delete(unit.id); return next; }); }}

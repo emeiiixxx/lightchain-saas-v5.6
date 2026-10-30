@@ -767,7 +767,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       const box = screenBounds(imageBounds(item), board.camera);
       return <div key={`filename:${item.id}:${item.id === renamingId}`} data-canvas-ui={item.id === renamingId ? true : undefined} className="canvas-selected-filename" style={{ left: box.x, top: box.y - IMAGE_FILENAME_TOP_SPACE, width: box.width }}>
         <span className="canvas-selected-filename-icon" aria-hidden="true" />
-        {item.id === renamingId ? <EditableFilename name={item.name} autoEdit onRename={name => board.renameImage(item.id, name)} onEditingEnd={() => setRenamingId(null)} />
+        {item.id === renamingId ? <EditableFilename name={item.name} autoEdit onRename={name => board.renameImage(item.id, name)} onValidationError={message => onNotify(message, 'error')} onEditingEnd={() => setRenamingId(null)} />
           : <span className="canvas-selected-filename-text">{item.name}</span>}
       </div>;
     })}
@@ -777,7 +777,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       <Tool icon="canvas-imgIconSystem6" label={t("资产")} size={24} onClick={() => openLeftPanel('assets')} />
       <Tool id="canvas-task-entry" icon="canvas-imgIcon2" label={t("任务")} size={24} onClick={() => openLeftPanel('history')} />
     </div>}
-    <CanvasLeftPanel layersDisabled={!!localEdit} layerReorderDisabled={board.locked || !board.restored} tab={leftTab} images={board.images} selectedIds={board.selectedIds} onSelectImage={id => board.selectMany([id])} onRenameImage={board.renameImage} onReorderLayer={board.reorderLayer} lookupImageFilename={board.lookupImageFilename} onTabChange={openLeftPanel} onClose={() => setLeftTab(null)} records={generationRecords} uploads={uploads} onUpload={onRememberUpload} onNotify={onNotify} onRegenerate={record => void regenerateRecord(record)} onDeleteRecord={id => { const record = generationRecords.find(item => item.id === id); if (record && !archivedRecords.current.has(id)) archivedRecords.current.set(id, record); setGenerationRecords(previous => previous.filter(record => record.id !== id)); }} onDeleteResult={(id, index) => setGenerationRecords(previous => previous.flatMap(record => {
+    <CanvasLeftPanel layersDisabled={!!localEdit} layerReorderDisabled={board.locked || !board.restored} tab={leftTab} images={board.images} selectedIds={board.selectedIds} onSelectImage={id => board.selectMany([id])} onSelectGroup={id => board.selectMany(board.images.filter(image => image.groupId === id).map(image => image.id))} onRenameImage={board.renameImage} onReorderLayer={board.reorderLayer} lookupImageFilename={board.lookupImageFilename} onTabChange={openLeftPanel} onClose={() => setLeftTab(null)} records={generationRecords} uploads={uploads} onUpload={onRememberUpload} onNotify={onNotify} onRegenerate={record => void regenerateRecord(record)} onDeleteRecord={id => { const record = generationRecords.find(item => item.id === id); if (record && !archivedRecords.current.has(id)) archivedRecords.current.set(id, record); setGenerationRecords(previous => previous.filter(record => record.id !== id)); }} onDeleteResult={(id, index) => setGenerationRecords(previous => previous.flatMap(record => {
       if (record.id !== id) return [record];
       if (!archivedRecords.current.has(id)) archivedRecords.current.set(id, record);
       const images = record.images.filter((_, imageIndex) => imageIndex !== index);
