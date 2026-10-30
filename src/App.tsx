@@ -1,3 +1,4 @@
+import { useCanvasPastePoint } from './useCanvasPastePoint';
 import { AiTryOnPage } from './components/AiTryOnPage';
 import { VideoWorkspace } from './components/VideoWorkspace';
 import { DesignWorkspace } from './components/DesignWorkspace';
@@ -24,7 +25,7 @@ import { ResultFeedbackPopover } from './components/ResultFeedbackPopover';
 import { ResultFeedbackToolbar, type ResultFeedback } from './components/ResultFeedbackToolbar';
 import { SelectionToolbar } from './components/SelectionToolbar';
 import { CanvasChrome } from './components/CanvasChrome';
-import type { CanvasTask } from './components/CanvasTaskList';
+import { syncTaskFilenames, type CanvasTask } from './components/CanvasTaskList';
 import { CanvasGenerationPlaceholder } from './components/CanvasGenerationPlaceholder';
 import { ReactFlowCanvas } from './components/ReactFlowCanvas';
 import { FullImageViewer } from './components/FullImageViewer';
@@ -179,6 +180,7 @@ export default function App() {
   const canvasClipboard = useRef<CanvasClipboard<CanvasImage> | null>(null);
   const selectedRef = useRef(selectedIds); selectedRef.current = selectedIds;
   const viewRef = useRef(view); viewRef.current = view;
+  const canvasPastePoint = useCanvasPastePoint(canvas, viewRef);
   const animateView = useCallback((target: Viewport) => {
     if (cameraFrame.current !== null) cancelAnimationFrame(cameraFrame.current);
     const duration = getMotionDurationMs();
@@ -367,6 +369,16 @@ export default function App() {
     setImages(next); setSelectedIds(ids);
   }, [remember]);
 
+  const renameImage = (id: string, name: string) => {
+    const previous = imageRef.current;
+    const image = previous.find(item => item.id === id && !item.nodeOnly && !item.generation);
+    if (!image || image.name === name) return;
+    remember(previous);
+    const next = previous.map(item => item.id === id ? { ...item, name } : item);
+    imageRef.current = next; setImages(next);
+  };
+  useEffect(() => { setTasks(previous => syncTaskFilenames(previous, images)); }, [images, tasks]);
+
   const duplicateSelected = useCallback(() => {
     const items = copyCanvasSelection(imageRef.current, selectedRef.current);
     if (items.length) pasteCopiedItems(undefined, items);
@@ -415,13 +427,13 @@ export default function App() {
       if (blocked(event) || !clipboard || !event.clipboardData || !canvas.current) return;
       if (!matchesCanvasClipboard(event.clipboardData, clipboard)) return;
       event.preventDefault();
-      pasteCopiedItems(canvasMenu && !canvasMenu.kind ? { x: canvasMenu.worldX, y: canvasMenu.worldY } : undefined);
+      pasteCopiedItems(canvasMenu && !canvasMenu.kind ? { x: canvasMenu.worldX, y: canvasMenu.worldY } : canvasPastePoint());
       closeCanvasMenu();
     };
     window.addEventListener('copy', copy);
     window.addEventListener('paste', paste);
     return () => { window.removeEventListener('copy', copy); window.removeEventListener('paste', paste); };
-  }, [page, modal, referenceTarget, mainTarget, canvasReference, menu, previewImage, cutoutImage, drawingImage, canvasMenu, closeCanvasMenu, pasteCopiedItems]);
+  }, [page, modal, referenceTarget, mainTarget, canvasReference, menu, previewImage, cutoutImage, drawingImage, canvasMenu, closeCanvasMenu, pasteCopiedItems, canvasPastePoint]);
 
   useEffect(() => {
     const down = (event: KeyboardEvent) => {
@@ -637,7 +649,7 @@ export default function App() {
     imageRef.current = centerAddedFusionBranches(previous, withCanvasOriginOrder([...previous, ...slots], previous));
     selectedRef.current = slots.map(result => result.id);
     setImages(imageRef.current); setSelectedIds(selectedRef.current);
-    setTasks(previousTasks => [{ id, status: 'running', createdAt: new Date().toISOString(), resultIds: results.map(result => result.id) }, ...previousTasks]);
+    setTasks(previousTasks => [{ id, status: 'running', createdAt: new Date().toISOString(), resultIds: results.map(result => result.id), resultFiles: results.map(result => ({ id: result.id, name: result.name })) }, ...previousTasks]);
     if (fitResults && canvas.current) {
       const focusIds = new Set([editor.id, ...slots.map(slot => slot.id)]);
       animateView(fitImages(canvasNodes(imageRef.current.filter(item => focusIds.has(item.id))), canvas.current.clientWidth, canvas.current.clientHeight));
@@ -960,7 +972,7 @@ export default function App() {
             document.dispatchEvent(new CustomEvent('lc-select-open', { detail: 'canvas-context' }));
             setCanvasMenu({ kind: 'image', imageId: n.id, x: e.clientX, y: e.clientY, worldX: (e.clientX - rect.left - v.x) / v.zoom, worldY: (e.clientY - rect.top - v.y) / v.zoom });
           }}>
-          {!n.generation && <CanvasMediaFilename name={n.name} url={n.url} />}
+          {!n.generation && <CanvasMediaFilename name={n.name} url={n.url} onRename={name => renameImage(n.id, name)} />}
           {n.projectCover && isProjectCoverCandidate(n) && <CanvasProjectCoverBadge locale={locale} />}
           <Button hidden={!!canvasReference || !!n.generation} variant="tonal" className="image-preview-button nodrag nopan" aria-label={`${t.viewFull} · ${n.name}`} title={t.viewFull} data-overlay onClick={event => { event.stopPropagation(); if (!n.generation) setPreviewImage(n); }}><Icon name="viewFull" size={20} /></Button>
           {n.generation ? <CanvasGenerationPlaceholder locale={locale} failed={n.generation.status === 'failed'} />
@@ -1054,7 +1066,7 @@ export default function App() {
         </div>
       </div>}
       {(images.length > 0 || tasks.length > 0) && <CanvasChrome locale={locale} mode={spaceDown ? 'hand' : canvasMode} onMode={setCanvasMode} zoom={view.zoom} view={view} canvasSize={canvasSize} images={navigationNodes}
-        tasks={tasks} onSelectTask={task => { if (!canvasReference) focusImageTask(task); }} canSelectTask={task => !canvasReference && canvasImageTaskResults(images, task).length > 0}
+        tasks={tasks} onRenameMedia={renameImage} onSelectTask={task => { if (!canvasReference) focusImageTask(task); }} canSelectTask={task => !canvasReference && canvasImageTaskResults(images, task).length > 0}
         snapToGrid={snapToGrid} onToggleSnap={() => { setSnapGuide(null); setSnapToGrid(current => { localStorage.setItem('lc-v56-flow-grid-snap', current ? 'off' : 'on'); return !current; }); }}
         onNavigateMinimap={navigateMinimap} onMinimapInteraction={setDragging}
         canUndo={canUndo && !canvasReference} canRedo={canRedo && !canvasReference} onUndo={() => { if (!canvasReference) undo(); }} onRedo={() => { if (!canvasReference) redo(); }} onUpload={() => { if (!canvasReference) openUpload(); }} onZoom={changeZoom} onFit={fit} onArrange={() => { if (!canvasReference) arrange(); }}

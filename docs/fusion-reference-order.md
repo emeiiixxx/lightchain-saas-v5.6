@@ -4,7 +4,7 @@
 
 适用于一键融合、合拼生图节点的参考图。
 
-参考图区按 Figma 6:13063 展示：缩略图 56×56px，每行 4 列，间距 8px；内容最大高度 160px，超出时内部滚动。为外移删除按钮保留空间，避免裁切；原有素材展示、删除和最多 9 张的添加规则不变。
+参考图区尺寸按 F10 与 Figma 73:18017 展示：缩略图及「＋」添加入口均为 64×64px，每行 4 列，间距 8px；内容最大高度 208px，超出时内部滚动。为外移删除按钮保留空间，避免裁切；原有素材展示、删除和最多 9 张的添加规则不变。
 
 ## 标题与提示
 
@@ -40,6 +40,7 @@
 
 ## 设计来源
 
+- [320px 节点与 64px 参考图区 73:18017](https://www.figma.com/design/A3oI9FzDPseUH4ybk7mA3H/Lightchain-SaaS-v5.6.0?node-id=73-18017&m=dev)
 - [参考图区 6:13063](https://www.figma.com/design/A3oI9FzDPseUH4ybk7mA3H/Lightchain-SaaS-v5.6.0?node-id=6-13063&m=dev)
 - [拖拽提示 6:13204](https://www.figma.com/design/A3oI9FzDPseUH4ybk7mA3H/Lightchain-SaaS-v5.6.0?node-id=6-13204&m=dev)
 - [一键融合节点整体 6:12568](https://www.figma.com/design/A3oI9FzDPseUH4ybk7mA3H/Lightchain-SaaS-v5.6.0?node-id=6-12568&m=dev)

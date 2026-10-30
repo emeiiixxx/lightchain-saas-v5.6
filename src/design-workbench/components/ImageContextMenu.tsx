@@ -74,8 +74,12 @@ export function ImageContextMenu({ board, onUpload }: { board: Board; onUpload: 
   const openSub = (kind: 'download' | 'order') => setSubmenu(kind);
   const keys = (e: KeyboardEvent<HTMLDivElement>) => {
     e.stopPropagation();
-    if (shown.value?.id && (e.metaKey || e.ctrlKey) && ['c', 'd', 'v'].includes(e.key.toLowerCase())) {
-      e.preventDefault(); const key = e.key.toLowerCase(); perform(key === 'c' ? board.copySelected : key === 'd' ? board.duplicate : board.paste); return;
+    if (e.nativeEvent.isComposing) return;
+    if (shown.value?.id && (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && (e.code === 'KeyD' || e.key.toLowerCase() === 'd')) {
+      e.preventDefault(); perform(board.duplicate); return;
+    }
+    if (shown.value?.id && (e.metaKey || e.ctrlKey) && ['c', 'v'].includes(e.key.toLowerCase())) {
+      e.preventDefault(); const key = e.key.toLowerCase(); perform(key === 'c' ? board.copySelected : board.paste); return;
     }
     if (shown.value?.id && (e.key === 'Delete' || e.key === 'Backspace')) { e.preventDefault(); perform(board.removeSelected); return; }
     if (e.key === 'Escape') { e.preventDefault(); perform(() => {}); return; }

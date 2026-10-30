@@ -1,3 +1,4 @@
+import { useCanvasPastePoint } from '../useCanvasPastePoint';
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import { boundsOf, DEFAULT_VIEW, fitImages, zoomAt, type CanvasImage, type Viewport } from '../canvas';
 import { prepareMainImage, type LibraryImage } from '../asset-library';
@@ -13,7 +14,7 @@ import { AssetPicker } from './AssetPicker';
 import { CanvasBackground } from './CanvasBackground';
 import { CanvasProjectPanel } from './CanvasProjectPanel';
 import { CanvasChrome } from './CanvasChrome';
-import type { CanvasTask } from './CanvasTaskList';
+import { syncTaskFilenames, type CanvasTask } from './CanvasTaskList';
 import { CanvasGenerationPlaceholder } from './CanvasGenerationPlaceholder';
 import { CanvasMediaFilename } from './CanvasMediaFilename';
 import { CanvasProjectCoverBadge } from './CanvasProjectCoverBadge';
@@ -124,6 +125,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   const history = useRef<{ past: Snapshot[]; future: Snapshot[] }>({ past: [], future: [] });
   const [view, commitView] = useState<Viewport>(DEFAULT_VIEW);
   const viewRef = useRef(view); viewRef.current = view;
+  const canvasPastePoint = useCanvasPastePoint(canvas, viewRef);
   const cameraFrame = useRef<number | null>(null);
   const stopCamera = useCallback(() => {
     if (cameraFrame.current !== null) cancelAnimationFrame(cameraFrame.current);
@@ -252,6 +254,14 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     history.current.future = [];
   }, []);
   const commit = useCallback((next: Snapshot) => { saveUndo(); replace(next); }, [replace, saveUndo]);
+  const renameImage = (id: string, name: string) => {
+    const previous = current.current;
+    const image = previous.images.find(item => item.id === id && !item.generation);
+    if (!image || image.name === name) return;
+    commit({ ...previous, images: previous.images.map(item => item.id === id
+      ? { ...item, name, ...(item.video ? { video: { ...item.video, name } } : {}) } : item) });
+  };
+  useEffect(() => { setTasks(previous => syncTaskFilenames(previous, snapshot.images)); }, [snapshot.images, tasks]);
   function commitFlowAddition(previous: Snapshot, next: Snapshot) {
     commit(centerVideoFlowAddition(previous, next));
   }
@@ -348,12 +358,12 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       const clipboard = canvasClipboard.current;
       if (blocked(event) || !clipboard || !event.clipboardData || !matchesCanvasClipboard(event.clipboardData, clipboard)) return;
       event.preventDefault();
-      pasteCopiedItems(canvasMenu && !canvasMenu.kind ? { x: canvasMenu.worldX, y: canvasMenu.worldY } : undefined);
+      pasteCopiedItems(canvasMenu && !canvasMenu.kind ? { x: canvasMenu.worldX, y: canvasMenu.worldY } : canvasPastePoint());
       closeCanvasMenu();
     };
     window.addEventListener('copy', copy); window.addEventListener('paste', paste);
     return () => { window.removeEventListener('copy', copy); window.removeEventListener('paste', paste); };
-  }, [active, reading, canvasReference, shownModal.value, shownPreview.value, shownCutout.value, shownWorkflowUpload.value, shownVideoPreview.value, canvasMenu, captureSelectedMedia, pasteCopiedItems, closeCanvasMenu]);
+  }, [active, reading, canvasReference, shownModal.value, shownPreview.value, shownCutout.value, shownWorkflowUpload.value, shownVideoPreview.value, canvasMenu, captureSelectedMedia, pasteCopiedItems, closeCanvasMenu, canvasPastePoint]);
 
   useEffect(() => {
     try { localStorage.setItem('lc-v56-video-project-name', projectName); } catch { /* The canvas remains usable without storage. */ }
@@ -682,7 +692,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     }));
     const task: DemoTaskRecord = { editorId, timer: null, status: 'running', results: boundResults };
     demoTaskRecords.current.set(id, task);
-    setTasks(previous => [{ id, status: 'running', createdAt: new Date().toISOString(), resultIds: results.map(result => result.id) }, ...previous]);
+    setTasks(previous => [{ id, status: 'running', createdAt: new Date().toISOString(), resultIds: boundResults.map(result => result.id), resultFiles: boundResults.map(result => ({ id: result.id, name: result.name })) }, ...previous]);
     appendDemoPlaceholders(previous, editor, sourceIds, placeholders);
     task.timer = window.setTimeout(() => {
       if (task.status !== 'running') return;
@@ -1159,7 +1169,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
               setCanvasMenu({ kind: 'image', imageId: image.id, x: event.clientX, y: event.clientY, worldX: (event.clientX - rect.left - viewport.x) / viewport.zoom, worldY: (event.clientY - rect.top - viewport.y) / viewport.zoom });
             }}
             onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || canvasReference && event.key === ' ')) { event.preventDefault(); if (canvasReference) { event.stopPropagation(); toggleCanvasReference(image.id); return; } replace({ ...current.current, selected: event.shiftKey ? current.current.selected.includes(image.id) ? current.current.selected.filter(id => id !== image.id) : [...current.current.selected, image.id] : [image.id] }); } }}>
-            {!image.generation && <CanvasMediaFilename name={image.name} url={image.video?.url ?? image.url} kind={image.video || ['mp4', 'webm', 'mov', 'm4v'].includes(image.generatedFile?.extension ?? '') ? 'video' : 'image'} />}
+            {!image.generation && <CanvasMediaFilename onRename={name => renameImage(image.id, name)} name={image.name} url={image.video?.url ?? image.url} kind={image.video || ['mp4', 'webm', 'mov', 'm4v'].includes(image.generatedFile?.extension ?? '') ? 'video' : 'image'} />}
             {image.projectCover && isProjectCoverCandidate(image) && <CanvasProjectCoverBadge locale={locale} />}
             {image.generation ? <CanvasGenerationPlaceholder locale={locale} failed={image.generation.status === 'failed'} /> : <>
             {!canvasReference && (image.video ? <Button variant="tonal" className="image-preview-button video-canvas-play nodrag nopan" title={m.play} aria-label={`${m.play} · ${image.name}`} data-node-id="97:6653" onClick={event => { event.stopPropagation(); setVideoPreview(image.video!); }}><VideoIcon name="playVideo" size={20} /></Button>
@@ -1251,7 +1261,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
           </div>
         </div>
       </div>}
-      <CanvasChrome locale={locale} mode={effectiveMode} onMode={setMode} zoom={view.zoom} view={view} canvasSize={canvasSize} images={items} tasks={tasks} showSmartSearch={false}
+      <CanvasChrome locale={locale} mode={effectiveMode} onMode={setMode} zoom={view.zoom} view={view} canvasSize={canvasSize} images={items} tasks={tasks} onRenameMedia={renameImage} showSmartSearch={false}
           taskListNodeId="165:30270" onSelectTask={task => { if (!canvasReference) focusTaskResults(task); }} canSelectTask={task => !canvasReference && taskResults(task).length > 0}
           sideActions={<>
             <Button className="canvas-icon-button" aria-label={t.platformAssets} disabled={!!canvasReference} onClick={openAssets}><Icon name="platformIcon" size={24} /></Button>

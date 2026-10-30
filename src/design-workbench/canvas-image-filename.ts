@@ -1,8 +1,8 @@
 import { canvasMediaFilename, createCanvasFileNamer, type GeneratedMediaFile } from '../canvas-media-filename';
 import { readDemoState, writeDemoState } from './demo-storage';
 
-export type ImageFile = { shape?: unknown; name: string; url: string; mimeType?: string; generatedFile?: GeneratedMediaFile; taskResultId?: string; generating?: boolean };
-type Ledger = { counters: GeneratedMediaFile[]; results: Record<string, GeneratedMediaFile> };
+export type ImageFile = { shape?: unknown; filenameEdited?: boolean; name: string; url: string; mimeType?: string; generatedFile?: GeneratedMediaFile; taskResultId?: string; generating?: boolean };
+type Ledger = { counters: GeneratedMediaFile[]; results: Record<string, GeneratedMediaFile>; names?: Record<string, string> };
 const format = (file: GeneratedMediaFile) => `${file.featureLabel}-${file.date}-${String(file.sequence).padStart(3, '0')}.${file.extension}`;
 const featureName = (title: string) => title.replace(/^款式\s*-\s*/, '').trim() || 'AI助手';
 
@@ -21,11 +21,13 @@ export function createDesignCanvasFileNamer() {
   const saved = readDemoState<Ledger>('image-filenames', { counters: [], results: {} });
   const counters = new Map(saved.counters.map(file => [`${file.featureKey}:${file.date}`, file]));
   const results = new Map(Object.entries(saved.results));
+  const names = new Map(Object.entries(saved.names ?? {}));
+  const persist = () => writeDemoState('image-filenames', { counters: [...counters.values()], results: Object.fromEntries(results), names: Object.fromEntries(names) });
   const remember = (file: GeneratedMediaFile, resultId?: string) => {
     const key = `${file.featureKey}:${file.date}`;
     if ((counters.get(key)?.sequence ?? 0) < file.sequence) counters.set(key, file);
     if (resultId) results.set(resultId, file);
-    writeDemoState('image-filenames', { counters: [...counters.values()], results: Object.fromEntries(results) });
+    persist();
   };
   const assign = <T extends ImageFile>(image: T, title: string, existing: ReadonlyArray<{ generatedFile?: GeneratedMediaFile }> = []) => {
     const retained = image.generatedFile ?? (image.taskResultId ? results.get(image.taskResultId) : undefined);
@@ -33,13 +35,24 @@ export function createDesignCanvasFileNamer() {
     const generatedFile = retained ?? allocator.assign([image], feature, feature,
       [...existing, ...[...counters.values()].map(generatedFile => ({ generatedFile }))], image.generating ? 'png' : extensionFor(image))[0].generatedFile;
     remember(generatedFile, image.taskResultId);
-    return { ...image, name: format(generatedFile), generatedFile };
+    const retainedName = image.taskResultId ? names.get(image.taskResultId) : undefined;
+    const filenameEdited = image.filenameEdited ?? (retainedName !== undefined && retainedName !== format(generatedFile));
+    return { ...image, name: image.filenameEdited ? image.name : retainedName ?? format(generatedFile), generatedFile, filenameEdited };
   };
   return {
     assign,
+    rememberNames(images: ImageFile[]) {
+      let changed = false;
+      for (const image of images) {
+        if (!image.taskResultId || image.generating || !image.generatedFile) continue;
+        const name = image.filenameEdited ? image.name : format(image.generatedFile);
+        if (names.get(image.taskResultId) !== name) { names.set(image.taskResultId, name); changed = true; }
+      }
+      if (changed) persist();
+    },
     lookup(resultId: string) {
       const generatedFile = results.get(resultId);
-      return generatedFile ? { name: format(generatedFile), generatedFile } : undefined;
+      return generatedFile ? { name: names.get(resultId) ?? format(generatedFile), generatedFile, filenameEdited: names.has(resultId) } : undefined;
     },
     complete<T extends ImageFile>(image: T, output: ImageFile) {
       const retained = assign(image, image.generatedFile?.featureLabel ?? '快捷编辑');

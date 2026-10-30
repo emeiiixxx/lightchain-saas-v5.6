@@ -17,6 +17,7 @@ export type ConnectedGroupContext = {
   // Local additions can anchor a source without moving it or arranging the
   // surrounding canvas. Full arrangement retains collision avoidance.
   fixedRoots?: ReadonlyMap<string, FlowLayoutRect>;
+  // false ignores external obstacles, never collisions within this layout.
   avoidCollisions?: boolean;
 };
 export type ConnectedGroupLayout = { positions: Map<string, Position>; width: number; height: number; bounds?: FlowLayoutRect };
@@ -235,8 +236,8 @@ export function layoutConnectedGroup(input: FlowLayoutVertex[], order: Record<st
       }
     }
     const blocked: Contour[] = [];
-    if (context && context.avoidCollisions !== false) {
-      const previousBoxes = new Map(fixedOccupied);
+    if (context) {
+      const previousBoxes = new Map<string, FlowLayoutRect>(context.avoidCollisions === false ? [] : fixedOccupied);
       for (const [id, point] of positions) {
         const vertex = byId.get(id)!;
         previousBoxes.set(id, { ...point, width: vertex.width, height: vertex.height });

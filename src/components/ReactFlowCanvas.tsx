@@ -1,6 +1,6 @@
 import { Children, cloneElement, isValidElement, memo, useCallback, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from 'react';
 import { BaseEdge, ConnectionMode, getBezierPath, Handle, Position, ReactFlow, SelectionMode, useUpdateNodeInternals, type Connection, type ConnectionLineComponentProps, type Edge, type EdgeChange, type EdgeProps, type Node, type NodeChange, type NodeProps } from '@xyflow/react';
-import { boundsOf, type CanvasImage, type Viewport } from '../canvas';
+import { boundsOf, FUSION_WIDTH, type CanvasImage, type Viewport } from '../canvas';
 import { canConnectCanvasNodes, canvasConnectionSides, type CanvasConnection, type CanvasConnectionInput, type CanvasConnectionNode, type CanvasConnectionNodes } from '../canvas-connections';
 import { magneticDragDelta, type DragSnapContext, type SnapGuides } from '../canvas-snapping';
 import { ImageConnection } from './ImageConnection';
@@ -215,7 +215,7 @@ export function ReactFlowCanvas(props: Props) {
         const style = p.style ?? {};
         const connectionNode = props.connectionNodes?.[id];
         nodes.push({ id, type: 'lightchain', position: { x: Number(style.left), y: Number(style.top) },
-          ...flowNodeGeometry(Number(style.width) || 280, Number(style.height) || 400,
+          ...flowNodeGeometry(Number(style.width) || FUSION_WIDTH, Number(style.height) || 400,
             freeConnections ? { sides: canvasConnectionSides(connectionNode), zoom: props.view.zoom } : undefined),
           selected: props.selectedIds.includes(id), zIndex: Number(style.zIndex) || 1,
           data: { content: cloneElement(child, { style: { ...style, left: 0, top: 0, position: 'relative', zIndex: undefined } }),
@@ -287,7 +287,7 @@ export function ReactFlowCanvas(props: Props) {
   }, [setSelection]);
   const beginDrag = useCallback((event: MouseEvent | TouchEvent | React.MouseEvent, node: ContentNode, selected?: ContentNode[]) => {
     bypass.current = event.altKey;
-    const all = graphRef.current.nodes.map(n => ({ id: n.id, ...n.position, width: n.width ?? 280, height: n.height ?? 400 })) as CanvasImage[];
+    const all = graphRef.current.nodes.map(n => ({ id: n.id, ...n.position, width: n.width ?? FUSION_WIDTH, height: n.height ?? 400 })) as CanvasImage[];
     const moving = new Set((selected?.length ? selected : [node]).map(n => n.id)); moving.add(node.id);
     const anchor = all.find(n => n.id === node.id)!;
     const bounds = boundsOf(all.filter(n => moving.has(n.id)))!;

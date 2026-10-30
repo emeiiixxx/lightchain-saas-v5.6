@@ -22,6 +22,18 @@ export function centerAddedFlowBranches(
   });
   const pending = new Map<string, Branch>();
   const enqueue = (branch: Branch) => {
+    // A growing result branch can outgrow the space between sibling editors.
+    // Include its same-owner upstream chain so those complete branches are
+    // spaced together around their unchanged inputs, not just the new results.
+    const visited = new Set<string>();
+    while (branch.sources.length === 1) {
+      const parent = current.get(branch.sources[0]);
+      if (!parent || visited.has(parent.id) || ownerOf(parent) !== branch.owner) break;
+      visited.add(parent.id);
+      const parentBranch = branchOf(parent);
+      if (!parentBranch.sources.length) break;
+      branch = parentBranch;
+    }
     if (branch.sources.length) pending.set(keyOf(branch), branch);
   };
   for (const vertex of next) {
@@ -99,8 +111,8 @@ export function centerAddedFlowBranches(
       fixedRoots: new Map([[anchorId, bounds]]), avoidCollisions: false,
     });
     const placed = new Map([...layout.positions].filter(([id]) => scope.has(id)));
-    // Normal additions prioritize centering even when unrelated content
-    // overlaps. Collision avoidance belongs to the explicit Arrange action.
+    // Internal branches are spaced before centering. Unrelated groups remain
+    // fixed; full-canvas collision avoidance belongs to Arrange.
     for (const [id, point] of placed) current.set(id, { ...current.get(id)!, ...point });
   }
   return new Map(next.flatMap(vertex => {

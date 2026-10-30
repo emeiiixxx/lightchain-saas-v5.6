@@ -2,7 +2,7 @@ import { GenerationRecordTags } from './GenerationRecordTags';
 import type { TextEditInput } from '../text-edit';
 import { recordHasPrompt, recordHasPromptActions } from '../generation-record-display';
 import { TaskDetailPanel } from './TaskDetailPanel';
-import { demoNotice } from '../demo-feedback';
+import { EditableFilename } from '../../components/EditableFilename';
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLocale } from '../LocaleContext';
 import type { Notify } from '../notification';
@@ -59,8 +59,8 @@ const tabs = [
   { value: 'history', label: '任务', en: 'Tasks', ja: 'タスク', icon: 'generation-record-imgDefaultIcon2' },
 ] as const;
 
-export function CanvasLeftPanel({ tab, hasSelectedElement, onTabChange, onClose, records, uploads, onUpload, onAddImages, onNotify, onRegenerate, onDeleteRecord, onDeleteResult, layersDisabled = false }: {
-  hasSelectedElement: boolean; layersDisabled?: boolean; onAddImages: () => void;
+export function CanvasLeftPanel({ tab, images, selectedIds, onSelectImage, onRenameImage, onTabChange, onClose, records, uploads, onUpload, onAddImages, onNotify, onRegenerate, onDeleteRecord, onDeleteResult, layersDisabled = false }: {
+  images: CanvasImage[]; selectedIds: string[]; onSelectImage: (id: string) => void; onRenameImage: (id: string, name: string) => void; layersDisabled?: boolean; onAddImages: () => void;
   tab: LeftPanelTab | null; onTabChange: (tab: LeftPanelTab) => void; onClose: () => void;
   records: GenerationRecord[]; uploads: LibraryImage[]; onUpload: (image: LibraryImage) => void; onNotify: Notify;
   onRegenerate: (record: GenerationRecord) => void; onDeleteRecord: (id: string) => void; onDeleteResult: (id: string, index: number) => void;
@@ -151,7 +151,14 @@ export function CanvasLeftPanel({ tab, hasSelectedElement, onTabChange, onClose,
         <IconButton className="left-panel-close" size="l" icon="generation-record-imgIcon" aria-label={t('收起左侧栏')} onClick={onClose} />
       </header>
       <div id="left-panel-content" className="left-panel-content" role="tabpanel" aria-labelledby={`left-panel-tab-${shown.value}`}>
-        {shown.value === 'assets' ? <div className="left-panel-placeholder"><Button variant="outline" size="m" disabled={layersDisabled} onClick={onAddImages}><Icon name="canvas-imgIconSystem5" size={20} />{t('添加图片')}</Button></div> : shown.value === 'layers' ? <div className="left-panel-placeholder">{!hasSelectedElement ? t('暂无图层') : demoNotice(locale)}</div> : !allRecords.length ? <div className="generation-record-empty" data-node-id="163:11702">
+        {shown.value === 'assets' ? <div className="left-panel-placeholder"><Button variant="outline" size="m" disabled={layersDisabled} onClick={onAddImages}><Icon name="canvas-imgIconSystem5" size={20} />{t('添加图片')}</Button></div> : shown.value === 'layers' ? <div className="canvas-layer-list">
+          {!images.length ? <div className="left-panel-placeholder">{t('暂无图层')}</div> : [...images].reverse().map(image => <div key={image.id} className={`canvas-layer-row ${selectedIds.includes(image.id) ? 'is-selected' : ''}`}
+            role="button" tabIndex={0} aria-pressed={selectedIds.includes(image.id)} onClick={() => onSelectImage(image.id)}
+            onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectImage(image.id); } }}>
+            {image.generating || image.generationFailed ? <span className="canvas-layer-thumbnail"><TaskResultPlaceholder status={image.generating ? 'generating' : 'failed'} /></span> : <img className="canvas-layer-thumbnail" src={image.url} alt="" />}
+            {image.generating || image.generationFailed ? <span>{t(image.generating ? '生成中' : '生成失败')}</span> : <EditableFilename name={image.name} onRename={image.shape ? undefined : name => onRenameImage(image.id, name)} />}
+          </div>)}
+        </div> : !allRecords.length ? <div className="generation-record-empty" data-node-id="163:11702">
           <img src="/assets/design-workbench/task-record-empty.png" alt="" width={128} height={128} />
           <div className="generation-record-empty-copy"><h3>{t('暂无任务记录')}</h3><p>{t('上传图片开始你的设计')}</p></div>
         </div> : <div className="generation-record-list">

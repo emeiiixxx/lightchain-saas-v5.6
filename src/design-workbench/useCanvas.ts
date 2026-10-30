@@ -19,7 +19,7 @@ import { canvasMediaFilename, type GeneratedMediaFile } from '../canvas-media-fi
 import { createCopyFilenameAllocator } from '../canvas-copy-filename';
 import { hitShape, shapeSvg, type CanvasShape, type ShapeKind } from './canvas-shapes';
 
-export type CanvasImage = { shape?: CanvasShape; id: string; name: string; image: HTMLImageElement; url: string; mimeType?: string; generatedFile?: GeneratedMediaFile; x: number; y: number; width: number; height: number; addedAt?: number; additionBatchId?: string; contentGroupId?: string; agentConversationId?: string; generatedAt?: number; uploadedAt?: number; origin?: 'upload' | 'generated' | 'copy'; generationParentId?: string; generationRootId?: string; generationRootAddedAt?: number; generationBatchId?: string; generationIndex?: number; groupId?: string; groupedAt?: number; generating?: boolean; generationFailed?: boolean; taskResultId?: string; generationPlacement?: 'agent'; fit?: 'cover'; rotation?: number; radius?: number; opacity?: number; flipX?: boolean; flipY?: boolean; stroke?: string; strokeWidth?: number; strokeOpacity?: number; strokeStyle?: 'solid' | 'dashed' | 'dotted'; strokeAlign?: 'inside' | 'center' | 'outside'; favorite?: boolean; cover?: boolean };
+export type CanvasImage = { shape?: CanvasShape; id: string; name: string; filenameEdited?: boolean; image: HTMLImageElement; url: string; mimeType?: string; generatedFile?: GeneratedMediaFile; x: number; y: number; width: number; height: number; addedAt?: number; additionBatchId?: string; contentGroupId?: string; agentConversationId?: string; generatedAt?: number; uploadedAt?: number; origin?: 'upload' | 'generated' | 'copy'; generationParentId?: string; generationRootId?: string; generationRootAddedAt?: number; generationBatchId?: string; generationIndex?: number; groupId?: string; groupedAt?: number; generating?: boolean; generationFailed?: boolean; taskResultId?: string; generationPlacement?: 'agent'; fit?: 'cover'; rotation?: number; radius?: number; opacity?: number; flipX?: boolean; flipY?: boolean; stroke?: string; strokeWidth?: number; strokeOpacity?: number; strokeStyle?: 'solid' | 'dashed' | 'dotted'; strokeAlign?: 'inside' | 'center' | 'outside'; favorite?: boolean; cover?: boolean };
 function refreshShapeAsset(item: CanvasImage, patch?: Partial<CanvasImage>): CanvasImage {
   if (!item.shape || (patch && !['shape', 'width', 'height', 'stroke', 'strokeWidth', 'strokeOpacity', 'strokeStyle', 'radius', 'flipX', 'flipY'].some(key => key in patch))) return item;
   const url = shapeSvg(item.shape, item.width, item.height, item.stroke, item.strokeWidth, item);
@@ -63,7 +63,7 @@ const editing = (target: EventTarget | null) => target instanceof HTMLElement &&
 
 export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-CN') {
   const [fileNamer] = useState(createDesignCanvasFileNamer);
-  const lookupImageFilename = useCallback((resultId: string) => fileNamer.lookup(resultId), [fileNamer]);
+  
   const [filenameIcon, setFilenameIcon] = useState<HTMLImageElement | null>(null);
   useEffect(() => {
     let active = true;
@@ -128,7 +128,12 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
   const future = useRef<CanvasImage[][]>([]);
   const live = useRef({ images, selected, selectedIds, camera, size, mode, shapeTool });
   live.current = { images, selected, selectedIds, camera, size, mode, shapeTool };
+  const lookupImageFilename = useCallback((resultId: string) => {
+    const item = live.current.images.find(image => image.taskResultId === resultId);
+    return item?.generatedFile ? { name: item.name, generatedFile: item.generatedFile, filenameEdited: item.filenameEdited } : fileNamer.lookup(resultId);
+  }, [fileNamer]);
   const [restored, setRestored] = useState(false);
+  useEffect(() => { if (restored) fileNamer.rememberNames(images); }, [fileNamer, images, restored]);
   useEffect(() => {
     let active = true;
     const saved = readDemoState<{ images: Omit<CanvasImage, 'image'>[]; camera: Camera } | null>('canvas', null);
@@ -521,14 +526,14 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     const next = state.images.map(item => item.id === state.selected ? refreshShapeAsset({ ...item, ...patch }, patch) : item);
     live.current.images = next; setImages(next);
   }, [remember, finishPlacement]);
-  const insertCopies = useCallback((items: CanvasImage[], center?: Point) => {
+  const insertCopies = useCallback((items: CanvasImage[], point?: Point) => {
     if (lock.current) return;
     finishPlacement();
     if (!items.length) return;
     const state = live.current;
     const bounds = selectionBounds(items);
-    const offset = center
-      ? { x: center.x - bounds.x - bounds.width / 2, y: center.y - bounds.y - bounds.height / 2 }
+    const offset = point
+      ? { x: point.x - bounds.x, y: point.y - bounds.y }
       : { x: 32, y: 32 };
     const clones = createCanvasCopies(items, offset, state.images);
     remember(state.images); const next = [...state.images, ...clones]; live.current.images = next; setImages(next);
@@ -540,14 +545,14 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     const items = live.current.images.filter(item => live.current.selectedIds.includes(item.id) && !item.generating && !item.generationFailed);
     if (items.length) { copied.current = items.map(item => ({ ...item })); notify('已复制，可在画布中粘贴', 'success'); }
   }, [notify, finishPlacement]);
-  const paste = useCallback(() => {
+  const paste = useCallback((at?: Point) => {
     const { size } = live.current;
     const pointer = hoverPoint.current;
     const { left, right } = editingViewport();
     const point = pointer && pointer.x >= 0 && pointer.x <= size.width && pointer.y >= 0 && pointer.y <= size.height
       ? pointer : { x: (left + right) / 2, y: size.height / 2 };
-    insertCopies(copied.current, worldPoint(point));
-  }, [insertCopies, editingViewport, worldPoint]);
+    insertCopies(copied.current, at ?? contextMenu?.worldPoint ?? worldPoint(point));
+  }, [insertCopies, editingViewport, worldPoint, contextMenu]);
   const updateImages = useCallback((patches: (Partial<CanvasImage> & { id: string })[], record = false) => {
     if (lock.current) return;
     finishPlacement();
@@ -556,6 +561,11 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     const next = state.images.map(item => lookup.has(item.id) ? refreshShapeAsset({ ...item, ...lookup.get(item.id) }, lookup.get(item.id)!) : item);
     live.current.images = next; setImages(next);
   }, [remember, finishPlacement]);
+  const renameImage = useCallback((id: string, name: string) => {
+    const item = live.current.images.find(image => image.id === id);
+    if (!item || item.shape || item.generating || item.generationFailed || item.name === name) return;
+    updateImages([{ id, name, filenameEdited: true }], true);
+  }, [updateImages]);
   const groupSelection = useCallback((ungroup = false) => {
     finishPlacement();
     const state = live.current;
@@ -1042,14 +1052,22 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     };
     const keydown = (e: KeyboardEvent) => {
       alt.current = e.altKey; updateMoveCursor();
-      if (editing(e.target) || (e.target instanceof Element && e.target.closest('button,a')) || document.querySelector('dialog[open]')) return;
+      if (e.defaultPrevented || e.isComposing || editing(e.target) || document.querySelector('dialog[open]')) return;
+      const duplicateShortcut = (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && (e.code === 'KeyD' || e.key.toLowerCase() === 'd');
+      // Toolbar buttons can retain focus after a canvas operation. Duplicate
+      // still acts on the current selection, as the context menu advertises.
+      if (!duplicateShortcut && e.target instanceof Element && e.target.closest('button,a')) return;
       if (lock.current) { if (e.code === 'Space' || ['Backspace', 'Delete', '+', '-', '='].includes(e.key)) e.preventDefault(); return; }
       if (gesture.current?.copy && e.key !== 'Escape') { if (e.key !== 'Alt') e.preventDefault(); return; }
+      if (duplicateShortcut) {
+        e.preventDefault(); duplicate(); setContextMenu(null);
+        canvas.focus({ preventScroll: true }); return;
+      }
       if (e.metaKey || e.ctrlKey) {
         const key = e.key.toLowerCase();
         if (key === 'a') { e.preventDefault(); selectMany(live.current.images.filter(item => !item.generating).map(item => item.id)); return; }
         if (key === 'g') { e.preventDefault(); groupSelection(e.shiftKey); return; }
-        if (['c', 'd', 'v'].includes(key)) { e.preventDefault(); if (key === 'c') copySelected(); else if (key === 'd') duplicate(); else paste(); setContextMenu(null); return; }
+        if (['c', 'v'].includes(key)) { e.preventDefault(); if (key === 'c') copySelected(); else paste(); setContextMenu(null); return; }
       }
       if (e.code === 'Space') { e.preventDefault(); space.current = true; setSpacePressed(true); }
       if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); removeSelected(); }
@@ -1078,5 +1096,5 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     setMode('select'); setShapeTool(kind); setSelected(null); setContextMenu(null);
     canvasRef.current?.focus({ preventScroll: true });
   }, [restored, cancelShape, finishPlacement, setSelected]);
-  return { shapeTool, selectShapeTool, restored, lookupImageFilename, projectCover, isolationActive: isolation.amount > 0 && images.some(image => image.id === isolation.id && !image.generating), locked, setInteractionLocked, setQuickEditing, blankClickVersion, setIsolatedImageId, editingViewport, focusImage, focusAgentResults, addAgentImages, selectedIds, hoveredId, marquee, selectMany, updateImages, groupSelection, alignSelection, contextMenu, setContextMenu, copySelected, paste, reorder, setCover, resetCover, downloadImage, size, mode, effectiveMode, setMode: chooseMode, beginEdit, updateSelected, duplicate, arrange, redo, canUndo: !images.some(image => image.generating) && history.current.length > 0, canRedo: !images.some(image => image.generating) && future.current.length > 0, historyVersion, canvasRef, images, selected, setSelected, camera, panning, upload, addImages, beginGeneration, beginResultRetry, finishGeneration, zoomAt, navigateMinimap, fit, returnToContent, removeSelected, undo };
+  return { shapeTool, selectShapeTool, restored, lookupImageFilename, projectCover, isolationActive: isolation.amount > 0 && images.some(image => image.id === isolation.id && !image.generating), locked, setInteractionLocked, setQuickEditing, blankClickVersion, setIsolatedImageId, editingViewport, focusImage, focusAgentResults, addAgentImages, selectedIds, hoveredId, marquee, selectMany, updateImages, renameImage, groupSelection, alignSelection, contextMenu, setContextMenu, copySelected, paste, reorder, setCover, resetCover, downloadImage, size, mode, effectiveMode, setMode: chooseMode, beginEdit, updateSelected, duplicate, arrange, redo, canUndo: !images.some(image => image.generating) && history.current.length > 0, canRedo: !images.some(image => image.generating) && future.current.length > 0, historyVersion, canvasRef, images, selected, setSelected, camera, panning, upload, addImages, beginGeneration, beginResultRetry, finishGeneration, zoomAt, navigateMinimap, fit, returnToContent, removeSelected, undo };
 }

@@ -25,7 +25,8 @@ const shortcutGroups = (altKey: 'Alt' | 'Option') => [
 
 export function ShortcutsPanel({ phase, onClose }: { phase: 'enter' | 'exit'; onClose: () => void }) {
   const { t } = useLocale();
-  const groups = shortcutGroups(/Mac|iPhone|iPad/.test(navigator.platform) ? 'Option' : 'Alt');
+  const mac = /Mac|iPhone|iPad/.test(navigator.platform);
+  const groups = shortcutGroups(mac ? 'Option' : 'Alt');
   const panel = useRef<HTMLElement>(null);
   const close = useRef(onClose); close.current = onClose;
   useEffect(() => {
@@ -43,7 +44,7 @@ export function ShortcutsPanel({ phase, onClose }: { phase: 'enter' | 'exit'; on
     <header className="shortcuts-header"><h2 id="shortcuts-title">{t('快捷键')}</h2><Button className="shortcuts-close" aria-label={t('关闭')} onClick={() => { onClose(); document.querySelector<HTMLButtonElement>('[aria-controls="canvas-shortcuts-panel"]')?.focus(); }}><Icon name="shortcuts-close" size={16} /></Button></header>
     <div className="element-menu-divider" />
     <div className="shortcuts-list">
-      {groups.map(group => <section className="shortcuts-group" key={group.title}><h3>{t(group.title)}</h3><dl>{group.rows.map(([label, keys]) => <div className="shortcut-row" key={label}><dt>{t(label)}</dt><dd><kbd>{t(keys)}</kbd></dd></div>)}</dl></section>)}
+      {groups.map(group => <section className="shortcuts-group" key={group.title}><h3>{t(group.title)}</h3><dl>{group.rows.map(([label, keys]) => <div className="shortcut-row" key={label}><dt>{t(label)}</dt><dd><kbd>{t(mac && label === '复制并粘贴' ? '⌘ + D' : keys)}</kbd></dd></div>)}</dl></section>)}
     </div>
   </section>;
 }

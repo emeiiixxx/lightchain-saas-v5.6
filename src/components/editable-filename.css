@@ -1,0 +1,2 @@
+.editable-filename { display: block; flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.editable-filename-input { display: block; box-sizing: border-box; width: 100%; min-width: 0; height: 100%; padding: 0 2px; border: 1px solid var(--border-brand); border-radius: 2px; outline: none; background: var(--surface-default); color: var(--text-primary); font: inherit; line-height: inherit; user-select: text; }

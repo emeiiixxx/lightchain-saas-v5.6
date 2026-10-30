@@ -1,3 +1,4 @@
+import { EditableFilename } from '../../components/EditableFilename';
 import { useInputMemory } from '../useInputMemory';
 import { readDemoState, writeDemoState, restoreDemoUrls, rememberDemoAsset } from '../demo-storage';
 import { retryRecordTarget } from '../retry-record';
@@ -78,7 +79,7 @@ function ImageProperties({ board, onReplace, onAction, rotationLocked, onNotify 
   const update = (patch: Partial<CanvasImage>) => board.updateSelected(patch, false);
   const field = (label: string, key: 'x' | 'y' | 'width' | 'height', prefix: string) => <NumberField label={label} prefix={prefix} value={item[key]} min={key === 'width' || key === 'height' ? 1 : undefined} begin={board.beginEdit} change={n => update({ [key]: n })} />;
   return <div className="image-properties" key={item.id}>
-    <div className="property-title"><h2 title={item.name}>{item.shape ? t(item.name) : `${t("图片")}${board.images.indexOf(item) + 1}`}</h2>{!item.shape && <Button icon="prop-imgLeftIcon" onClick={onReplace}>{t("替换图片")}</Button>}</div>
+    <div className="property-title"><h2 title={item.name}>{item.shape ? t(item.name) : item.generating ? t("生成中") : item.generationFailed ? t("生成失败") : item.name}</h2>{!item.shape && <Button icon="prop-imgLeftIcon" onClick={onReplace}>{t("替换图片")}</Button>}</div>
     {!item.shape && <div className="property-actions">{[['prop-imgNameInpaint', t("局部编辑")], ['prop-imgNameConvertTo3DTile', t("转3D平铺")], ['prop-imgNameImageEdit', t("图片编辑")]].map(([icon, label]) => <button key={label} onClick={() => onAction(label)}><Icon name={icon} size={16} /><span>{label}</span></button>)}</div>}
     <Divider />
     <section className="property-section"><h3>{t("基础参数")}</h3>
@@ -100,7 +101,8 @@ function ImageProperties({ board, onReplace, onAction, rotationLocked, onNotify 
 }
 
 export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplace, onHelp, onNotify, uploads, onRememberUpload }: Props) {
-  useCanvasFilenameTooltip(board);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  useCanvasFilenameTooltip(board, setRenamingId);
   const { t, locale } = useLocale();
   const toolbarRef = useRef<HTMLDivElement>(null);
   const [toolbarSize, setToolbarSize] = useState({ width: 700, height: 42 });
@@ -259,7 +261,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     return () => { active = false; };
   }, []);
   useEffect(() => { if (recordsRestored) writeDemoState('tasks', { seedVersion: PROMO_TASK_SEED_VERSION, records: generationRecords, archived: [...archivedRecords.current] }); }, [generationRecords, recordsRestored]);
-  const openLeftPanel = (value: LeftPanelTab) => { setLeftTab(value); if (value === 'layers' && board.selectedIds.length > 0) onNotify(demoNotice(locale)); };
+  const openLeftPanel = (value: LeftPanelTab) => { setLeftTab(value); };
   const updateAgentRecord = (id: string, update: (record: GenerationRecord) => GenerationRecord) => {
     setGenerationRecords(previous => previous.map(record => record.id === id ? update(record) : record));
     const archived = archivedRecords.current.get(id);
@@ -761,11 +763,12 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     })}
     {hovered && <div className="element-hover" aria-hidden="true" style={{ left: hovered.x * board.camera.zoom + board.camera.x, top: hovered.y * board.camera.zoom + board.camera.y, width: hovered.width * board.camera.zoom, height: hovered.height * board.camera.zoom, transform: `rotate(${hovered.rotation ?? 0}deg)` }} />}
     {board.marquee && <div className="canvas-marquee" aria-hidden="true" style={{ left: board.marquee.x * board.camera.zoom + board.camera.x, top: board.marquee.y * board.camera.zoom + board.camera.y, width: board.marquee.width * board.camera.zoom, height: board.marquee.height * board.camera.zoom }} />}
-    {board.images.filter(item => board.selectedIds.includes(item.id) && !item.shape && !item.generating && !item.generationFailed).map(item => {
+    {board.images.filter(item => (board.selectedIds.includes(item.id) || item.id === renamingId) && !item.shape && !item.generating && !item.generationFailed).map(item => {
       const box = screenBounds(imageBounds(item), board.camera);
-      return <div key={`filename:${item.id}`} className="canvas-selected-filename" style={{ left: box.x, top: box.y - IMAGE_FILENAME_TOP_SPACE, width: box.width }}>
+      return <div key={`filename:${item.id}:${item.id === renamingId}`} data-canvas-ui={item.id === renamingId ? true : undefined} className="canvas-selected-filename" style={{ left: box.x, top: box.y - IMAGE_FILENAME_TOP_SPACE, width: box.width }}>
         <span className="canvas-selected-filename-icon" aria-hidden="true" />
-        <span className="canvas-selected-filename-text">{item.name}</span>
+        {item.id === renamingId ? <EditableFilename name={item.name} autoEdit onRename={name => board.renameImage(item.id, name)} onEditingEnd={() => setRenamingId(null)} />
+          : <span className="canvas-selected-filename-text">{item.name}</span>}
       </div>;
     })}
     {board.selectedIds.length > 1 && !board.marquee && <MultiSelectionControls key={board.selectedIds.join('|')} board={board} onNotify={onNotify} onTechPack={unavailable} />}
@@ -774,7 +777,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       <Tool icon="canvas-imgIconSystem6" label={t("资产")} size={24} onClick={() => openLeftPanel('assets')} />
       <Tool id="canvas-task-entry" icon="canvas-imgIcon2" label={t("任务")} size={24} onClick={() => openLeftPanel('history')} />
     </div>}
-    <CanvasLeftPanel layersDisabled={!!localEdit} tab={leftTab} hasSelectedElement={board.selectedIds.length > 0} onTabChange={openLeftPanel} onClose={() => setLeftTab(null)} records={generationRecords} uploads={uploads} onUpload={onRememberUpload} onAddImages={() => onUpload()} onNotify={onNotify} onRegenerate={record => void regenerateRecord(record)} onDeleteRecord={id => { const record = generationRecords.find(item => item.id === id); if (record && !archivedRecords.current.has(id)) archivedRecords.current.set(id, record); setGenerationRecords(previous => previous.filter(record => record.id !== id)); }} onDeleteResult={(id, index) => setGenerationRecords(previous => previous.flatMap(record => {
+    <CanvasLeftPanel layersDisabled={!!localEdit} tab={leftTab} images={board.images} selectedIds={board.selectedIds} onSelectImage={id => board.selectMany([id])} onRenameImage={board.renameImage} onTabChange={openLeftPanel} onClose={() => setLeftTab(null)} records={generationRecords} uploads={uploads} onUpload={onRememberUpload} onAddImages={() => onUpload()} onNotify={onNotify} onRegenerate={record => void regenerateRecord(record)} onDeleteRecord={id => { const record = generationRecords.find(item => item.id === id); if (record && !archivedRecords.current.has(id)) archivedRecords.current.set(id, record); setGenerationRecords(previous => previous.filter(record => record.id !== id)); }} onDeleteResult={(id, index) => setGenerationRecords(previous => previous.flatMap(record => {
       if (record.id !== id) return [record];
       if (!archivedRecords.current.has(id)) archivedRecords.current.set(id, record);
       const images = record.images.filter((_, imageIndex) => imageIndex !== index);

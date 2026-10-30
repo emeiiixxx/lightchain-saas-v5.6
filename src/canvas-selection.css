@@ -205,3 +205,7 @@
 .result-dislike-reasons {display:flex;flex-wrap:wrap;gap:8px;}
 .result-dislike-reasons .lc-button[aria-pressed='true'] {background:var(--alpha-brand-20);border-color:var(--border-brand);color:var(--text-brand);}
 .result-dislike-popover footer {gap:8px;}
+
+.canvas-task-item .canvas-task-row { height: var(--task-row-height, 64px); }
+.canvas-task-filename { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 16px; }
+.canvas-task-details { min-width: 0; flex: 1; }

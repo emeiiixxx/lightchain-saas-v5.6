@@ -36,7 +36,7 @@ export const FUSION_GAP = 80;
 const BRANCH_GAP = 120;
 export const GROUP_GAP = 240;
 const GROUPS_PER_ROW = 5;
-export const FUSION_WIDTH = 280;
+export const FUSION_WIDTH = 320;
 export const workflowWidth = (settings?: FusionSettings) => settings?.kind === 'batch' ? 592 : FUSION_WIDTH;
 // Shared action footer adds a 1px divider and 12px spacing above the button.
 export const FUSION_HEIGHT = 592;
@@ -50,14 +50,14 @@ function referenceGridRows(settings?: FusionSettings) {
 // The 56px add entry and its 12px gap disappear at the three-point limit.
 export function workflowHeight(settings?: FusionSettings) {
   if (settings?.kind === 'batch') return 404;
-  if (settings?.kind === 'merge') return 505 - 56 + Math.min(160, referenceGridRows(settings) * 64 - 8);
+  if (settings?.kind === 'merge') return 505 - 56 + Math.min(208, referenceGridRows(settings) * 72 - 8);
   if (settings?.kind === 'flat' && settings.batchFlat) {
     const count = fusionReferences(settings).length;
     const rows = Math.ceil(Math.max(1, count + (count < 20 ? 1 : 0)) / 4);
-    return 401 + Math.min(208, rows * 64 - 8);
+    return 401 + Math.min(208, rows * 72 - 8);
   }
   if (settings?.kind === 'flat') return 430;
-  if (!settings?.kind || settings.kind === 'fusion') return FUSION_HEIGHT - 64 + Math.min(160, referenceGridRows(settings) * 64 - 8);
+  if (!settings?.kind || settings.kind === 'fusion') return FUSION_HEIGHT - 64 + Math.min(208, referenceGridRows(settings) * 72 - 8);
   if (settings?.kind !== 'directed') return FUSION_HEIGHT + (referenceGridRows(settings) - 1) * 72;
   const count = Math.min(MAX_DIRECTED_POINTS, settings.directedPoints?.length ?? 0);
   return 354 + count * 141 - (count === MAX_DIRECTED_POINTS ? 68 : 0);
