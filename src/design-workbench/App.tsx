@@ -41,7 +41,7 @@ export default function App() {
   const [uploads, setUploads] = useState<LibraryImage[]>([]);
   const uploadUrls = useRef(new Set<string>());
   useEffect(() => () => { uploadUrls.current.forEach(url => URL.revokeObjectURL(url)); }, []);
-  const rememberUpload = (image: LibraryImage) => { uploadUrls.current.add(image.url); setUploads(previous => [image, ...previous]); };
+  const rememberUpload = useCallback((image: LibraryImage) => { uploadUrls.current.add(image.url); setUploads(previous => [image, ...previous]); }, []);
   const [dragging, setDragging] = useState(false);
   const dragCount = useRef(0);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);

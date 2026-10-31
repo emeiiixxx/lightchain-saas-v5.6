@@ -1,7 +1,8 @@
 import { readDemoState, writeDemoState, restoreDemoUrls, rememberDemoAsset } from './demo-storage';
 import { resolveProjectCover } from './project-cover';
 import type { Notify } from './notification';
-import { CanvasIsolationCache, IMAGE_FILENAME_TOP_SPACE, paintCanvasImage, paintCanvasImageFilename, paintCanvasScene, type CanvasPalette } from './canvas-renderer';
+import { CanvasIsolationCache, clearCanvasTextCache, IMAGE_FILENAME_TOP_SPACE, paintCanvasImage, paintCanvasImageFilename, paintCanvasScene, type CanvasPalette } from './canvas-renderer';
+import { CanvasRasterCache } from './canvas-raster-cache';
 import { nextCanvasTime, orderArrangementUnits } from './canvas-order';
 import { moveCanvasLayer, type CanvasLayerEdge, type CanvasLayerTarget } from './canvas-layers';
 import { MOTION_DURATION, easeOut } from './motion';
@@ -104,6 +105,16 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     return () => cancelAnimationFrame(frame);
   }, [isolatedImageId]);
   const [images, setImages] = useState<CanvasImage[]>([]);
+  const [rasterVersion, setRasterVersion] = useState(0);
+  const [fontVersion, setFontVersion] = useState(0);
+  const [rasterCache] = useState(() => new CanvasRasterCache(() => setRasterVersion(value => value + 1)));
+  useEffect(() => () => rasterCache.dispose(), [rasterCache]);
+  useEffect(() => { rasterCache.retain(new Set(images.map(item => item.image))); }, [images, rasterCache]);
+  useEffect(() => {
+    const loaded = () => { clearCanvasTextCache(); setFontVersion(value => value + 1); };
+    document.fonts?.addEventListener('loadingdone', loaded);
+    return () => document.fonts?.removeEventListener('loadingdone', loaded);
+  }, []);
   const projectCover = useMemo(() => resolveProjectCover(images), [images]);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; id: string | null; worldPoint?: Point } | null>(null);
   const copied = useRef<CanvasImage[]>([]);
@@ -113,6 +124,8 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
   const selected = selectedIds.length === 1 ? selectedIds[0] : null;
   const [marquee, setMarquee] = useState<Bounds | null>(null);
   const [camera, setCamera] = useState<Camera>({ x: 0, y: 0, zoom: 1 });
+  const queuedCamera = useRef<Camera | null>(null);
+  const cameraFrame = useRef<number | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [panning, setPanning] = useState(false);
   const [mode, setMode] = useState<'select' | 'hand'>('select');
@@ -128,7 +141,23 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
   const [historyVersion, setHistoryVersion] = useState(0);
   const future = useRef<CanvasImage[][]>([]);
   const live = useRef({ images, selected, selectedIds, camera, size, mode, shapeTool });
-  live.current = { images, selected, selectedIds, camera, size, mode, shapeTool };
+  live.current = { images, selected, selectedIds, camera: queuedCamera.current ?? camera, size, mode, shapeTool };
+  const flushCamera = useCallback(() => {
+    if (cameraFrame.current !== null) cancelAnimationFrame(cameraFrame.current);
+    cameraFrame.current = null;
+    const next = queuedCamera.current;
+    queuedCamera.current = null;
+    if (next) { live.current.camera = next; setCamera(next); }
+  }, []);
+  const queueCamera = useCallback((next: Camera) => {
+    // Keep input coordinates current, but render at most once per display frame.
+    queuedCamera.current = next; live.current.camera = next;
+    if (cameraFrame.current === null) cameraFrame.current = requestAnimationFrame(flushCamera);
+  }, [flushCamera]);
+  useEffect(() => () => {
+    if (cameraFrame.current !== null) cancelAnimationFrame(cameraFrame.current);
+    cameraFrame.current = null; queuedCamera.current = null;
+  }, []);
   const lookupImageFilename = useCallback((resultId: string) => {
     const item = live.current.images.find(image => image.taskResultId === resultId);
     return item?.generatedFile ? { name: item.name, generatedFile: item.generatedFile, filenameEdited: item.filenameEdited } : fileNamer.lookup(resultId);
@@ -290,6 +319,7 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     return { left, right };
   }, []);
   const focusImage = useCallback((id: string, bottomInset: number, options?: { animate?: boolean; staged?: boolean; ignorePanels?: boolean; onComplete?: () => void }) => {
+    flushCamera();
     focusAnimation.current?.();
     const item = live.current.images.find(image => image.id === id); if (!item) return;
     const bounds = imageBounds(item), { left, right } = editingViewport(options?.ignorePanels ?? true);
@@ -329,9 +359,10 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     };
     frame = requestAnimationFrame(tick);
     return cancel;
-  }, [editingViewport]);
+  }, [editingViewport, flushCamera]);
   const worldPoint = useCallback((point: Point, cam = live.current.camera) => ({ x: (point.x - cam.x) / cam.zoom, y: (point.y - cam.y) / cam.zoom }), []);
   const transitionCamera = useCallback((next: Camera, animate = false, point?: Point, timing: number | GenerationFocusViewport = MOTION_DURATION, delay = 0) => {
+    flushCamera();
     focusAnimation.current?.();
     const apply = (value: Camera) => { live.current.camera = value; setCamera(value); };
     if (!animate || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { apply(next); return; }
@@ -365,7 +396,7 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
-  }, [worldPoint]);
+  }, [worldPoint, flushCamera]);
   const zoomAt = useCallback((zoom: number, point?: Point, options?: { animate?: boolean; duration?: number }) => {
     if (lock.current) return;
     finishPlacement();
@@ -376,12 +407,13 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
   }, [worldPoint, transitionCamera]);
   const navigateMinimap = useCallback((x: number, y: number) => {
     if (lock.current) return;
+    flushCamera();
     finishPlacement();
     focusAnimation.current?.();
     const state = live.current;
     const next = { ...state.camera, x: state.size.width / 2 - x * state.camera.zoom, y: state.size.height / 2 - y * state.camera.zoom };
     live.current.camera = next; setCamera(next);
-  }, []);
+  }, [flushCamera, finishPlacement]);
   const arrangementViewport = useCallback(() => {
     const viewport = live.current.size;
     // Keep the arranged content inside the actual visible canvas, clear of both sidebars.
@@ -743,6 +775,7 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     name?: string; taskRecordId?: string; sourceSize?: { width: number; height: number };
     outputSize?: { width: number; height: number }; outputSizes?: { width: number; height: number }[];
     placement?: 'agent'; agentConversationId?: string; generationIndex?: number; sourceIds?: string[];
+    focus?: boolean;
   }) => {
     const acceptedContinuation = fallback?.placement === 'agent' && (fallback.generationIndex ?? 0) > 0;
     if ((lock.current && !acceptedContinuation) || count < 1) return [];
@@ -766,7 +799,7 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
           generating: true, generationBatchId: batchId, generationIndex: index + offset,
         }, fallback.name ?? 'AI助手', live.current.images);
       }), { agentConversationId: fallback.agentConversationId, sourceIds: fallback.sourceIds, appendAfter: index > 0 ? previous : undefined,
-        focus: index === 0, acceptedTask: acceptedContinuation }).images;
+        focus: index === 0 && fallback.focus !== false, acceptedTask: acceptedContinuation }).images;
     }
     const state = live.current;
     const normalized = restoreCanvasContentGroups(state.images);
@@ -803,7 +836,8 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
       { ...start, width: (viewport.right - viewport.left) / state.camera.zoom, height: (viewport.bottom - viewport.top) / state.camera.zoom }, filenameTopSpace, sources.map(item => item.id));
     remember(state.images);
     const next = [...normalized, ...additions]; live.current.images = next; setImages(next);
-    selectMany([]); focusAgentImages(additions);
+    selectMany([]);
+    if (fallback?.focus !== false) focusAgentImages(additions);
     return additions;
   }, [remember, finishPlacement, agentViewport, worldPoint, selectMany, focusAgentImages, addAgentImages, fileNamer]);
 
@@ -861,6 +895,8 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     const observer = new ResizeObserver(([entry]) => setSize({ width: entry.contentRect.width, height: entry.contentRect.height }));
     observer.observe(canvas); return () => observer.disconnect();
   }, []);
+  // Resolve CSS tokens after the theme is applied, and reuse them while panning.
+  const paletteCache = useMemo(() => ({ value: null as CanvasPalette | null }), [theme, locale, selectedIds, projectCover, filenameIcon, fontVersion]);
   useEffect(() => {
     const canvas = canvasRef.current!, ctx = canvas.getContext('2d');
     if (!ctx || size.width <= 0 || size.height <= 0) {
@@ -873,8 +909,9 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.globalAlpha = 1;
-    const style = getComputedStyle(document.documentElement);
-    const palette: CanvasPalette = {
+    const palette: CanvasPalette = paletteCache.value ??= (() => {
+      const style = getComputedStyle(document.documentElement);
+      return {
       background: style.getPropertyValue('--background-canvas').trim(),
       surface: style.getPropertyValue('--background-default').trim(),
       text: style.getPropertyValue('--text-secondary').trim(),
@@ -890,34 +927,37 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
       coverLabel: locale === 'en' ? 'Cover' : locale === 'ja' ? 'カバー' : '封面',
       vectorLabel: locale === 'en' ? 'Vector' : locale === 'ja' ? 'ベクター' : '矢量图',
       fontFamily: getComputedStyle(document.body).fontFamily,
-    };
+      };
+    })();
     ctx.fillStyle = palette.background; ctx.fillRect(0, 0, size.width, size.height);
+    rasterCache.beginFrame(`${camera.x}:${camera.y}:${camera.zoom}:${size.width}:${size.height}:${dpr}`);
     const editingImage = isolation.amount > 0 ? images.find(image => image.id === isolation.id && !image.generating) : undefined;
     if (editingImage) {
       const cache = isolationCache.current ??= new CanvasIsolationCache();
-      const background = cache.get(images, editingImage.id, camera, size, dpr, theme, palette);
+      const background = cache.get(images, editingImage.id, camera, size, dpr, theme, palette, rasterCache);
       if (background) {
         ctx.save(); ctx.globalAlpha = 1 - isolation.amount * .7;
         ctx.drawImage(background, 0, 0, size.width, size.height); ctx.restore();
       } else {
         // Equivalent opaque-background composite without an extra buffer if allocation fails.
-        paintCanvasScene(ctx, images, camera, size, palette, editingImage.id, true);
+        paintCanvasScene(ctx, images, camera, size, palette, editingImage.id, true, rasterCache);
         ctx.save(); ctx.globalAlpha = isolation.amount * .7; ctx.fillStyle = palette.background;
         ctx.fillRect(0, 0, size.width, size.height); ctx.restore();
       }
       ctx.save(); ctx.translate(camera.x, camera.y); ctx.scale(camera.zoom, camera.zoom);
-      paintCanvasImage(ctx, editingImage, palette);
+      paintCanvasImage(ctx, editingImage, palette, rasterCache);
       if (!palette.foregroundFilenameIds.has(editingImage.id)) paintCanvasImageFilename(ctx, editingImage, palette, camera.zoom);
       ctx.restore();
     } else {
       isolationCache.current?.dispose(); isolationCache.current = null;
-      paintCanvasScene(ctx, images, camera, size, palette);
+      paintCanvasScene(ctx, images, camera, size, palette, undefined, false, rasterCache);
     }
     if (shapePreview) {
       ctx.save(); ctx.translate(camera.x, camera.y); ctx.scale(camera.zoom, camera.zoom);
       paintCanvasImage(ctx, shapePreview, palette); ctx.restore();
     }
-  }, [images, selectedIds, camera, size, theme, locale, isolation, projectCover, filenameIcon, shapePreview]);
+    rasterCache.endFrame();
+  }, [images, selectedIds, camera, size, theme, locale, isolation, projectCover, filenameIcon, shapePreview, rasterCache, rasterVersion, paletteCache]);
 
   useEffect(() => {
     const canvas = canvasRef.current!, stage = canvas.parentElement!;
@@ -930,7 +970,10 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
       focusAnimation.current?.();
       if (shapeDraft.current || gesture.current?.copy) return;
       if (e.ctrlKey || e.metaKey || e.altKey) zoomAt(live.current.camera.zoom * Math.exp(-e.deltaY * unit * .006), local(e));
-      else setCamera(cam => ({ ...cam, x: cam.x - (e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX) * unit, y: cam.y - (e.shiftKey && !e.deltaX ? 0 : e.deltaY) * unit }));
+      else {
+        const cam = live.current.camera;
+        queueCamera({ ...cam, x: cam.x - (e.shiftKey && !e.deltaX ? e.deltaY : e.deltaX) * unit, y: cam.y - (e.shiftKey && !e.deltaX ? 0 : e.deltaY) * unit });
+      }
     };
     const context = (e: MouseEvent) => {
       if (lock.current) { e.preventDefault(); return; }
@@ -1018,7 +1061,7 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
         } else remember(drag.snapshot);
       }
       drag.moved = true;
-      if (drag.mode === 'pan') setCamera({ ...drag.camera, x: drag.camera.x + dx, y: drag.camera.y + dy });
+      if (drag.mode === 'pan') queueCamera({ ...drag.camera, x: drag.camera.x + dx, y: drag.camera.y + dy });
       else if (drag.mode === 'marquee') {
         const start = worldPoint(drag.point, drag.camera), end = worldPoint(point, drag.camera);
         const box = { x: Math.min(start.x, end.x), y: Math.min(start.y, end.y), width: Math.abs(end.x - start.x), height: Math.abs(end.y - start.y) };
@@ -1098,7 +1141,7 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     canvas.addEventListener('pointerdown', down); canvas.addEventListener('pointermove', move); canvas.addEventListener('pointerup', up); canvas.addEventListener('pointercancel', up); canvas.addEventListener('lostpointercapture', up);
     window.addEventListener('keydown', keydown); window.addEventListener('keyup', keyup); window.addEventListener('blur', blur);
     return () => { canvas.removeEventListener('pointerenter', move); canvas.removeEventListener('pointerleave', leave); canvas.removeEventListener('contextmenu', context); stage.removeEventListener('wheel', wheel, true); canvas.removeEventListener('pointerdown', down); canvas.removeEventListener('pointermove', move); canvas.removeEventListener('pointerup', up); canvas.removeEventListener('pointercancel', up); canvas.removeEventListener('lostpointercapture', up); window.removeEventListener('keydown', keydown); window.removeEventListener('keyup', keyup); window.removeEventListener('blur', blur); };
-  }, [fit, remember, removeSelected, undo, redo, worldPoint, zoomAt, copySelected, duplicate, paste, selectMany, setSelected, groupSelection, updateMoveCursor, finishPlacement, cancelShape, chooseMode, finishCopyDrag]);
+  }, [fit, remember, removeSelected, undo, redo, worldPoint, zoomAt, copySelected, duplicate, paste, selectMany, setSelected, groupSelection, updateMoveCursor, finishPlacement, cancelShape, chooseMode, finishCopyDrag, queueCamera]);
   useEffect(() => () => { urls.current.forEach(url => URL.revokeObjectURL(url)); }, []);
   const selectShapeTool = useCallback((kind: ShapeKind) => {
     if (lock.current || !restored) return;

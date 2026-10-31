@@ -2,6 +2,7 @@ import type { CanvasImage } from './useCanvas';
 import { paintShape } from './canvas-shapes';
 import { imageBounds } from './canvas-selection';
 import { intersectsViewport, screenBounds } from './canvas-toolbar';
+import type { CanvasRasterCache } from './canvas-raster-cache';
 
 type Camera = { x: number; y: number; zoom: number };
 type Viewport = { width: number; height: number };
@@ -10,6 +11,28 @@ export type CanvasPalette = { background: string; surface: string; text: string;
 // Figma 31:17639: 16px image icon, 4px gap, 12/16 text and an 8px
 // image gap stay in screen pixels; only the row width follows the image zoom.
 export const IMAGE_FILENAME_TOP_SPACE = 24;
+const filenameLabels = new Map<string, string>();
+export function clearCanvasTextCache() { filenameLabels.clear(); }
+
+function filenameLabel(ctx: CanvasRenderingContext2D, name: string, available: number) {
+  const key = JSON.stringify([ctx.font, name, available]);
+  const cached = filenameLabels.get(key);
+  if (cached !== undefined) return cached;
+  let label = name;
+  if (ctx.measureText(name).width > available) {
+    const letters = Array.from(name), ellipsis = '…';
+    let low = 0, high = letters.length;
+    while (low < high) {
+      const middle = Math.ceil((low + high) / 2);
+      if (ctx.measureText(letters.slice(0, middle).join('') + ellipsis).width <= available) low = middle;
+      else high = middle - 1;
+    }
+    label = ctx.measureText(ellipsis).width <= available ? letters.slice(0, low).join('') + ellipsis : '';
+  }
+  if (filenameLabels.size >= 1024) filenameLabels.delete(filenameLabels.keys().next().value!);
+  filenameLabels.set(key, label);
+  return label;
+}
 const tintedFilenameIcons = new Map<string, HTMLCanvasElement>();
 function filenameIcon(source: HTMLImageElement, color: string) {
   const key = `${source.src}:${color}`;
@@ -35,19 +58,7 @@ export function paintCanvasImageFilename(ctx: CanvasRenderingContext2D, image: C
   if (palette.filenameIcon) ctx.drawImage(filenameIcon(palette.filenameIcon, palette.filenameText), 0, -IMAGE_FILENAME_TOP_SPACE, 16, 16);
   ctx.font = `400 12px ${palette.fontFamily}`;
   ctx.fillStyle = palette.filenameText; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  const available = width - 20;
-  let name = image.name;
-  if (ctx.measureText(name).width > available) {
-    const letters = Array.from(name), ellipsis = '…';
-    let low = 0, high = letters.length;
-    while (low < high) {
-      const middle = Math.ceil((low + high) / 2);
-      if (ctx.measureText(letters.slice(0, middle).join('') + ellipsis).width <= available) low = middle;
-      else high = middle - 1;
-    }
-    name = ctx.measureText(ellipsis).width <= available ? letters.slice(0, low).join('') + ellipsis : '';
-  }
-  ctx.fillText(name, 20, -IMAGE_FILENAME_TOP_SPACE + 8);
+  ctx.fillText(filenameLabel(ctx, image.name, width - 20), 20, -IMAGE_FILENAME_TOP_SPACE + 8);
   ctx.restore();
 }
 
@@ -81,13 +92,19 @@ function visible(image: CanvasImage, camera: Camera, viewport: Viewport) {
 }
 
 // Shared native-size image painter; isolation never changes individual alpha values.
-export function paintCanvasImage(ctx: CanvasRenderingContext2D, img: CanvasImage, palette: CanvasPalette) {
+export function paintCanvasImage(ctx: CanvasRenderingContext2D, img: CanvasImage, palette: CanvasPalette, rasters?: CanvasRasterCache) {
   if (img.shape) {
     ctx.save(); ctx.translate(img.x + img.width / 2, img.y + img.height / 2);
     ctx.rotate((img.rotation ?? 0) * Math.PI / 180); ctx.scale(img.flipX ? -1 : 1, img.flipY ? -1 : 1);
     ctx.globalAlpha = (img.opacity ?? 100) / 100; paintShape(ctx, img); ctx.restore(); return;
   }
   if (img.generating || img.generationFailed || !img.image.complete || !img.image.naturalWidth) return;
+  const transform = ctx.getTransform();
+  const pixelScale = Math.max(Math.hypot(transform.a, transform.b), Math.hypot(transform.c, transform.d));
+  const raster = img.mimeType === 'image/gif' || img.mimeType === 'image/svg+xml' ? img.image
+    : rasters?.get(img.image, pixelScale * Math.max(img.width / img.image.naturalWidth, img.height / img.image.naturalHeight)) ?? img.image;
+  const rasterWidth = raster === img.image ? img.image.naturalWidth : (raster as ImageBitmap | HTMLCanvasElement).width;
+  const rasterHeight = raster === img.image ? img.image.naturalHeight : (raster as ImageBitmap | HTMLCanvasElement).height;
   ctx.save();
   ctx.translate(img.x + img.width / 2, img.y + img.height / 2);
   ctx.rotate((img.rotation ?? 0) * Math.PI / 180);
@@ -97,10 +114,10 @@ export function paintCanvasImage(ctx: CanvasRenderingContext2D, img: CanvasImage
   ctx.save(); ctx.beginPath(); ctx.roundRect(x, y, img.width, img.height, radius); ctx.clip();
   ctx.scale(img.flipX ? -1 : 1, img.flipY ? -1 : 1);
   if (img.fit === 'cover') {
-    const scale = Math.max(img.width / img.image.naturalWidth, img.height / img.image.naturalHeight);
+    const scale = Math.max(img.width / rasterWidth, img.height / rasterHeight);
     const sw = img.width / scale, sh = img.height / scale;
-    ctx.drawImage(img.image, (img.image.naturalWidth - sw) / 2, (img.image.naturalHeight - sh) / 2, sw, sh, x, y, img.width, img.height);
-  } else ctx.drawImage(img.image, x, y, img.width, img.height);
+    ctx.drawImage(raster, (rasterWidth - sw) / 2, (rasterHeight - sh) / 2, sw, sh, x, y, img.width, img.height);
+  } else ctx.drawImage(raster, x, y, img.width, img.height);
   ctx.restore();
   if ((img.strokeWidth ?? 0) > 0 && (img.strokeOpacity ?? 100) > 0) {
     const sw = img.strokeWidth!;
@@ -132,12 +149,12 @@ function paintPendingTile(ctx: CanvasRenderingContext2D, img: CanvasImage, palet
   ctx.restore();
 }
 
-export function paintCanvasScene(ctx: CanvasRenderingContext2D, images: CanvasImage[], camera: Camera, viewport: Viewport, palette: CanvasPalette, excludedId?: string, includePending = false) {
+export function paintCanvasScene(ctx: CanvasRenderingContext2D, images: CanvasImage[], camera: Camera, viewport: Viewport, palette: CanvasPalette, excludedId?: string, includePending = false, rasters?: CanvasRasterCache) {
   ctx.save(); ctx.translate(camera.x, camera.y); ctx.scale(camera.zoom, camera.zoom);
   for (const image of images) {
     if (image.id === excludedId || !visible(image, camera, viewport)) continue;
     if (image.generating) { if (includePending) paintPendingTile(ctx, image, palette, camera.zoom); }
-    else paintCanvasImage(ctx, image, palette);
+    else paintCanvasImage(ctx, image, palette, rasters);
     if (!palette.foregroundFilenameIds.has(image.id)) paintCanvasImageFilename(ctx, image, palette, camera.zoom);
   }
   ctx.restore();
@@ -152,7 +169,7 @@ export class CanvasIsolationCache {
   private key: CacheKey | null = null;
   private unavailable = false;
 
-  get(images: CanvasImage[], id: string, camera: Camera, viewport: Viewport, dpr: number, theme: string, palette: CanvasPalette) {
+  get(images: CanvasImage[], id: string, camera: Camera, viewport: Viewport, dpr: number, theme: string, palette: CanvasPalette, rasters?: CanvasRasterCache) {
     if (this.unavailable || viewport.width <= 0 || viewport.height <= 0) return null;
     const scale = Math.min(dpr, 2, Math.sqrt(MAX_PIXELS / viewport.width / viewport.height), MAX_EDGE / viewport.width, MAX_EDGE / viewport.height);
     const width = Math.max(1, Math.floor(viewport.width * scale)), height = Math.max(1, Math.floor(viewport.height * scale));
@@ -166,7 +183,7 @@ export class CanvasIsolationCache {
       if (!ctx || (typeof ctx.isContextLost === 'function' && ctx.isContextLost())) throw new Error('Isolation cache unavailable');
       ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, width, height);
       ctx.setTransform(width / viewport.width, 0, 0, height / viewport.height, 0, 0);
-      paintCanvasScene(ctx, images, camera, viewport, palette, id, true);
+      paintCanvasScene(ctx, images, camera, viewport, palette, id, true, rasters);
       this.key = { images, id, camera: { ...camera }, viewport: { ...viewport }, width, height, theme, label };
       return canvas;
     } catch {

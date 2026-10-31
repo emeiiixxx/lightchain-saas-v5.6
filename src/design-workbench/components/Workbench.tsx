@@ -1,5 +1,6 @@
 import { EditableFilename } from '../../components/EditableFilename';
 import { useInputMemory } from '../useInputMemory';
+import { useEventCallback } from '../useEventCallback';
 import { readDemoState, writeDemoState, restoreDemoUrls, rememberDemoAsset } from '../demo-storage';
 import { retryRecordTarget } from '../retry-record';
 import { PrintPlacementDialog } from './PrintPlacementDialog';
@@ -13,7 +14,7 @@ import { demoNotice } from '../demo-feedback';
 import type { Notify } from '../notification';
 import { prepareMainImage, type LibraryImage } from '../asset-library';
 import { useLocale } from '../LocaleContext';
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import { Button, Divider, Icon } from './ui';
 import { usePresence } from '../usePresence';
 import { ElementMenu } from './ElementMenu';
@@ -60,6 +61,10 @@ async function restoreTextEditTags(record: GenerationRecord): Promise<Generation
 type Board = ReturnType<typeof useCanvas>;
 type ComposerAttachment = AgentComposerAttachment & { canvasImageId?: string; lockedAt?: number };
 type Props = { board: Board; open: boolean; onOpenChange: (open: boolean) => void; phase: 'enter' | 'exit'; onUpload: (point?: { x: number; y: number }) => void; onReplace: () => void; onHelp: () => void; onNotify: Notify; uploads: LibraryImage[]; onRememberUpload: (image: LibraryImage) => void };
+const MemoCanvasLeftPanel = memo(CanvasLeftPanel);
+const MemoAgentConversation = memo(AgentConversation);
+const MemoImageProperties = memo(ImageProperties);
+type PropertiesBoard = Pick<Board, 'selectedIds' | 'selected' | 'images' | 'updateSelected' | 'beginEdit'>;
 function Tool({ id, icon, label, active, onClick, disabled, size = 20 }: { id?: string; icon: string; label: string; active?: boolean; onClick: () => void; disabled?: boolean; size?: number }) {
   return <Button id={id} aria-label={label} title={label} aria-pressed={active} className={`workbench-tool ${active ? 'is-active' : ''}`} disabled={disabled} onClick={onClick}><Icon name={icon} size={size} /></Button>;
 }
@@ -71,7 +76,7 @@ function SliderField({ label, value, max, unit, brand, begin, change }: { label:
   return <div className="property-slider"><input type="range" aria-label={label} min="0" max={max} value={value} className={brand ? 'brand-range' : ''} style={{ '--range-progress': `${value / max * 100}%` } as CSSProperties} onPointerDown={begin} onKeyDown={e => { if (!e.repeat && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) begin(); }} onChange={e => change(Number(e.target.value))} /><NumberField label={`${label} ${t("数值")}`} value={value} min={0} max={max} unit={unit} begin={begin} change={change} /></div>;
 }
 
-function ImageProperties({ board, onReplace, onAction, rotationLocked, onNotify }: { board: Board; onReplace: () => void; onAction: (text: string) => void; rotationLocked: boolean; onNotify: Notify }) {
+function ImageProperties({ board, onReplace, onAction, rotationLocked, onNotify }: { board: PropertiesBoard; onReplace: () => void; onAction: (text: string) => void; rotationLocked: boolean; onNotify: Notify }) {
   const { t } = useLocale();
   if (board.selectedIds.length > 1) return <div className="properties-empty">{t('已选择')} {board.selectedIds.length} {t(board.images.some(item => board.selectedIds.includes(item.id) && item.shape) ? '个元素' : '张图片')}</div>;
   const item = board.images.find(i => i.id === board.selected);
@@ -115,17 +120,17 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
   const [tab, setTab] = useState<'agent' | 'properties'>('agent');
   const [prompt, setPrompt] = useState('');
   const [attachments, setAttachments] = useState<ComposerAttachment[]>([]);
-  const pinnedCanvasIds = new Set(attachments.flatMap(item => item.canvasImageId ? [item.canvasImageId] : []));
-  const canvasImagesById = new Map(board.images.map(item => [item.id, item]));
+  const pinnedCanvasIds = useMemo(() => new Set(attachments.flatMap(item => item.canvasImageId ? [item.canvasImageId] : [])), [attachments]);
+  const canvasImagesById = useMemo(() => new Map(board.images.map(item => [item.id, item])), [board.images]);
   // Selection is a live preview until the user enters the composer. Keep the
   // canvas ID, not the URL: separate instances of the same image stay distinct.
-  const provisionalAttachments = board.selectedIds.flatMap<ComposerAttachment>(id => {
+  const provisionalAttachments = useMemo(() => board.selectedIds.flatMap<ComposerAttachment>(id => {
     const item = canvasImagesById.get(id);
     return item && !item.shape && !item.generating && !item.generationFailed && !pinnedCanvasIds.has(id)
       ? [{ id: `canvas:${id}`, canvasImageId: id, name: item.name, kind: 'image', url: item.url, provisional: true }]
       : [];
-  });
-  const composerAttachments = [...attachments, ...provisionalAttachments];
+  }), [board.selectedIds, canvasImagesById, pinnedCanvasIds]);
+  const composerAttachments = useMemo(() => [...attachments, ...provisionalAttachments], [attachments, provisionalAttachments]);
   const lockCanvasReferences = () => {
     if (board.locked || !board.restored || !provisionalAttachments.length) return;
     const lockedAt = Date.now();
@@ -208,6 +213,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
   const [minimapOpen, setMinimapOpen] = useState(false);
   const shownMinimap = usePresence(minimapOpen && !board.locked ? true : null);
   const [leftTab, setLeftTab] = useState<LeftPanelTab | null>(null);
+  const shownLeftPanel = usePresence(leftTab);
   useLayoutEffect(() => {
     const bottom = bottomToolsRef.current;
     const zoom = zoomToolsRef.current;
@@ -261,7 +267,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     return () => { active = false; };
   }, []);
   useEffect(() => { if (recordsRestored) writeDemoState('tasks', { seedVersion: PROMO_TASK_SEED_VERSION, records: generationRecords, archived: [...archivedRecords.current] }); }, [generationRecords, recordsRestored]);
-  const openLeftPanel = (value: LeftPanelTab) => { setLeftTab(value); };
+  const openLeftPanel = useEventCallback((value: LeftPanelTab) => { setLeftTab(value); });
   const updateAgentRecord = (id: string, update: (record: GenerationRecord) => GenerationRecord) => {
     setGenerationRecords(previous => previous.map(record => record.id === id ? update(record) : record));
     const archived = archivedRecords.current.get(id);
@@ -359,6 +365,15 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
   const shownTextEdit = usePresence(textEdit);
   const [localEdit, setLocalEdit] = useState<string | null>(null);
   const [localEditTool, setLocalEditTool] = useState<CanvasEditTool>('局部修改');
+  const [pendingToolFocus, setPendingToolFocus] = useState<string[] | null>(null);
+
+  useLayoutEffect(() => {
+    if (!pendingToolFocus || localEdit || board.locked) return;
+    // Hand the camera from the source editor to the new placeholders only
+    // after the editor has unmounted and the canvas has committed the batch.
+    board.focusAgentResults(pendingToolFocus);
+    setPendingToolFocus(null);
+  }, [pendingToolFocus, localEdit, board.locked, board.focusAgentResults]);
 
   const closeLocalEdit = () => { setLocalEdit(null); board.setInteractionLocked(false); };
   const [quickEdit, setQuickEdit] = useState<string | null>(null);
@@ -456,8 +471,9 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     const settings = { ratio: draft.ratio, resolution: draft.resolution, sourceSize: { width: source.image.naturalWidth, height: source.image.naturalHeight }, count };
     const sourceIds = [sourceId, ...draft.references.flatMap(reference => board.images.some(item => item.id === reference.id) ? [reference.id] : [])];
     if (independent) closeLocalEdit();
-    const placeholders = board.beginGeneration(sourceId, count, { name: independent ? localEditTool : '快捷编辑', taskRecordId: id, sourceIds, outputSize: demoOutputSize(settings) });
+    const placeholders = board.beginGeneration(sourceId, count, { name: independent ? localEditTool : '快捷编辑', taskRecordId: id, sourceIds, outputSize: demoOutputSize(settings), focus: !independent });
     if (!placeholders.length) return;
+    if (independent) setPendingToolFocus(placeholders.map(item => item.taskResultId!));
     generatingSources.current.add(sourceId);
     const now = new Date();
     const time = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -708,8 +724,8 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     const ox = (width - item.width) / 2 * (h.includes('l') ? -1 : h.includes('r') ? 1 : 0), oy = (height - item.height) / 2 * (h.includes('t') ? -1 : h.includes('b') ? 1 : 0);
     board.updateSelected({ width, height, x: item.x + item.width / 2 + ox * Math.cos(angle) - oy * Math.sin(angle) - width / 2, y: item.y + item.height / 2 + ox * Math.sin(angle) + oy * Math.cos(angle) - height / 2 }, false);
   };
-  const unavailable = () => { setMenu(null); onNotify(demoNotice(locale)); };
-  const agentMessages = conversation.filter(message => !message.requestId || message.taskId || message.text).map(message => {
+  const unavailable = useEventCallback(() => { setMenu(null); onNotify(demoNotice(locale)); });
+  const agentMessages = useMemo(() => !shownPanel.value ? [] : conversation.filter(message => !message.requestId || message.taskId || message.text).map(message => {
     if (!message.taskId) return { ...message, results: message.results?.map(result => ({ ...result, sourceIds: result.sourceIds ?? message.sourceIds, agentConversationId: result.agentConversationId ?? message.conversationId ?? conversationId, ...board.lookupImageFilename(result.id) })) };
     const record = generationRecords.find(record => record.id === message.taskId) ?? archivedRecords.current.get(message.taskId);
     return { ...message, results: record?.images.map((result, index): AgentImageResult => ({
@@ -717,8 +733,8 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       width: 92, height: result.height, status: result.status,
       ...board.lookupImageFilename(`${record.id}:${result.id}`),
     })) };
-  });
-  const sendAgentResultToCanvas = async (result: AgentImageResult, loaded?: HTMLImageElement) => {
+  }), [shownPanel.value, conversation, conversationId, generationRecords, board.images, board.lookupImageFilename]);
+  const sendAgentResultToCanvas = useEventCallback(async (result: AgentImageResult, loaded?: HTMLImageElement) => {
     if (board.locked || !board.restored || result.status === 'generating' || result.status === 'failed') return;
     // Existing results can be focused even if their old conversation URL is no
     // longer loadable; placement always uses the current canvas instance.
@@ -733,9 +749,32 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       const outcome = board.addAgentImages([{ ...asset, id: crypto.randomUUID(), taskResultId: result.id, agentConversationId }], { agentConversationId, sourceIds });
       if (outcome.addedCount) onNotify(t('已发送至画布'), 'success');
     } catch { onNotify(t('图片加载失败，请重试'), 'error'); }
-  };
+  });
+  const selectLayerImage = useEventCallback((id: string) => board.selectMany([id]));
+  const selectLayerGroup = useEventCallback((id: string) => board.selectMany(board.images.filter(image => image.groupId === id).map(image => image.id)));
+  const closeLeftPanel = useEventCallback(() => setLeftTab(null));
+  const replayTask = useEventCallback((record: GenerationRecord) => { void regenerateRecord(record); });
+  const deleteTask = useEventCallback((id: string) => {
+    const record = generationRecords.find(item => item.id === id);
+    if (record && !archivedRecords.current.has(id)) archivedRecords.current.set(id, record);
+    setGenerationRecords(previous => previous.filter(record => record.id !== id));
+  });
+  const deleteTaskResult = useEventCallback((id: string, index: number) => setGenerationRecords(previous => previous.flatMap(record => {
+    if (record.id !== id) return [record];
+    if (!archivedRecords.current.has(id)) archivedRecords.current.set(id, record);
+    const images = record.images.filter((_, imageIndex) => imageIndex !== index);
+    return images.length ? [{ ...record, images }] : [];
+  })));
+  const retryAgentImage = useEventCallback((id: string) => retryCanvasImage(id));
+  const referenceAgentImage = useEventCallback((src: string, resultId?: string) => {
+    const source = resultId ? board.images.find(item => item.taskResultId === resultId && !item.generating && !item.generationFailed) : undefined;
+    setAttachments(previous => source && previous.some(item => item.canvasImageId === source.id) ? previous
+      : [...previous, { id: source ? `canvas:${source.id}` : crypto.randomUUID(), canvasImageId: source?.id, name: source?.name ?? `${t('参考图片')}.jpg`, kind: 'image', url: src }]);
+    textarea.current?.focus();
+  });
   const elementAction = (label: string, entry: string) => {
     if (label === '款式' && ['局部修改', '印花上身'].includes(entry) && selected) {
+      onOpenChange(false);
       setMenu(null); setQuickEdit(null);
       if (leftTab === 'layers') setLeftTab('history');
       setLocalEditTool(entry as CanvasEditTool); board.setInteractionLocked(true); setLocalEdit(selected.id);
@@ -743,6 +782,13 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     }
     unavailable();
   };
+  const propertiesBoard = useMemo(() => ({ images: board.images, selected: board.selected, selectedIds: board.selectedIds,
+    updateSelected: board.updateSelected, beginEdit: board.beginEdit }),
+  [board.images, board.selected, board.selectedIds, board.updateSelected, board.beginEdit]);
+  const replacePropertyImage = useEventCallback(onReplace);
+  const propertyAction = useEventCallback((entry: string) => entry === t('局部编辑') ? elementAction('款式', '局部修改') : unavailable());
+  const visibleStatusImages = useMemo(() => board.images.filter(item => (item.generating !== undefined || item.generationFailed)
+    && intersectsViewport(screenBounds(imageBounds(item), board.camera), board.size)), [board.images, board.camera, board.size]);
   const elementMenu = (label: string, icon: string) => <ElementMenu label={label} icon={icon} open={menu === label} onToggle={() => toggleMenu(label)} onClose={() => setMenu(null)} onAction={entry => elementAction(label, entry)} />;
 
   return <>
@@ -750,8 +796,8 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       <p role="status">{t('当前视窗没有内容，可点击按钮快速回到内容区域')}</p>
       <Button variant="primary" size="s" onClick={board.returnToContent}>{t('回到内容')}</Button>
     </div>}
-    {board.images.filter(item => item.generating !== undefined).map(item => <GeneratingPlaceholder key={item.id} active={!!item.generating} zoom={board.camera.zoom} suspended={board.isolationActive} style={{ left: item.x * board.camera.zoom + board.camera.x, top: item.y * board.camera.zoom + board.camera.y, width: item.width * board.camera.zoom, height: item.height * board.camera.zoom, visibility: board.isolationActive ? 'hidden' : 'visible' }} />)}
-    {board.images.filter(item => item.generationFailed).map(item => {
+    {visibleStatusImages.map(item => <GeneratingPlaceholder key={item.id} active={!!item.generating} zoom={board.camera.zoom} suspended={board.isolationActive} style={{ left: item.x * board.camera.zoom + board.camera.x, top: item.y * board.camera.zoom + board.camera.y, width: item.width * board.camera.zoom, height: item.height * board.camera.zoom, visibility: board.isolationActive ? 'hidden' : 'visible' }} />)}
+    {visibleStatusImages.filter(item => item.generationFailed).map(item => {
       // Size the state artwork and controls on a 320px short edge, then apply
       // the image's actual dimensions and camera zoom together.
       const contentScale = Math.max(1, Math.min(item.width, item.height)) / 320;
@@ -777,12 +823,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       <Tool icon="canvas-imgIconSystem6" label={t("资产")} size={24} onClick={() => openLeftPanel('assets')} />
       <Tool id="canvas-task-entry" icon="canvas-imgIcon2" label={t("任务")} size={24} onClick={() => openLeftPanel('history')} />
     </div>}
-    <CanvasLeftPanel layersDisabled={!!localEdit} layerReorderDisabled={board.locked || !board.restored} tab={leftTab} images={board.images} selectedIds={board.selectedIds} onSelectImage={id => board.selectMany([id])} onSelectGroup={id => board.selectMany(board.images.filter(image => image.groupId === id).map(image => image.id))} onRenameImage={board.renameImage} onReorderLayer={board.reorderLayer} lookupImageFilename={board.lookupImageFilename} onTabChange={openLeftPanel} onClose={() => setLeftTab(null)} records={generationRecords} uploads={uploads} onUpload={onRememberUpload} onNotify={onNotify} onRegenerate={record => void regenerateRecord(record)} onDeleteRecord={id => { const record = generationRecords.find(item => item.id === id); if (record && !archivedRecords.current.has(id)) archivedRecords.current.set(id, record); setGenerationRecords(previous => previous.filter(record => record.id !== id)); }} onDeleteResult={(id, index) => setGenerationRecords(previous => previous.flatMap(record => {
-      if (record.id !== id) return [record];
-      if (!archivedRecords.current.has(id)) archivedRecords.current.set(id, record);
-      const images = record.images.filter((_, imageIndex) => imageIndex !== index);
-      return images.length ? [{ ...record, images }] : [];
-    }))} />
+    {shownLeftPanel.value && <MemoCanvasLeftPanel layersDisabled={!!localEdit} layerReorderDisabled={board.locked || !board.restored} tab={leftTab} images={board.images} selectedIds={board.selectedIds} onSelectImage={selectLayerImage} onSelectGroup={selectLayerGroup} onRenameImage={board.renameImage} onReorderLayer={board.reorderLayer} lookupImageFilename={board.lookupImageFilename} onTabChange={openLeftPanel} onClose={closeLeftPanel} records={generationRecords} uploads={uploads} onUpload={onRememberUpload} onNotify={onNotify} onRegenerate={replayTask} onDeleteRecord={deleteTask} onDeleteResult={deleteTaskResult} />}
     <TaskFeatureTip expanded={!!leftTab} blankClickVersion={board.blankClickVersion} />
     <div ref={bottomToolsRef} className="bottom-tools wb-surface" data-canvas-ui data-phase={phase} role="toolbar" aria-label={t("画布工具栏")} style={{ '--bottom-tools-shift': `${bottomToolsShift}px`, '--bottom-tools-bottom': `${bottomToolsBottom}px` } as CSSProperties}>
       <Tool disabled={!!localEdit} icon="canvas-imgIconEditor" label={t("选择 V")} active={board.effectiveMode === 'select' && !board.shapeTool} onClick={() => board.setMode('select')} /><Tool disabled={!!localEdit} icon="canvas-imgIconEditor1" label={t("抓手 H")} active={board.effectiveMode === 'hand'} onClick={() => board.setMode('hand')} />
@@ -813,7 +854,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
         {!board.shapeTool && ['tl', 't', 'tr', 'l', 'r', 'bl', 'b', 'br', ...(quickEdit ? [] : ['rotate'])].map(handle => localEdit ? <span key={handle} className={`selection-handle handle-${handle}`} aria-hidden="true">{handle === 'rotate' && <Icon name="canvas-imgIcon0201" size={16} />}</span> : <button key={handle} data-canvas-ui className={`selection-handle handle-${handle}`} aria-label={handle === 'rotate' ? t("旋转图片") : t("调整图片尺寸")} onPointerDown={e => startTransform(e, handle)} onPointerMove={moveTransform} onPointerUp={e => { transform.current = null; delete e.currentTarget.dataset.rotating; }} onPointerCancel={e => { transform.current = null; delete e.currentTarget.dataset.rotating; }} onLostPointerCapture={e => { transform.current = null; delete e.currentTarget.dataset.rotating; }}>{handle === 'rotate' && <Icon name="canvas-imgIcon0201" size={16} />}</button>)}
       </div>
       {!selected.shape && shownElementToolbar.value === selected.id && <div ref={toolbarRef} className="element-toolbar wb-surface" data-canvas-ui data-phase={shownElementToolbar.phase} inert={shownElementToolbar.phase === 'exit'} role="toolbar" aria-label={t("元素工具栏")} style={canvasToolbarPosition(imageBounds(selected), board.camera, board.size, toolbarSize, open ? 432 : 16, IMAGE_FILENAME_TOP_SPACE)}>
-        <Button icon="canvas-imgIconBusinessAi1" aria-expanded={quickEdit === selected.id} onClick={() => { setQuickEdit(quickEdit === selected.id ? null : selected.id); setMenu(null); }}>{t("快捷编辑")}</Button><Divider vertical />
+        <Button icon="canvas-imgIconBusinessAi1" aria-expanded={quickEdit === selected.id} onClick={() => { if (quickEdit !== selected.id) onOpenChange(false); setQuickEdit(quickEdit === selected.id ? null : selected.id); setMenu(null); }}>{t("快捷编辑")}</Button><Divider vertical />
         {elementMenu('款式', 'element-fashion')}{elementMenu('印花', 'element-pattern')}{elementMenu('面料', 'element-fabric')}{elementMenu('线稿', 'element-line')}
         <div className="element-menu-anchor" data-workbench-menu>
           <Button className="workbench-tool element-menu-trigger" aria-label={t("更多操作")} title={t("更多操作")} aria-haspopup="menu" aria-expanded={menu === 'more'} aria-controls="element-more-menu" onClick={() => toggleMenu('more')}><Icon name="element-more" size={20} /></Button>
@@ -822,7 +863,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
           </div>}
         </div>
         <Divider vertical /><Button onClick={unavailable}><Icon name="element-tech" size={20} />{t("工艺单")}</Button>
-        <Button onClick={() => { setQuickEdit(null); setMenu(null); setTextEdit(selected); }}><Icon name="text-edit/text-edit" size={20} />{t('文字编辑')}</Button><Divider vertical />
+        <Button onClick={() => { onOpenChange(false); setQuickEdit(null); setMenu(null); setTextEdit(selected); }}><Icon name="text-edit/text-edit" size={20} />{t('文字编辑')}</Button><Divider vertical />
         <div className="element-toolbar-actions" onPointerLeave={() => setHoveredToolbarAction(null)}>
           <span className="element-toolbar-action-hover" aria-hidden="true" style={{ transform: `translateX(${(hoveredToolbarAction ?? lastHoveredToolbarAction.current) * 36}px)`, opacity: hoveredToolbarAction === null ? 0 : 1 }} />
           <div className="element-toolbar-action" onPointerEnter={() => hoverToolbarAction(0)}><Tool icon="element-preview" label={t("查看大图")} onClick={() => setPreview({ url: selected.url, name: selected.name, width: selected.image.naturalWidth || selected.width, height: selected.image.naturalHeight || selected.height })} /></div>
@@ -835,7 +876,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     {shownPanel.value && <aside id="canvas-right-sidebar" className={`right-panel ${tab === 'properties' ? 'properties-panel' : ''}`} data-canvas-ui data-phase={shownPanel.phase} inert={shownPanel.phase === 'exit'}>
       <header className="right-panel-header"><div ref={switcherRef} className="right-panel-switcher" role="tablist" aria-label={t("右侧面板")}><span className="switcher-indicator" style={indicatorStyle} aria-hidden="true" />{(['agent', 'properties'] as const).map((value, i) => <button key={value} role="tab" id={`panel-tab-${value}`} aria-controls="right-panel-content" aria-selected={tab === value} tabIndex={tab === value ? 0 : -1} onClick={() => setTab(value)} onKeyDown={e => { if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) { e.preventDefault(); const next = tab === 'agent' ? 'properties' : 'agent'; setTab(next); document.getElementById(`panel-tab-${next}`)?.focus(); } }}><AgentArtwork name={i ? 'properties' : 'assistant'} />{i ? t("图层属性") : t("AI助手")}</button>)}</div><Button className="workbench-tool" aria-label={t("收起右侧栏")} title={t("收起右侧栏")} onClick={() => onOpenChange(false)}><AgentArtwork name="sidebar" size={24} /></Button></header>
       <div id="right-panel-content" role="tabpanel" aria-labelledby={`panel-tab-${tab}`} className="right-panel-content">
-        {tab === 'properties' ? <div className="properties-content" inert={!!localEdit}><ImageProperties board={board} onNotify={onNotify} rotationLocked={rotationLocked} onReplace={onReplace} onAction={entry => entry === t("局部编辑") ? elementAction("款式", "局部修改") : unavailable()} /></div> : <>
+        {tab === 'properties' ? <div className="properties-content" inert={!!localEdit}><MemoImageProperties board={propertiesBoard} onNotify={onNotify} rotationLocked={rotationLocked} onReplace={replacePropertyImage} onAction={propertyAction} /></div> : <>
           <div className="conversation-bar">
             <div className="conversation-menu-anchor" data-workbench-menu>
               <Button className="conversation-trigger" aria-haspopup="menu" aria-controls="conversation-history-menu" aria-expanded={menu === 'conversations'} onClick={() => toggleMenu('conversations')} onKeyDown={event => {
@@ -862,12 +903,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
             setAgentScrolling(element.scrollHeight > element.clientHeight);
             if (agentScrollTimer.current) clearTimeout(agentScrollTimer.current);
             agentScrollTimer.current = setTimeout(() => setAgentScrolling(false), 600);
-          }}>{conversation.length ? <AgentConversation conversationId={conversationId} messages={agentMessages} onPreview={setPreview} onNotify={onNotify} onUnavailable={unavailable} canvasLocked={board.locked || !board.restored} onSendToCanvas={sendAgentResultToCanvas} onRetry={retryCanvasImage} onReference={(src, resultId) => {
-            const source = resultId ? board.images.find(item => item.taskResultId === resultId && !item.generating && !item.generationFailed) : undefined;
-            setAttachments(previous => source && previous.some(item => item.canvasImageId === source.id) ? previous
-              : [...previous, { id: source ? `canvas:${source.id}` : crypto.randomUUID(), canvasImageId: source?.id, name: source?.name ?? `${t('参考图片')}.jpg`, kind: 'image', url: src }]);
-            textarea.current?.focus();
-          }} /> : <><h2>{t("今天你想设计什么？")}</h2><p>{t("从下方输入你的设计需求，或上传/从画布中选择图片进行修改与设计")}</p><div className="agent-suggestions">{[t("多款融合"), t("面料套版"), t("单款裂变"), t("印花设计"), t("工艺单素材包")].map(text => <button key={text} onClick={() => action(text)}><span className="suggestion-idea"><Icon name="suggestion-idea" size={20} /></span><span className="suggestion-label">{text}</span><span className="suggestion-add"><Icon name="suggestion-add" size={20} /></span></button>)}</div></>}</div>
+          }}>{conversation.length ? <MemoAgentConversation conversationId={conversationId} messages={agentMessages} onPreview={setPreview} onNotify={onNotify} onUnavailable={unavailable} canvasLocked={board.locked || !board.restored} onSendToCanvas={sendAgentResultToCanvas} onRetry={retryAgentImage} onReference={referenceAgentImage} /> : <><h2>{t("今天你想设计什么？")}</h2><p>{t("从下方输入你的设计需求，或上传/从画布中选择图片进行修改与设计")}</p><div className="agent-suggestions">{[t("多款融合"), t("面料套版"), t("单款裂变"), t("印花设计"), t("工艺单素材包")].map(text => <button key={text} onClick={() => action(text)}><span className="suggestion-idea"><Icon name="suggestion-idea" size={20} /></span><span className="suggestion-label">{text}</span><span className="suggestion-add"><Icon name="suggestion-add" size={20} /></span></button>)}</div></>}</div>
           <AgentInputArea>
             <AgentRequestStatus state={agentRequestState} disabled={board.locked || !board.restored || !recordsRestored} onRetry={() => { if (activeAgentRequestId) agentRequests.retry(activeAgentRequestId); }} />
             <div className="agent-composer" onPointerDownCapture={event => {
