@@ -175,11 +175,10 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
             <span className="video-reference-label-divider" aria-hidden="true" />
             <span className="material-reference-count">{t.uploaded}<span>{references.length}</span>/{materialReferenceLimit(node.kind)}</span></>}
         </div>
-        <div ref={supportsReferenceSorting ? element => sorting.row('image', element) : undefined} className="video-workflow-references material-reference-row nowheel" data-canvas-scroll="wheel"
+        <div ref={supportsReferenceSorting ? element => sorting.row('image', element) : undefined} className="video-workflow-references video-reference-grid material-reference-row"
           data-reference-sorting={Boolean(sorting.dragId)} aria-labelledby={`${id}-references`}
           onDragOver={supportsReferenceSorting ? event => sorting.over(event, 'image') : undefined} onDragLeave={supportsReferenceSorting ? sorting.leave : undefined}
-          onDrop={supportsReferenceSorting ? event => { sorting.drop(event, 'image'); suppressPreviewUntil.current = Date.now() + 200; } : undefined}
-          onWheel={event => { if (event.ctrlKey || event.metaKey || event.altKey) return; event.stopPropagation(); if (!event.deltaX) event.currentTarget.scrollLeft += event.deltaY; }}>
+          onDrop={supportsReferenceSorting ? event => { sorting.drop(event, 'image'); suppressPreviewUntil.current = Date.now() + 200; } : undefined}>
           {references.map(reference => thumbnail(reference, 'references', sorting.order.indexOf(reference.id)))}
           {references.length < materialReferenceLimit(node.kind) && <ReferenceSourceMenu className="fusion-reference video-workflow-reference-add nodrag nopan" style={{ order: references.length }}
             addLabel={t.add} uploadLabel={t.uploadReference} canvasLabel={t.fromCanvas} onChoose={source => onReference('references', source)}><NodeIcon src={assets.addReference} size={20} /></ReferenceSourceMenu>}

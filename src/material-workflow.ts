@@ -40,10 +40,14 @@ export function materialWorkflowHasBackView(node: Pick<MaterialWorkflow, 'kind' 
 
 // These are editor sizes, not the surrounding Figma demonstration frames.
 // Geometry is shared by React Flow, connections, fit, minimap and arrangement.
-export function materialWorkflowSize(node: Pick<MaterialWorkflow, 'kind' | 'view'>) {
+export function materialWorkflowSize(node: Pick<MaterialWorkflow, 'kind' | 'view'> & Partial<Pick<MaterialWorkflow, 'references'>>) {
   const height = node.kind === 'multiView' ? (materialWorkflowHasBackView(node) ? 541 : 441)
     : node.kind === 'gridSplit' ? 329 : 533;
-  return { width: 320, height };
+  const count = node.references?.length ?? 0;
+  // The add button occupies a grid slot too: four images move it to row two.
+  const slots = count + (count < materialReferenceLimit(node.kind) ? 1 : 0);
+  const extraRows = Math.max(0, Math.ceil(slots / 4) - 1);
+  return { width: 320, height: height + extraRows * 72 };
 }
 
 export function canGenerateMaterialWorkflow(node: MaterialWorkflow): boolean {

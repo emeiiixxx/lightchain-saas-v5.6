@@ -8,7 +8,7 @@
 .material-workflow-header .fusion-tip { flex: 0 0 28px; background: linear-gradient(10.839779284859844deg, rgba(0, 161, 255, .4) 16.533%, rgba(200, 97, 255, .4) 83.467%); }
 .material-workflow-content { flex: 1 0 auto; margin: 0; padding: 12px; gap: 16px; }
 .material-workflow-content > * { flex-shrink: 0; }
-.material-reference-field { height: 92px; }
+.material-reference-field { min-height: 92px; }
 .material-reference-heading { display: flex; align-items: center; gap: 4px; height: 20px; flex: 0 0 20px; }
 .material-reference-heading > .fusion-label { flex: 0 0 auto; }
 .material-workflow-node .material-reference-info { width: 16px; min-width: 16px; height: 16px; min-height: 16px; padding: 0; border: 0; border-radius: 4px; color: var(--text-tertiary); }
