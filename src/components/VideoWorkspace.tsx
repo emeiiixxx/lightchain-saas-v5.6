@@ -839,7 +839,9 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       notify(locale === 'zh-CN' ? '素材或节点已变化，请重新选择。' : locale === 'ja' ? '素材またはノードが変更されました。選び直してください。' : 'The assets or node have changed. Select again.', 'error');
       setCanvasReference({ ...canvasReference, ids: [] }); return;
     }
-    commitFlowAddition(previous, next); closeCanvasReference();
+    // Existing canvas inputs only update references and connections. Preserve
+    // every position; connected layout runs on creation/generation or Arrange.
+    commit(next); closeCanvasReference();
   }
   function openMaterialReference(id: string, field: MaterialWorkflowUpload['field'], source: 'upload' | 'canvas') {
     const node = current.current.materialWorkflows?.find(item => item.id === id);

@@ -707,7 +707,7 @@ export default function App() {
     startImageTask(editor, results, true);
   }
 
-  function updateFusion(id: string, patch: Partial<FusionSettings>) {
+  function updateFusion(id: string, patch: Partial<FusionSettings>, preservePositions = false) {
     if ('mainImages' in patch || 'references' in patch || 'directedPoints' in patch || 'drawingGuide' in patch || imageRef.current.find(n => n.id === id)?.fusion?.kind === 'flat') remember(imageRef.current);
     const current = imageRef.current;
     const owner = current.find(item => item.id === id);
@@ -721,6 +721,12 @@ export default function App() {
         const fusion = { ...item.fusion, ...patch };
         const height = workflowHeight(fusion);
         const heightChange = height - workflowHeight(item.fusion);
+        if (preservePositions) {
+          // Referencing an existing canvas image changes inputs, not placement.
+          // Keep the top-left fixed even when another thumbnail row adds height.
+          const position = fusionPosition(item);
+          return { ...item, ...(item.nodeOnly ? { ...position, height } : {}), fusion: { ...fusion, position } };
+        }
         if (heightChange && !patch.position) {
           // Grow around the existing center, preserving any manual placement.
           const previous = fusionPosition(item);
@@ -733,7 +739,7 @@ export default function App() {
       if (multiInputs && item.layoutTaskId === id && !nextInputs.has(item.id)) return { ...item, layoutTaskId: undefined };
       return item;
     });
-    if (multiInputs && owner) {
+    if (multiInputs && owner && !preservePositions) {
       const previousSources = new Set(workflowSources(current, owner).map(source => source.id));
       const updated = imageRef.current.find(item => item.id === id)!;
       if (workflowSources(imageRef.current, updated).some(source => !previousSources.has(source.id))) {
@@ -781,7 +787,7 @@ export default function App() {
     if (source === 'upload') setReferenceTarget({ target, role });
     else { setCanvasMode('select'); setCanvasReference({ target, role, ids: [] }); }
   }
-  function addWorkflowMainImages(target: string, additions: PendingImage[]) {
+  function addWorkflowMainImages(target: string, additions: PendingImage[], source: 'upload' | 'canvas' = 'upload') {
     const current = imageRef.current;
     const owner = current.find(item => item.id === target && (item.fusion?.kind === 'batch' || (item.fusion?.kind === 'flat' && item.fusion.batchFlat)));
     if (!owner?.fusion) return;
@@ -817,11 +823,12 @@ export default function App() {
       ? { mainImages: [...existing, ...references] }
       : { references: [...existing, ...references], reference: undefined }) };
     const height = workflowHeight(fusion);
-    const nextPosition = { ...position, y: position.y - (height - workflowHeight(owner.fusion)) / 2 };
+    const nextPosition = source === 'canvas' ? position : { ...position, y: position.y - (height - workflowHeight(owner.fusion)) / 2 };
     remember(current);
-    imageRef.current = centerAddedFusionBranches(current, [...current.map(item => item.id === target
+    const next = [...current.map(item => item.id === target
       ? { ...item, ...(item.nodeOnly ? { ...nextPosition, height } : {}), fusion: { ...fusion, position: nextPosition } }
-      : adopted.has(item.id) ? { ...item, layoutTaskId: target } : item), ...created]);
+      : adopted.has(item.id) ? { ...item, layoutTaskId: target } : item), ...created];
+    imageRef.current = source === 'canvas' ? next : centerAddedFusionBranches(current, next);
     setImages(imageRef.current);
   }
   function reportMergeCycle() {
@@ -833,7 +840,7 @@ export default function App() {
     if (imageRef.current.find(n => n.id === target)?.fusion?.batchFlat) return batchFlatLimitMessage();
     return imageRef.current.find(n => n.id === target)?.fusion?.kind === 'lingerie' ? t.modelImageLimit : t.referenceLimit;
   }
-  function addReferences(target: string, additions: FusionReference[]) {
+  function addReferences(target: string, additions: FusionReference[], source: 'upload' | 'canvas' = 'upload') {
     const owner = imageRef.current.find(n => n.id === target);
     if (!owner?.fusion) return;
     additions = additions.filter(reference => !imageRef.current.some(image => image.id === reference.id && image.generation));
@@ -844,7 +851,7 @@ export default function App() {
       sourceImageId: merge && imageRef.current.some(image => !image.nodeOnly && image.id === item.id && image.url === item.url) ? item.id : undefined }));
     const references = [...new Map([...fusionReferences(owner.fusion), ...incoming].map(item => [merge ? item.id : item.url, item])).values()];
     if (references.length > workflowReferenceLimit(owner.fusion)) { announce(referenceLimitMessage(target)); return; }
-    updateFusion(target, { references, reference: undefined });
+    updateFusion(target, { references, reference: undefined }, source === 'canvas');
   }
   function toggleCanvasReference(id: string) {
     if (!canvasReference) return;
@@ -1057,8 +1064,8 @@ export default function App() {
             <Button variant="primary" disabled={!canvasReference?.ids.length} onClick={() => {
               if (canvasReference) {
                 const additions = canvasReference.ids.flatMap(id => imageRef.current.find(n => n.id === id && !n.nodeOnly && !n.generation) ?? []);
-                if (canvasReference.role === 'main') addWorkflowMainImages(canvasReference.target, additions);
-                else addReferences(canvasReference.target, additions);
+                if (canvasReference.role === 'main') addWorkflowMainImages(canvasReference.target, additions, 'canvas');
+                else addReferences(canvasReference.target, additions, 'canvas');
               }
               setCanvasReference(null);
             }}>{t.confirm}</Button>
