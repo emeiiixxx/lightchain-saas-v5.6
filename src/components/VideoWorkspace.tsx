@@ -1,3 +1,4 @@
+import { useEventHandlers } from '../useEventHandlers';
 import { useCanvasPastePoint } from '../useCanvasPastePoint';
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
 import { boundsOf, DEFAULT_VIEW, fitImages, zoomAt, type CanvasImage, type Viewport } from '../canvas';
@@ -1097,8 +1098,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   const imageUploadRemaining = videoImageUploadNode
     ? Math.max(0, videoReferenceLimits.image - videoWorkflowReferences(videoImageUploadNode).filter(reference => reference.kind === 'image').length)
     : materialUploadRemaining;
-  const canvasReferenceOptions = canvasReference ? referenceOptions(snapshot, canvasReference.target) : null;
-  const candidateIds = new Set(canvasReferenceOptions?.candidates.map(image => image.id));
+  const canvasReferenceOptions = useMemo(() => canvasReference ? referenceOptions(snapshot, canvasReference.target) : null, [snapshot, canvasReference]);
+  const candidateIds = useMemo(() => new Set(canvasReferenceOptions?.candidates.map(image => image.id)), [canvasReferenceOptions]);
   const coverMenuImage = canvasMenu?.kind === 'image' ? snapshot.images.find(image => image.id === canvasMenu.imageId) : undefined;
   const canSetProjectCover = !!coverMenuImage && isProjectCoverCandidate(coverMenuImage);
   const canvasReferencePreviews = shownCanvasReference.value?.ids.flatMap(id => snapshot.images.find(image => image.id === id) ?? []) ?? [];
@@ -1109,6 +1110,70 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     if (canvasReference && !canvasReferenceOptions?.valid) closeCanvasReference();
   }, [canvasReference, canvasReferenceOptions?.valid, closeCanvasReference]);
 
+
+  const sceneEvents = useEventHandlers({ toggleCanvasReference, replace, renameImage, updateWorkflow, chooseWorkflowReference, openWorkflowReference, previewReference, generateVideoDemo, updateMaterialWorkflow, openMaterialReference, generateMaterialDemo, updateUpscaleWorkflow, generateUpscaleDemo });
+  // Panning changes the camera, not scene content. Zoom and business changes
+  // still update node geometry, labels, selection and connection appearance.
+  const sceneContent = useMemo(() => <>
+    {snapshot.images.map(image => <div key={image.id} data-image data-canvas-id={image.id} data-node-id={image.video ? '97:6651' : undefined} className={`canvas-image${image.video ? ' canvas-video' : ''}${(canvasReference?.ids ?? snapshot.selected).includes(image.id) ? ' selected' : ''}`} style={{ left: image.x, top: image.y, width: image.width, height: image.height, opacity: canvasReference && !candidateIds.has(image.id) ? 0.35 : undefined }} role="button" tabIndex={canvasReference && !candidateIds.has(image.id) ? -1 : 0} aria-label={`${image.video ? m.video : t.image}: ${image.name}`} aria-pressed={(canvasReference?.ids ?? snapshot.selected).includes(image.id)} aria-disabled={!!canvasReference && !candidateIds.has(image.id)}
+      onPointerDownCapture={event => {
+        if (!canvasReference || effectiveMode === 'hand' || event.button !== 0) return;
+        event.preventDefault(); event.stopPropagation(); sceneEvents.toggleCanvasReference(image.id);
+      }}
+      onContextMenu={event => {
+        event.preventDefault(); event.stopPropagation();
+        if (canvasReference || image.generation) return;
+        if (!active || reading || !canvas.current || shownModal.value || shownPreview.value || shownCutout.value || shownWorkflowUpload.value || shownVideoPreview.value) return;
+        const selected = current.current.selected.includes(image.id) ? current.current.selected.filter(id => current.current.images.some(item => item.id === id)) : [image.id];
+        sceneEvents.replace({ ...current.current, selected });
+        setDragging(false); setSelecting(false); setGuides(null);
+        const rect = canvas.current.getBoundingClientRect(), viewport = viewRef.current;
+        document.dispatchEvent(new CustomEvent('lc-select-open', { detail: 'canvas-context' }));
+        setCanvasMenu({ kind: 'image', imageId: image.id, x: event.clientX, y: event.clientY, worldX: (event.clientX - rect.left - viewport.x) / viewport.zoom, worldY: (event.clientY - rect.top - viewport.y) / viewport.zoom });
+      }}
+      onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || canvasReference && event.key === ' ')) { event.preventDefault(); if (canvasReference) { event.stopPropagation(); sceneEvents.toggleCanvasReference(image.id); return; } sceneEvents.replace({ ...current.current, selected: event.shiftKey ? current.current.selected.includes(image.id) ? current.current.selected.filter(id => id !== image.id) : [...current.current.selected, image.id] : [image.id] }); } }}>
+      {!image.generation && <CanvasMediaFilename onRename={name => sceneEvents.renameImage(image.id, name)} name={image.name} url={image.video?.url ?? image.url} kind={image.video || ['mp4', 'webm', 'mov', 'm4v'].includes(image.generatedFile?.extension ?? '') ? 'video' : 'image'} />}
+      {image.projectCover && isProjectCoverCandidate(image) && <CanvasProjectCoverBadge locale={locale} />}
+      {image.generation ? <CanvasGenerationPlaceholder locale={locale} failed={image.generation.status === 'failed'} /> : <>
+      {!canvasReference && (image.video ? <Button variant="tonal" className="image-preview-button video-canvas-play nodrag nopan" title={m.play} aria-label={`${m.play} · ${image.name}`} data-node-id="97:6653" onClick={event => { event.stopPropagation(); setVideoPreview(image.video!); }}><VideoIcon name="playVideo" size={20} /></Button>
+        : <Button variant="tonal" className="image-preview-button nodrag nopan" title={t.viewFull} aria-label={`${t.viewFull} · ${image.name}`} onClick={event => { event.stopPropagation(); setPreview(image); }}><Icon name="viewFull" size={20} /></Button>)}
+      <ProgressiveImage src={image.url} alt={image.name} width={image.width} height={image.height} fit="cover" />
+      </>}
+    </div>)}
+    {snapshot.workflows.flatMap(node => videoWorkflowSourceIds(node).map(sourceId => {
+      const source = snapshot.images.find(image => image.id === sourceId);
+      return source ? <ImageConnection key={`${source.id}-${node.id}`} image={source} target={videoWorkflowBox(node)} active={snapshot.selected.includes(source.id) || snapshot.selected.includes(node.id)} zoom={view.zoom} /> : null;
+    }))}
+    {snapshot.images.map(result => {
+      const editor = result.generatedByEditorId ? items.find(item => item.id === result.generatedByEditorId) : undefined;
+      return editor ? <ImageConnection key={`${editor.id}-${result.id}`} image={editor} target={result} active={snapshot.selected.includes(editor.id) || snapshot.selected.includes(result.id)} zoom={view.zoom} /> : null;
+    })}
+    {snapshot.workflows.map(node => <div key={node.id} data-canvas-id={node.id} inert={!!canvasReference} className="fusion-position video-workflow-position" data-selected={!canvasReference && snapshot.selected.includes(node.id)} style={{ left: node.x, top: node.y, ...videoWorkflowSize(node) }} role="group" tabIndex={0} aria-label={node.mode === 'references' ? v.proFashionVideo : v.fashionVideo}
+      onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') { event.preventDefault(); sceneEvents.replace({ ...current.current, selected: [node.id] }); } }}>
+      <VideoWorkflowNode node={node} locale={locale} onChange={patch => sceneEvents.updateWorkflow(node.id, patch)} onMain={source => sceneEvents.chooseWorkflowReference({ id: node.id, field: 'main', kind: 'image' }, source)}
+        onReference={(kind, source) => sceneEvents.openWorkflowReference(node.id, kind, source)} onPreview={reference => void sceneEvents.previewReference(reference)}
+        onGenerate={() => sceneEvents.generateVideoDemo(node.id)} />
+    </div>)}
+    {(snapshot.materialWorkflows ?? []).flatMap(node => materialWorkflowSourceIds(node).map(sourceId => {
+      const source = snapshot.images.find(image => image.id === sourceId);
+      return source ? <ImageConnection key={`${source.id}-${node.id}`} image={source} target={materialWorkflowBox(node)} active={snapshot.selected.includes(source.id) || snapshot.selected.includes(node.id)} zoom={view.zoom} /> : null;
+    }))}
+    {(snapshot.materialWorkflows ?? []).map(node => <div key={node.id} data-canvas-id={node.id} inert={!!canvasReference} className="fusion-position video-workflow-position material-workflow-position" data-selected={!canvasReference && snapshot.selected.includes(node.id)} style={{ left: node.x, top: node.y, ...materialWorkflowSize(node) }} role="group" tabIndex={0} aria-label={materialWorkflowTitle(node.kind, locale)}
+      onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') { event.preventDefault(); sceneEvents.replace({ ...current.current, selected: [node.id] }); } }}>
+      <MaterialWorkflowNode node={node} locale={locale} onChange={patch => sceneEvents.updateMaterialWorkflow(node.id, patch)} onReference={(field, source) => sceneEvents.openMaterialReference(node.id, field, source)} onPreview={reference => void sceneEvents.previewReference(reference)}
+        onGenerate={() => sceneEvents.generateMaterialDemo(node.id)} />
+    </div>)}
+    {(snapshot.upscaleWorkflows ?? []).flatMap(node => videoUpscaleWorkflowSourceIds(node).map(sourceId => {
+      const source = snapshot.images.find(image => image.id === sourceId);
+      return source ? <ImageConnection key={`${source.id}-${node.id}`} image={source} target={videoUpscaleWorkflowBox(node)} active={snapshot.selected.includes(source.id) || snapshot.selected.includes(node.id)} zoom={view.zoom} /> : null;
+    }))}
+    {(snapshot.upscaleWorkflows ?? []).map(node => <div key={node.id} data-canvas-id={node.id} inert={!!canvasReference} className="fusion-position video-workflow-position video-upscale-position" data-selected={!canvasReference && snapshot.selected.includes(node.id)} style={{ left: node.x, top: node.y, ...videoUpscaleWorkflowSize() }} role="group" tabIndex={0} aria-label={c.upscale}
+      onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') { event.preventDefault(); sceneEvents.replace({ ...current.current, selected: [node.id] }); } }}>
+      <VideoUpscaleWorkflowNode node={node} locale={locale} onChange={patch => sceneEvents.updateUpscaleWorkflow(node.id, patch)}
+        onUpload={source => sceneEvents.chooseWorkflowReference({ editor: 'upscale', id: node.id, field: 'video', kind: 'video' }, source)} onPreview={video => setVideoPreview(video)}
+        onGenerate={() => sceneEvents.generateUpscaleDemo(node.id)} />
+    </div>)}
+  </>, [snapshot, items, canvasReference, candidateIds, effectiveMode, locale, t, v, m, c, view.zoom, active, reading, shownModal.value, shownPreview.value, shownCutout.value, shownWorkflowUpload.value, shownVideoPreview.value, sceneEvents]);
 
   return <>
     <main ref={canvas} hidden={!active} inert={!active} tabIndex={-1} lang={locale} className={`canvas video-workspace${items.length ? '' : ' video-workspace--empty'}${spaceDown || mode === 'hand' ? ' is-panning' : ''}${dragging ? ' is-dragging' : ''}`} aria-label={v.title} data-node-id={items.length ? '76:5683' : '64:2057'}
@@ -1156,64 +1221,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
             materialWorkflows: (current.current.materialWorkflows ?? []).map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node),
             upscaleWorkflows: (current.current.upscaleWorkflows ?? []).map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node) })}
           onDragStart={() => { saveUndo(); setDragging(true); }} onDragEnd={() => { setDragging(false); setGuides(null); }} onGuides={setGuides} onSelecting={setSelecting}>
-          {snapshot.images.map(image => <div key={image.id} data-image data-canvas-id={image.id} data-node-id={image.video ? '97:6651' : undefined} className={`canvas-image${image.video ? ' canvas-video' : ''}${(canvasReference?.ids ?? snapshot.selected).includes(image.id) ? ' selected' : ''}`} style={{ left: image.x, top: image.y, width: image.width, height: image.height, opacity: canvasReference && !candidateIds.has(image.id) ? 0.35 : undefined }} role="button" tabIndex={canvasReference && !candidateIds.has(image.id) ? -1 : 0} aria-label={`${image.video ? m.video : t.image}: ${image.name}`} aria-pressed={(canvasReference?.ids ?? snapshot.selected).includes(image.id)} aria-disabled={!!canvasReference && !candidateIds.has(image.id)}
-            onPointerDownCapture={event => {
-              if (!canvasReference || effectiveMode === 'hand' || event.button !== 0) return;
-              event.preventDefault(); event.stopPropagation(); toggleCanvasReference(image.id);
-            }}
-            onContextMenu={event => {
-              event.preventDefault(); event.stopPropagation();
-              if (canvasReference || image.generation) return;
-              if (!active || reading || !canvas.current || shownModal.value || shownPreview.value || shownCutout.value || shownWorkflowUpload.value || shownVideoPreview.value) return;
-              const selected = current.current.selected.includes(image.id) ? current.current.selected.filter(id => current.current.images.some(item => item.id === id)) : [image.id];
-              replace({ ...current.current, selected });
-              setDragging(false); setSelecting(false); setGuides(null);
-              const rect = canvas.current.getBoundingClientRect(), viewport = viewRef.current;
-              document.dispatchEvent(new CustomEvent('lc-select-open', { detail: 'canvas-context' }));
-              setCanvasMenu({ kind: 'image', imageId: image.id, x: event.clientX, y: event.clientY, worldX: (event.clientX - rect.left - viewport.x) / viewport.zoom, worldY: (event.clientY - rect.top - viewport.y) / viewport.zoom });
-            }}
-            onKeyDown={event => { if (event.target === event.currentTarget && (event.key === 'Enter' || canvasReference && event.key === ' ')) { event.preventDefault(); if (canvasReference) { event.stopPropagation(); toggleCanvasReference(image.id); return; } replace({ ...current.current, selected: event.shiftKey ? current.current.selected.includes(image.id) ? current.current.selected.filter(id => id !== image.id) : [...current.current.selected, image.id] : [image.id] }); } }}>
-            {!image.generation && <CanvasMediaFilename onRename={name => renameImage(image.id, name)} name={image.name} url={image.video?.url ?? image.url} kind={image.video || ['mp4', 'webm', 'mov', 'm4v'].includes(image.generatedFile?.extension ?? '') ? 'video' : 'image'} />}
-            {image.projectCover && isProjectCoverCandidate(image) && <CanvasProjectCoverBadge locale={locale} />}
-            {image.generation ? <CanvasGenerationPlaceholder locale={locale} failed={image.generation.status === 'failed'} /> : <>
-            {!canvasReference && (image.video ? <Button variant="tonal" className="image-preview-button video-canvas-play nodrag nopan" title={m.play} aria-label={`${m.play} · ${image.name}`} data-node-id="97:6653" onClick={event => { event.stopPropagation(); setVideoPreview(image.video!); }}><VideoIcon name="playVideo" size={20} /></Button>
-              : <Button variant="tonal" className="image-preview-button nodrag nopan" title={t.viewFull} aria-label={`${t.viewFull} · ${image.name}`} onClick={event => { event.stopPropagation(); setPreview(image); }}><Icon name="viewFull" size={20} /></Button>)}
-            <ProgressiveImage src={image.url} alt={image.name} width={image.width} height={image.height} fit="cover" />
-            </>}
-          </div>)}
-          {snapshot.workflows.flatMap(node => videoWorkflowSourceIds(node).map(sourceId => {
-            const source = snapshot.images.find(image => image.id === sourceId);
-            return source ? <ImageConnection key={`${source.id}-${node.id}`} image={source} target={videoWorkflowBox(node)} active={snapshot.selected.includes(source.id) || snapshot.selected.includes(node.id)} zoom={view.zoom} /> : null;
-          }))}
-          {snapshot.images.map(result => {
-            const editor = result.generatedByEditorId ? items.find(item => item.id === result.generatedByEditorId) : undefined;
-            return editor ? <ImageConnection key={`${editor.id}-${result.id}`} image={editor} target={result} active={snapshot.selected.includes(editor.id) || snapshot.selected.includes(result.id)} zoom={view.zoom} /> : null;
-          })}
-          {snapshot.workflows.map(node => <div key={node.id} data-canvas-id={node.id} inert={!!canvasReference} className="fusion-position video-workflow-position" data-selected={!canvasReference && snapshot.selected.includes(node.id)} style={{ left: node.x, top: node.y, ...videoWorkflowSize(node) }} role="group" tabIndex={0} aria-label={node.mode === 'references' ? v.proFashionVideo : v.fashionVideo}
-            onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') { event.preventDefault(); replace({ ...current.current, selected: [node.id] }); } }}>
-            <VideoWorkflowNode node={node} locale={locale} onChange={patch => updateWorkflow(node.id, patch)} onMain={source => chooseWorkflowReference({ id: node.id, field: 'main', kind: 'image' }, source)}
-              onReference={(kind, source) => openWorkflowReference(node.id, kind, source)} onPreview={reference => void previewReference(reference)}
-              onGenerate={() => generateVideoDemo(node.id)} />
-          </div>)}
-          {(snapshot.materialWorkflows ?? []).flatMap(node => materialWorkflowSourceIds(node).map(sourceId => {
-            const source = snapshot.images.find(image => image.id === sourceId);
-            return source ? <ImageConnection key={`${source.id}-${node.id}`} image={source} target={materialWorkflowBox(node)} active={snapshot.selected.includes(source.id) || snapshot.selected.includes(node.id)} zoom={view.zoom} /> : null;
-          }))}
-          {(snapshot.materialWorkflows ?? []).map(node => <div key={node.id} data-canvas-id={node.id} inert={!!canvasReference} className="fusion-position video-workflow-position material-workflow-position" data-selected={!canvasReference && snapshot.selected.includes(node.id)} style={{ left: node.x, top: node.y, ...materialWorkflowSize(node) }} role="group" tabIndex={0} aria-label={materialWorkflowTitle(node.kind, locale)}
-            onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') { event.preventDefault(); replace({ ...current.current, selected: [node.id] }); } }}>
-            <MaterialWorkflowNode node={node} locale={locale} onChange={patch => updateMaterialWorkflow(node.id, patch)} onReference={(field, source) => openMaterialReference(node.id, field, source)} onPreview={reference => void previewReference(reference)}
-              onGenerate={() => generateMaterialDemo(node.id)} />
-          </div>)}
-          {(snapshot.upscaleWorkflows ?? []).flatMap(node => videoUpscaleWorkflowSourceIds(node).map(sourceId => {
-            const source = snapshot.images.find(image => image.id === sourceId);
-            return source ? <ImageConnection key={`${source.id}-${node.id}`} image={source} target={videoUpscaleWorkflowBox(node)} active={snapshot.selected.includes(source.id) || snapshot.selected.includes(node.id)} zoom={view.zoom} /> : null;
-          }))}
-          {(snapshot.upscaleWorkflows ?? []).map(node => <div key={node.id} data-canvas-id={node.id} inert={!!canvasReference} className="fusion-position video-workflow-position video-upscale-position" data-selected={!canvasReference && snapshot.selected.includes(node.id)} style={{ left: node.x, top: node.y, ...videoUpscaleWorkflowSize() }} role="group" tabIndex={0} aria-label={c.upscale}
-            onKeyDown={event => { if (event.target === event.currentTarget && event.key === 'Enter') { event.preventDefault(); replace({ ...current.current, selected: [node.id] }); } }}>
-            <VideoUpscaleWorkflowNode node={node} locale={locale} onChange={patch => updateUpscaleWorkflow(node.id, patch)}
-              onUpload={source => chooseWorkflowReference({ editor: 'upscale', id: node.id, field: 'video', kind: 'video' }, source)} onPreview={video => setVideoPreview(video)}
-              onGenerate={() => generateUpscaleDemo(node.id)} />
-          </div>)}
+        {sceneContent}
         </ReactFlowCanvas>
         {shownSingle.value && !selecting && !canvasReference && <div className="selection-overlay" data-phase={shownSingle.phase} aria-label={t.selectionTools} style={{ left: shownSingle.value.x * view.zoom + view.x, top: shownSingle.value.y * view.zoom + view.y, width: shownSingle.value.width * view.zoom, height: shownSingle.value.height * view.zoom }}>
           <div className="media-toolbar-anchor" style={{ bottom: `calc(100% + ${16 + MEDIA_FILENAME_SPACE * view.zoom}px)` }} data-overlay inert={shownSingle.phase === 'exit'}>

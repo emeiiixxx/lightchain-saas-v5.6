@@ -42,7 +42,7 @@ export function materialWorkflowHasBackView(node: Pick<MaterialWorkflow, 'kind' 
 // Geometry is shared by React Flow, connections, fit, minimap and arrangement.
 export function materialWorkflowSize(node: Pick<MaterialWorkflow, 'kind' | 'view'> & Partial<Pick<MaterialWorkflow, 'references'>>) {
   const height = node.kind === 'multiView' ? (materialWorkflowHasBackView(node) ? 541 : 441)
-    : node.kind === 'gridSplit' ? 329 : 533;
+    : node.kind === 'gridSplit' ? 329 : node.kind === 'storyboard' ? 609 : 533;
   const count = node.references?.length ?? 0;
   // The add button occupies a grid slot too: four images move it to row two.
   const slots = count + (count < materialReferenceLimit(node.kind) ? 1 : 0);
@@ -60,7 +60,7 @@ export function canGenerateMaterialWorkflow(node: MaterialWorkflow): boolean {
 }
 
 export function createMaterialWorkflow(x: number, y: number, kind: MaterialWorkflowKind, source?: CanvasImage): MaterialWorkflow {
-  return { id: crypto.randomUUID(), x, y, kind, view: ['front'], grid: 4, prompt: '', smartExpand: false,
+  return { id: crypto.randomUUID(), x, y, kind, view: kind === 'multiView' ? [] : ['front'], grid: 4, prompt: '', smartExpand: false,
     ratio: 'auto', resolution: '2K', count: 1,
     references: source ? [{ id: crypto.randomUUID(), sourceImageId: source.id, name: source.name, url: source.url, kind: 'image' }] : [] };
 }

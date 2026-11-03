@@ -23,6 +23,8 @@ jobs:
           node-version: '22'
       # Avoid cache restore stalls when Actions cache egress is rate-limited.
       - run: npm ci
+      - run: node scripts/sync-asset-aliases.mjs --check
+      - run: node scripts/run-canvas-performance-tests.mjs
       - run: node scripts/build-pages.mjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

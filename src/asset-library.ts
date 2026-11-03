@@ -1,5 +1,6 @@
 import type { CanvasImage } from './canvas';
 import { canvasMediaFilename } from './canvas-media-filename';
+import { assetDisplayUrl } from './asset-display-url';
 
 export type LibraryImage = Pick<CanvasImage, 'id' | 'name' | 'url'> & Partial<Pick<CanvasImage, 'width' | 'height'>>;
 // Figma-provided demo fixtures, not a connected account's upload history.
@@ -98,7 +99,7 @@ export const multiDemoAssets: LibraryImage[] = [
 
 export async function prepareMainImage(asset: LibraryImage): Promise<Omit<CanvasImage, 'x' | 'y'>> {
   const image = new Image();
-  image.src = asset.url;
+  image.src = assetDisplayUrl(asset.url);
   await image.decode();
   const width = Math.min(360, image.naturalWidth);
   return { id: crypto.randomUUID(), name: canvasMediaFilename(asset.name, asset.url), url: asset.url, width, height: width * image.naturalHeight / image.naturalWidth, naturalWidth: image.naturalWidth, naturalHeight: image.naturalHeight, role: 'main' };

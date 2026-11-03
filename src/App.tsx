@@ -1,3 +1,4 @@
+import { useEventHandlers } from './useEventHandlers';
 import { useCanvasPastePoint } from './useCanvasPastePoint';
 import { AiTryOnPage } from './components/AiTryOnPage';
 import { VideoWorkspace } from './components/VideoWorkspace';
@@ -868,6 +869,65 @@ export default function App() {
   }
   function changeZoom(factor: number, animated = false) { const r = canvas.current!.getBoundingClientRect(); if (animated) animateView(zoomAt(viewRef.current, factor, r.width / 2, r.height / 2)); else setView(v => zoomAt(v, factor, r.width / 2, r.height / 2)); }
 
+  const sceneEvents = useEventHandlers({ toggleCanvasReference, selectReferenceImage, renameImage, updateFusion, openImagePicker, generateDemo, announce });
+  // Panning changes the camera, not scene content. Zoom and business changes
+  // still update node geometry, labels, selection and connection appearance.
+  const sceneContent = useMemo(() => <>
+    {images.filter(result => !result.nodeOnly && !result.sourceImageId && result.generatedByEditorId).map(result => {
+      const editor = images.find(item => item.id === result.generatedByEditorId && item.fusion);
+      if (!editor) return null;
+      return <ImageConnection zoom={view.zoom} key={`generation:${result.id}`} image={{...editor, ...fusionPosition(editor), id:`${editor.id}:fusion`, width:workflowWidth(editor.fusion), height:workflowHeight(editor.fusion)}} target={result} active={selectedIds.includes(result.id) || selectedIds.includes(`${editor.id}:fusion`) || workflowSources(images, editor).some(source => selectedIds.includes(source.id))} />;
+    })}
+    {images.filter(result => !result.nodeOnly && result.sourceImageId).map(result => {
+      const source = images.find(item => !item.nodeOnly && item.id === result.sourceImageId);
+      return source ? <ImageConnection zoom={view.zoom} key={`cutout:${result.id}`} image={source} target={result} active={selectedIds.includes(source.id) || selectedIds.includes(result.id)} /> : null;
+    })}
+    {images.filter(n => !n.nodeOnly).map(n => <div key={n.id} data-image data-canvas-id={n.id} className={`canvas-image ${(canvasReference ? canvasReference.ids.includes(n.id) : selectedIds.includes(n.id)) ? 'selected' : ''}`} style={{ left: n.x, top: n.y, width: n.width, height: n.height, opacity: canvasReference && n.generation ? .35 : undefined, zIndex: foregroundIds.has(n.id) ? 3 : raisedIds.has(n.id) ? 2 : undefined } as React.CSSProperties}
+      tabIndex={canvasReference && n.generation ? -1 : 0} role="button" aria-label={`${t.image}: ${n.name}`} aria-disabled={!!canvasReference && !!n.generation} aria-pressed={canvasReference ? canvasReference.ids.includes(n.id) : selectedIds.includes(n.id)}
+      onFocus={e => { if (document.documentElement.dataset.focusNavigation === 'keyboard' && !canvasReference && e.target === e.currentTarget && !selectedRef.current.includes(n.id)) setSelectedIds([n.id]); }} onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || (e.key === ' ' && document.documentElement.dataset.focusNavigation === 'keyboard'))) { e.preventDefault(); if (canvasReference) { sceneEvents.toggleCanvasReference(n.id); return; } setSelectedIds(e.shiftKey ? selectedIds.includes(n.id) ? selectedIds.filter(id => id !== n.id) : [...selectedIds, n.id] : [n.id]); } }}
+      onPointerDown={e => sceneEvents.selectReferenceImage(e, n.id)}
+      onContextMenu={e => {
+        e.preventDefault(); e.stopPropagation();
+        if (canvasReference || n.generation || !canvas.current) return;
+        const ids = selectedRef.current.includes(n.id)
+          ? [...selectedRef.current]
+          : [n.id];
+        selectedRef.current = ids; setSelectedIds(ids);
+        setDragging(false); setSelecting(false); setSnapGuide(null);
+        const rect = canvas.current.getBoundingClientRect(), v = viewRef.current;
+        document.dispatchEvent(new CustomEvent('lc-select-open', { detail: 'canvas-context' }));
+        setCanvasMenu({ kind: 'image', imageId: n.id, x: e.clientX, y: e.clientY, worldX: (e.clientX - rect.left - v.x) / v.zoom, worldY: (e.clientY - rect.top - v.y) / v.zoom });
+      }}>
+      {!n.generation && <CanvasMediaFilename name={n.name} url={n.url} onRename={name => sceneEvents.renameImage(n.id, name)} />}
+      {n.projectCover && isProjectCoverCandidate(n) && <CanvasProjectCoverBadge locale={locale} />}
+      <Button hidden={!!canvasReference || !!n.generation} variant="tonal" className="image-preview-button nodrag nopan" aria-label={`${t.viewFull} · ${n.name}`} title={t.viewFull} data-overlay onClick={event => { event.stopPropagation(); if (!n.generation) setPreviewImage(n); }}><Icon name="viewFull" size={20} /></Button>
+      {n.generation ? <CanvasGenerationPlaceholder locale={locale} failed={n.generation.status === 'failed'} />
+        : <ProgressiveImage src={n.url} alt={n.name} width={n.width} height={n.height} fit="contain" />}
+    </div>)}
+    {images.filter(n => n.fusion).map(n => {
+      const sources = workflowSources(images, n), source = sources[0];
+      const editorImage = source && !isMultiInputWorkflow(n.fusion) ? {...source, id: n.id, fusion: n.fusion, nodeOnly: false}
+        : n.fusion?.kind === 'batch' ? { ...n, fusion: { ...n.fusion, mainImages: batchMainImages(n.fusion).map(main => {
+          const current = sources.find(image => image.id === main.sourceImageId);
+          return current ? { ...main, name: current.name, url: current.url } : main;
+        }) } } : n;
+      return <div key={`${n.id}:fusion`}>
+      {sources.map(input => <ImageConnection key={input.id} zoom={view.zoom} image={input} target={{...fusionPosition(n),id:`${n.id}:fusion`,width:workflowWidth(n.fusion),height:workflowHeight(n.fusion)}} active={selectedIds.includes(input.id) || selectedIds.includes(`${n.id}:fusion`)} />)}
+      <div className="fusion-position" data-workflow-kind={n.fusion?.kind} data-fusion-id={n.id} data-selected={selectedIds.includes(`${n.id}:fusion`)} tabIndex={0} role="group" aria-label={`${n.fusion?.kind === 'batch' ? t.batchEdit : n.fusion?.kind === 'directed' ? t.directed : n.fusion?.kind === 'lingerie' ? t.lingerie : n.fusion?.kind === 'flat' ? t.flat : n.fusion?.kind === 'merge' ? t.mergeImages : t.fusion} · ${n.name}`}
+        style={{ left: fusionPosition(n).x, top: fusionPosition(n).y, width: workflowWidth(n.fusion), height: workflowHeight(n.fusion), zIndex: foregroundIds.has(`${n.id}:fusion`) ? 3 : raisedIds.has(n.id) ? 2 : undefined } as React.CSSProperties}
+        onFocus={() => { if (document.documentElement.dataset.focusNavigation === 'keyboard' && !canvasReference && !selectedRef.current.includes(`${n.id}:fusion`)) setSelectedIds([`${n.id}:fusion`]); }}
+        >
+        {n.fusion?.kind === 'batch'
+          ? <BatchEditNode image={editorImage} locale={locale} onChange={patch => sceneEvents.updateFusion(n.id, patch)} onMainImages={source => sceneEvents.openImagePicker(n.id, source, 'main')} onReference={source => sceneEvents.openImagePicker(n.id, source)} onGenerate={() => sceneEvents.generateDemo(n.id)} />
+          : n.fusion?.kind === 'flat'
+          ? <FlatLayNode image={editorImage} locale={locale} onAddMain={() => setMainTarget(n.id)} onReference={source => sceneEvents.openImagePicker(n.id, source, n.fusion?.batchFlat ? 'main' : undefined)} onChange={patch => sceneEvents.updateFusion(n.id, patch)} onGenerate={() => sceneEvents.generateDemo(n.id)} />
+          : n.fusion?.kind === 'directed'
+          ? <DirectedFusionNode image={editorImage} locale={locale} onAddMain={() => setMainTarget(n.id)} onChange={patch => sceneEvents.updateFusion(n.id, patch)} onChoosePoint={pointId => setDirectedTarget({ editorId: n.id, pointId })} onGenerate={() => sceneEvents.generateDemo(n.id)} onNotify={sceneEvents.announce} />
+          : <FusionNode image={editorImage} locale={locale} onAddMain={() => setMainTarget(n.id)} onChange={patch => sceneEvents.updateFusion(n.id, patch)} onReference={source => sceneEvents.openImagePicker(n.id, source)} onEditGuide={() => setDrawingImage(editorImage)} onGenerate={() => sceneEvents.generateDemo(n.id)} />}
+      </div>
+    </div>;})}
+  </>, [images, selectedIds, canvasReference, foregroundIds, raisedIds, locale, t, view.zoom, sceneEvents]);
+
   return <PromptLibraryProvider uploads={uploads} onUpload={rememberUpload} locale={locale}><div className="app-shell" data-library="Lightchain SaaS v5.1 libraries Beta" data-node-id="12:3127">
     <header className="topbar flex items-center justify-between gap-2 px-6" data-node-id="12:3148">
       <div className="flex items-center gap-6 min-w-0">
@@ -954,59 +1014,7 @@ export default function App() {
         snap={snapToGrid} onView={setView} onSelection={selectFlowNodes} onPositions={moveFlowNodes}
         onPrepareCopyDrag={prepareFlowCopyDrag}
         onDragStart={startFlowDrag} onDragEnd={finishFlowDrag} onGuides={setSnapGuide} onSelecting={setSelecting}>
-        {images.filter(result => !result.nodeOnly && !result.sourceImageId && result.generatedByEditorId).map(result => {
-          const editor = images.find(item => item.id === result.generatedByEditorId && item.fusion);
-          if (!editor) return null;
-          return <ImageConnection zoom={view.zoom} key={`generation:${result.id}`} image={{...editor, ...fusionPosition(editor), id:`${editor.id}:fusion`, width:workflowWidth(editor.fusion), height:workflowHeight(editor.fusion)}} target={result} active={selectedIds.includes(result.id) || selectedIds.includes(`${editor.id}:fusion`) || workflowSources(images, editor).some(source => selectedIds.includes(source.id))} />;
-        })}
-        {images.filter(result => !result.nodeOnly && result.sourceImageId).map(result => {
-          const source = images.find(item => !item.nodeOnly && item.id === result.sourceImageId);
-          return source ? <ImageConnection zoom={view.zoom} key={`cutout:${result.id}`} image={source} target={result} active={selectedIds.includes(source.id) || selectedIds.includes(result.id)} /> : null;
-        })}
-        {images.filter(n => !n.nodeOnly).map(n => <div key={n.id} data-image data-canvas-id={n.id} className={`canvas-image ${(canvasReference ? canvasReference.ids.includes(n.id) : selectedIds.includes(n.id)) ? 'selected' : ''}`} style={{ left: n.x, top: n.y, width: n.width, height: n.height, opacity: canvasReference && n.generation ? .35 : undefined, zIndex: foregroundIds.has(n.id) ? 3 : raisedIds.has(n.id) ? 2 : undefined } as React.CSSProperties}
-          tabIndex={canvasReference && n.generation ? -1 : 0} role="button" aria-label={`${t.image}: ${n.name}`} aria-disabled={!!canvasReference && !!n.generation} aria-pressed={canvasReference ? canvasReference.ids.includes(n.id) : selectedIds.includes(n.id)}
-          onFocus={e => { if (document.documentElement.dataset.focusNavigation === 'keyboard' && !canvasReference && e.target === e.currentTarget && !selectedRef.current.includes(n.id)) setSelectedIds([n.id]); }} onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || (e.key === ' ' && document.documentElement.dataset.focusNavigation === 'keyboard'))) { e.preventDefault(); if (canvasReference) { toggleCanvasReference(n.id); return; } setSelectedIds(e.shiftKey ? selectedIds.includes(n.id) ? selectedIds.filter(id => id !== n.id) : [...selectedIds, n.id] : [n.id]); } }}
-          onPointerDown={e => selectReferenceImage(e, n.id)}
-          onContextMenu={e => {
-            e.preventDefault(); e.stopPropagation();
-            if (canvasReference || n.generation || !canvas.current) return;
-            const ids = selectedRef.current.includes(n.id)
-              ? [...selectedRef.current]
-              : [n.id];
-            selectedRef.current = ids; setSelectedIds(ids);
-            setDragging(false); setSelecting(false); setSnapGuide(null);
-            const rect = canvas.current.getBoundingClientRect(), v = viewRef.current;
-            document.dispatchEvent(new CustomEvent('lc-select-open', { detail: 'canvas-context' }));
-            setCanvasMenu({ kind: 'image', imageId: n.id, x: e.clientX, y: e.clientY, worldX: (e.clientX - rect.left - v.x) / v.zoom, worldY: (e.clientY - rect.top - v.y) / v.zoom });
-          }}>
-          {!n.generation && <CanvasMediaFilename name={n.name} url={n.url} onRename={name => renameImage(n.id, name)} />}
-          {n.projectCover && isProjectCoverCandidate(n) && <CanvasProjectCoverBadge locale={locale} />}
-          <Button hidden={!!canvasReference || !!n.generation} variant="tonal" className="image-preview-button nodrag nopan" aria-label={`${t.viewFull} · ${n.name}`} title={t.viewFull} data-overlay onClick={event => { event.stopPropagation(); if (!n.generation) setPreviewImage(n); }}><Icon name="viewFull" size={20} /></Button>
-          {n.generation ? <CanvasGenerationPlaceholder locale={locale} failed={n.generation.status === 'failed'} />
-            : <ProgressiveImage src={n.url} alt={n.name} width={n.width} height={n.height} fit="contain" />}
-        </div>)}
-        {images.filter(n => n.fusion).map(n => {
-          const sources = workflowSources(images, n), source = sources[0];
-          const editorImage = source && !isMultiInputWorkflow(n.fusion) ? {...source, id: n.id, fusion: n.fusion, nodeOnly: false}
-            : n.fusion?.kind === 'batch' ? { ...n, fusion: { ...n.fusion, mainImages: batchMainImages(n.fusion).map(main => {
-              const current = sources.find(image => image.id === main.sourceImageId);
-              return current ? { ...main, name: current.name, url: current.url } : main;
-            }) } } : n;
-          return <div key={`${n.id}:fusion`}>
-          {sources.map(input => <ImageConnection key={input.id} zoom={view.zoom} image={input} target={{...fusionPosition(n),id:`${n.id}:fusion`,width:workflowWidth(n.fusion),height:workflowHeight(n.fusion)}} active={selectedIds.includes(input.id) || selectedIds.includes(`${n.id}:fusion`)} />)}
-          <div className="fusion-position" data-workflow-kind={n.fusion?.kind} data-fusion-id={n.id} data-selected={selectedIds.includes(`${n.id}:fusion`)} tabIndex={0} role="group" aria-label={`${n.fusion?.kind === 'batch' ? t.batchEdit : n.fusion?.kind === 'directed' ? t.directed : n.fusion?.kind === 'lingerie' ? t.lingerie : n.fusion?.kind === 'flat' ? t.flat : n.fusion?.kind === 'merge' ? t.mergeImages : t.fusion} · ${n.name}`}
-            style={{ left: fusionPosition(n).x, top: fusionPosition(n).y, width: workflowWidth(n.fusion), height: workflowHeight(n.fusion), zIndex: foregroundIds.has(`${n.id}:fusion`) ? 3 : raisedIds.has(n.id) ? 2 : undefined } as React.CSSProperties}
-            onFocus={() => { if (document.documentElement.dataset.focusNavigation === 'keyboard' && !canvasReference && !selectedRef.current.includes(`${n.id}:fusion`)) setSelectedIds([`${n.id}:fusion`]); }}
-            >
-            {n.fusion?.kind === 'batch'
-              ? <BatchEditNode image={editorImage} locale={locale} onChange={patch => updateFusion(n.id, patch)} onMainImages={source => openImagePicker(n.id, source, 'main')} onReference={source => openImagePicker(n.id, source)} onGenerate={() => generateDemo(n.id)} />
-              : n.fusion?.kind === 'flat'
-              ? <FlatLayNode image={editorImage} locale={locale} onAddMain={() => setMainTarget(n.id)} onReference={source => openImagePicker(n.id, source, n.fusion?.batchFlat ? 'main' : undefined)} onChange={patch => updateFusion(n.id, patch)} onGenerate={() => generateDemo(n.id)} />
-              : n.fusion?.kind === 'directed'
-              ? <DirectedFusionNode image={editorImage} locale={locale} onAddMain={() => setMainTarget(n.id)} onChange={patch => updateFusion(n.id, patch)} onChoosePoint={pointId => setDirectedTarget({ editorId: n.id, pointId })} onGenerate={() => generateDemo(n.id)} onNotify={announce} />
-              : <FusionNode image={editorImage} locale={locale} onAddMain={() => setMainTarget(n.id)} onChange={patch => updateFusion(n.id, patch)} onReference={source => openImagePicker(n.id, source)} onEditGuide={() => setDrawingImage(editorImage)} onGenerate={() => generateDemo(n.id)} />}
-          </div>
-        </div>;})}
+        {sceneContent}
       </ReactFlowCanvas>
 
       {shownSelection.value && !selecting && !canvasReference && <div className="selection-overlay" data-phase={shownSelection.phase} aria-label={t.groupSelection} style={{

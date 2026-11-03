@@ -422,6 +422,7 @@ export function ReactFlowCanvas(props: Props) {
       }
     }}>
     <ReactFlow<ContentNode, CanvasEdge> nodes={graph.nodes} edges={graph.edges} nodeTypes={nodeTypes} edgeTypes={edgeTypes}
+      onlyRenderVisibleElements
       defaultViewport={props.view} viewport={props.view} onViewportChange={onViewport} onNodesChange={onChanges} onEdgesChange={onEdgeChanges}
       onSelectionStart={() => latest.current.onSelecting(true)} onSelectionEnd={() => latest.current.onSelecting(false)}
       onNodeDragStart={beginDrag} onNodeDragStop={endDrag}

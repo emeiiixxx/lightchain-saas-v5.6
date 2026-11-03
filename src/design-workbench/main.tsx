@@ -4,7 +4,7 @@ import '@fontsource-variable/noto-sans-sc';
 import './tokens.css';
 import './styles.css';
 import './topbar.css';
-import './asset-picker.css';
+import '../asset-picker.css';
 import './workbench.css';
 import './full-image-viewer.css';
 import './toast.css';

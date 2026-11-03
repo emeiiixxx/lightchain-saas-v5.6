@@ -28,7 +28,7 @@ const copy = {
     storyboard: '分镜配置', crop: '裁切配置', four: '四宫格', nine: '九宫格',
     prompt: '生图描述', placeholder: '请输入服装、人物动作、场景等', smartExpand: '智能扩写',
     expand: '展开编辑', save: '保存指令', library: '提示词库', clear: '清空', close: '关闭', count: '字数',
-    settings: '生成设置', generate: '开始 AI 生成',
+    settings: '生成设置', generate: '开始 AI 生成', outputCount: '生成数量', imageCount: (count: number) => `${count}张`,
   },
   en: {
     quickTip: 'Add references and a prompt to generate images', tip: 'Feature description', references: 'References',
@@ -39,7 +39,7 @@ const copy = {
     storyboard: 'Storyboard layout', crop: 'Crop layout', four: '2 × 2 grid', nine: '3 × 3 grid',
     prompt: 'Image description', placeholder: 'Describe clothing, poses, settings, and more', smartExpand: 'Smart expand',
     expand: 'Expand editor', save: 'Save prompt', library: 'Prompt library', clear: 'Clear', close: 'Close', count: 'Characters',
-    settings: 'Generation settings', generate: 'Start AI generation',
+    settings: 'Generation settings', generate: 'Start AI generation', outputCount: 'Image count', imageCount: (count: number) => String(count),
   },
   ja: {
     quickTip: '参考画像と説明から素材をすばやく生成', tip: '機能の説明', references: '参考画像',
@@ -50,7 +50,7 @@ const copy = {
     storyboard: '絵コンテの構成', crop: '分割設定', four: '4分割', nine: '9分割',
     prompt: '画像の説明', placeholder: '服装、人物の動作、背景などを入力', smartExpand: 'スマート拡張',
     expand: '拡大編集', save: '指示を保存', library: 'プロンプト集', clear: 'クリア', close: '閉じる', count: '文字数',
-    settings: '生成設定', generate: 'AI 生成を開始',
+    settings: '生成設定', generate: 'AI 生成を開始', outputCount: '生成枚数', imageCount: (count: number) => `${count}枚`,
   },
 };
 
@@ -214,6 +214,15 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
               inlineIcons={{ expand: <NodeIcon src={assets.promptExpand} />, save: <NodeIcon src={assets.promptSave} />, library: <NodeIcon src={assets.promptLibrary} /> }} /></div>
             <span className="fusion-counter" aria-label={t.count}>{node.prompt.length}/{promptLimit}</span>
           </div>
+        </div>
+      </div>}
+      {node.kind === 'storyboard' && <div className="fusion-field material-generation-field">
+        <span className="fusion-label" id={`${id}-output-count`}>{t.outputCount}</span>
+        <div className="material-choice-group material-count-choices nodrag nopan" role="group" aria-labelledby={`${id}-output-count`} onKeyDown={navigateChoices}>
+          {[1, 2, 3, 4].map(count => <ChoiceChip key={count} selected={(node.count ?? 1) === count}
+            tabIndex={(node.count ?? 1) === count ? 0 : -1} onClick={() => onChange({ count })}>
+            {t.imageCount(count)}
+          </ChoiceChip>)}
         </div>
       </div>}
       {hasSettings && <div className="fusion-field material-generation-field">

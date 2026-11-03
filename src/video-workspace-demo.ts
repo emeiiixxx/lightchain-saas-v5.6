@@ -61,8 +61,7 @@ const copy = {
 // Fixed local examples for generation nodes. Grid cropping uses grid-crop.ts.
 export function createMaterialDemoResults(node: MaterialWorkflow, locale: Locale): DemoResult[] {
   if (node.kind === 'gridSplit') return [];
-  const count = node.kind === 'storyboard' ? 1
-    : Math.max(1, Math.min(4, Number.isFinite(node.count) ? Math.trunc(node.count) : 1));
+  const count = Math.max(1, Math.min(4, Number.isFinite(node.count) ? Math.trunc(node.count) : 1));
   // Text-only Auto reserves a square frame; use a genuinely square source so
   // the canvas, task thumbnail, preview and download all share the same ratio.
   const image = node.kind === 'storyboard' ? storyboardImage

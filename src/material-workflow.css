@@ -18,6 +18,8 @@
 .material-reference-row > .fusion-reference:focus-visible, .material-back-reference > .fusion-reference:focus-visible { outline: 2px solid var(--border-brand); outline-offset: -2px; }
 .material-view-field { min-height: 96px; }
 .material-choice-group { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 4px; }
+.material-count-choices { flex-wrap: nowrap; }
+.material-count-choices > .lc-choice-chip { flex: 1 1 0; min-width: 0; justify-content: center; }
 .material-view-choices { min-height: 68px; }
 .material-back-field { height: 92px; }
 .material-back-reference { display: flex; height: 64px; }

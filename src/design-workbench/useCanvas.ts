@@ -3,6 +3,7 @@ import { resolveProjectCover } from './project-cover';
 import type { Notify } from './notification';
 import { CanvasIsolationCache, clearCanvasTextCache, IMAGE_FILENAME_TOP_SPACE, paintCanvasImage, paintCanvasImageFilename, paintCanvasScene, type CanvasPalette } from './canvas-renderer';
 import { CanvasRasterCache } from './canvas-raster-cache';
+import { decodeCanvasImages } from './decode-canvas-images';
 import { nextCanvasTime, orderArrangementUnits } from './canvas-order';
 import { moveCanvasLayer, type CanvasLayerEdge, type CanvasLayerTarget } from './canvas-layers';
 import { MOTION_DURATION, easeOut } from './motion';
@@ -166,18 +167,19 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
   useEffect(() => { if (restored) fileNamer.rememberNames(images); }, [fileNamer, images, restored]);
   useEffect(() => {
     let active = true;
+    const controller = new AbortController();
     const saved = readDemoState<{ images: Omit<CanvasImage, 'image'>[]; camera: Camera } | null>('canvas', null);
     void (async () => {
       try {
         if (saved) {
           const items = await restoreDemoUrls(saved.images);
-          const loaded = await Promise.all(items.map(async item => { const image = new Image(); image.src = item.url; await image.decode(); return { ...item, image }; }));
+          const loaded = await decodeCanvasImages(items, controller.signal);
           if (active && !live.current.images.length) { const named = restoreCanvasContentGroups(fileNamer.restore(loaded)); live.current.images = named; setImages(named); setCamera(saved.camera); }
         }
       } catch { /* Keep the current session usable if stored Demo data cannot load. */ }
       if (active) setRestored(true);
     })();
-    return () => { active = false; };
+    return () => { active = false; controller.abort(); };
   }, [fileNamer]);
   useEffect(() => {
     if (!restored) return;

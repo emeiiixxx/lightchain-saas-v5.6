@@ -1,6 +1,7 @@
 import { memo, useEffect, useRef, useState, type CSSProperties } from 'react';
 import { imagePreview, rememberImagePreview } from '../image-previews';
-import '../progressive-image.css';
+import { assetDisplayUrl } from '../../asset-display-url';
+import '../../progressive-image.css';
 import { useLocale } from '../LocaleContext';
 
 type Props = {
@@ -74,7 +75,7 @@ function ImageRequest({ src, alt, width, height, className = '', style, fit = 'c
     aria-busy={state === 'loading'} style={{ ...style, '--image-fit': fit } as CSSProperties}>
     {preview ? <img className="progressive-image-preview" src={preview} alt="" aria-hidden="true" draggable={false} />
       : <span className="progressive-image-placeholder" aria-hidden="true" />}
-    <img ref={picture} className="progressive-image-full" src={started ? src : undefined} alt={state === 'error' ? '' : alt}
+    <img ref={picture} className="progressive-image-full" src={started ? assetDisplayUrl(src) : undefined} alt={state === 'error' ? '' : alt}
       width={width} height={height} decoding="async" draggable={false} />
     {state === 'error' && <span className="progressive-image-error" role="img" aria-label={`${alt} · ${failure}`}>{failure}</span>}
   </span>;

@@ -1,4 +1,5 @@
 import type { CanvasImage } from './useCanvas';
+import { assetDisplayUrl } from '../asset-display-url';
 import { canvasMediaFilename } from '../canvas-media-filename';
 
 export type LibraryImage = Pick<CanvasImage, 'id' | 'name' | 'url'> & Partial<Pick<CanvasImage, 'width' | 'height' | 'mimeType' | 'uploadedAt'>>;
@@ -100,7 +101,7 @@ export const multiDemoAssets: LibraryImage[] = [
 
 export async function prepareMainImage(asset: LibraryImage): Promise<Omit<CanvasImage, 'x' | 'y'>> {
   const image = new Image();
-  image.src = asset.url;
+  image.src = assetDisplayUrl(asset.url);
   await image.decode();
   return { id: crypto.randomUUID(), name: canvasMediaFilename(asset.name, asset.url), mimeType: asset.mimeType, uploadedAt: asset.uploadedAt, url: asset.url, width: image.naturalWidth, height: image.naturalHeight, image };
 }

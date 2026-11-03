@@ -1,5 +1,6 @@
 import { createReadStream, readdirSync, readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { createHash } from 'node:crypto';
+import { posix, resolve } from 'node:path';
 import type { Plugin } from 'vite';
 
 // Keep the official worker and its matching ONNX runtime on the Demo's origin.
@@ -28,8 +29,29 @@ export function designWorkbenchOcrAssets(): Plugin {
         createReadStream(file).on('error', next).pipe(response);
       });
     },
-    generateBundle() {
-      for (const [name, path] of files) this.emitFile({ type: 'asset', fileName: `assets/design-workbench/ocr/${name}`, source: readFileSync(path) });
-    },
+    generateBundle: { order: 'post', handler(_options, bundle) {
+      const canonical = new Map<string, string>();
+      for (const [name, path] of files) {
+        const source = readFileSync(path);
+        const fileName = `assets/design-workbench/ocr/${name}`;
+        this.emitFile({ type: 'asset', fileName, source });
+        canonical.set(createHash('sha256').update(source).digest('hex'), fileName);
+      }
+      // Vite also emits the SDK's default worker/WASM, although our recognizer
+      // supplies its own stable same-origin URLs. Share byte-identical files;
+      // keep both default-SDK references and our explicit worker config valid.
+      for (const [fileName, asset] of Object.entries(bundle)) {
+        if (asset.type !== 'asset' || !/\.(?:js|mjs|wasm)$/.test(fileName)) continue;
+        const target = canonical.get(createHash('sha256').update(asset.source).digest('hex'));
+        if (!target || fileName === target) continue;
+        for (const chunk of Object.values(bundle)) {
+          if (chunk.type !== 'chunk') continue;
+          chunk.code = chunk.code.replaceAll(fileName, target)
+            .replaceAll(posix.basename(fileName), posix.relative(posix.dirname(chunk.fileName), target));
+          chunk.referencedFiles = chunk.referencedFiles.map(name => name === fileName ? target : name);
+        }
+        delete bundle[fileName];
+      }
+    } },
   };
 }
