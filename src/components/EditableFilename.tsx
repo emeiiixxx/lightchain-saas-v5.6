@@ -22,7 +22,8 @@ export function EditableFilename({ name, onRename, autoEdit = false, onEditingEn
   useLayoutEffect(() => { if (editing) { input.current?.focus({ preventScroll: true }); input.current?.select(); } }, [editing]);
   const finish = (save: boolean) => {
     if (finished.current) return;
-    const value = draft.trim();
+    // Opening and closing an unchanged name must preserve it verbatim.
+    const value = draft === basename ? draft : draft.trim();
     // Validate on save, not while typing; existing long names are left untouched.
     if (save && value && value + suffix !== name && exceedsFilenameLimit(value)) {
       setInvalid(true);

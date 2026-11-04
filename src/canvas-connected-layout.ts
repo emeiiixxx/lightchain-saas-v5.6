@@ -21,7 +21,7 @@ export type ConnectedGroupContext = {
   avoidCollisions?: boolean;
 };
 export type ConnectedGroupLayout = { positions: Map<string, Position>; width: number; height: number; bounds?: FlowLayoutRect };
-const STACK_GAP = 120;
+export const FLOW_BRANCH_GAP = 80;
 const EDITOR_GAP = 80;
 
 export function layoutConnectedGroup(input: FlowLayoutVertex[], order: Record<string, number>, context?: ConnectedGroupContext): ConnectedGroupLayout {
@@ -95,7 +95,7 @@ export function layoutConnectedGroup(input: FlowLayoutVertex[], order: Record<st
       compareConsumers(a.consumer, b.consumer) || a.index - b.index);
     // Fixed external inputs cannot be stretched or moved to make room.
     if (!byId.has(id)) continue;
-    const space = (slots: InputSlot[]) => slots.reduce((sum, slot) => sum + byId.get(slot.id)!.height + STACK_GAP, 0);
+    const space = (slots: InputSlot[]) => slots.reduce((sum, slot) => sum + byId.get(slot.id)!.height + FLOW_BRANCH_GAP, 0);
     // Reserve only the side where fresh inputs will actually be placed.
     // Mirroring this space onto the other side creates an empty gap between
     // neighbouring results, even when nothing occupies that gap.
@@ -141,7 +141,7 @@ export function layoutConnectedGroup(input: FlowLayoutVertex[], order: Record<st
       let offset = 0;
       for (const [rank, contour] of branch.contours) {
         const previous = contours.get(rank);
-        if (previous) offset = Math.max(offset, previous.bottom + STACK_GAP - contour.top);
+        if (previous) offset = Math.max(offset, previous.bottom + FLOW_BRANCH_GAP - contour.top);
       }
       for (const [childId, y] of branch.points) points.set(childId, y + offset);
       const childTop = branch.points.get(child)! + offset;
@@ -227,12 +227,12 @@ export function layoutConnectedGroup(input: FlowLayoutVertex[], order: Record<st
       const slots = reservations.get(anchor.id)![anchor.side];
       const index = slots.findIndex(slot => slot.id === root.id);
       if (anchor.side === 'before') {
-        const space = slots.slice(index + 1).reduce((sum, slot) => sum + byId.get(slot.id)!.height + STACK_GAP, 0);
-        center = anchorBox.y - STACK_GAP - space - root.height / 2;
+        const space = slots.slice(index + 1).reduce((sum, slot) => sum + byId.get(slot.id)!.height + FLOW_BRANCH_GAP, 0);
+        center = anchorBox.y - FLOW_BRANCH_GAP - space - root.height / 2;
         placeAbove = true;
       } else {
-        const space = slots.slice(0, index).reduce((sum, slot) => sum + byId.get(slot.id)!.height + STACK_GAP, 0);
-        center = anchorBox.y + anchorBox.height + STACK_GAP + space + root.height / 2;
+        const space = slots.slice(0, index).reduce((sum, slot) => sum + byId.get(slot.id)!.height + FLOW_BRANCH_GAP, 0);
+        center = anchorBox.y + anchorBox.height + FLOW_BRANCH_GAP + space + root.height / 2;
       }
     }
     const blocked: Contour[] = [];
@@ -248,7 +248,7 @@ export function layoutConnectedGroup(input: FlowLayoutVertex[], order: Record<st
         const right = Math.max(...columnMembers.map(([id, point]) => point.x + byId.get(id)!.width));
         for (const [id, previous] of previousBoxes) {
           const related = positions.has(id) || externalInputs.has(id);
-          const gap = related ? STACK_GAP : context.groupGap ?? 240;
+          const gap = related ? FLOW_BRANCH_GAP : context.groupGap ?? 240;
           const horizontalGap = related ? 0 : gap;
           if (left >= previous.x + previous.width + horizontalGap || right + horizontalGap <= previous.x) continue;
           const isLooseInput = root.kind === 'media' && !allParents.get(root.id)!.length && points.size === 1;
@@ -266,8 +266,8 @@ export function layoutConnectedGroup(input: FlowLayoutVertex[], order: Record<st
         ? [...positions].flatMap(([id, point]) => ranks.get(id) === rank ? [{ top: point.y, bottom: point.y + byId.get(id)!.height }] : [])
         : occupied.get(rank) ?? [];
       for (const previous of previousSpans) blocked.push({
-        top: previous.top - STACK_GAP - contour.bottom,
-        bottom: previous.bottom + STACK_GAP - contour.top,
+        top: previous.top - FLOW_BRANCH_GAP - contour.bottom,
+        bottom: previous.bottom + FLOW_BRANCH_GAP - contour.top,
       });
     }
     // Sorted forbidden offsets also account for long trees spanning later

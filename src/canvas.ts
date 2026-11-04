@@ -3,7 +3,7 @@ import { groupTaskBlocks } from './canvas-task-layout';
 import { rememberImagePreview } from './image-previews';
 import type { DrawingGuide } from './drawing-guide';
 import { mergeGroupStages } from './canvas-merge-layout';
-import { layoutConnectedGroup, type FlowLayoutVertex } from './canvas-connected-layout';
+import { FLOW_BRANCH_GAP, layoutConnectedGroup, type FlowLayoutVertex } from './canvas-connected-layout';
 import { placeConnectedGroupStages, type ConnectedLayoutGroup } from './canvas-group-placement';
 import { packStandaloneRows } from './canvas-standalone-layout';
 import type { GeneratedMediaFile } from './canvas-media-filename';
@@ -33,7 +33,6 @@ export function newFusionSettings(kind: WorkflowKind = 'fusion'): FusionSettings
   return memoryKind ? { ...settings, ...demoGenerationSettingsMemory.read(memoryKind, settings) } : settings;
 }
 export const FUSION_GAP = 80;
-const BRANCH_GAP = 120;
 export const GROUP_GAP = 240;
 const GROUPS_PER_ROW = 5;
 export const FUSION_WIDTH = 320;
@@ -213,9 +212,9 @@ export function arrangeImages(items: CanvasImage[], startX = 0, viewport = { wid
       getId: data => data.id!,
       getWidth: data => data.width!,
       getHeight: data => data.height!,
-      // AntV pads BOTH sides: 40+40 = 80 horizontally, 60+60 = 120 vertically.
+      // AntV pads BOTH sides: 40+40 = 80 horizontally, 40+40 = 80 vertically.
       getHGap: () => FUSION_GAP / 2,
-      getVGap: () => BRANCH_GAP / 2,
+      getVGap: () => FLOW_BRANCH_GAP / 2,
     });
     const nodes: Placement[] = [];
     let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;

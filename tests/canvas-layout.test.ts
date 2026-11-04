@@ -110,7 +110,7 @@ test('one task gathers old and new standalone inputs by image ID in reference or
   const inputs = referenceOrder.map(input => visibleNode(arranged, input.id));
   const task = visibleNode(arranged, 'batch:fusion');
   for (const input of inputs) assert.equal(input.x + input.width + 80, task.x);
-  for (let i = 1; i < inputs.length; i++) assert.equal(inputs[i].y, inputs[i - 1].y + inputs[i - 1].height + 120);
+  for (let i = 1; i < inputs.length; i++) assert.equal(inputs[i].y, inputs[i - 1].y + inputs[i - 1].height + 80);
 });
 
 test('a shared standalone input stays with its valid original owner even when another editor appears first', () => {
@@ -124,7 +124,7 @@ test('a shared standalone input stays with its valid original owner even when an
   const ownerInput = visibleNode(arranged, originalOwn.id);
   const ownerEditor = visibleNode(arranged, 'original:fusion');
   assert.equal(sharedNode.x, ownerInput.x);
-  assert.equal(sharedNode.y, ownerInput.y + ownerInput.height + 120);
+  assert.equal(sharedNode.y, ownerInput.y + ownerInput.height + 80);
   assert.equal(sharedNode.x + sharedNode.width + 80, ownerEditor.x);
   assert(visibleNode(arranged, 'first:fusion').x > ownerEditor.x, 'the consuming task follows its shared-input owner');
 });
@@ -143,7 +143,7 @@ test('an invalid shared-input owner falls back to the first referencing editor',
     const firstInput = visibleNode(arranged, firstOwn.id);
     const firstEditor = visibleNode(arranged, 'first:fusion');
     assert.equal(sharedNode.x, firstInput.x, staleOwner);
-    assert.equal(sharedNode.y, firstInput.y + firstInput.height + 120, staleOwner);
+    assert.equal(sharedNode.y, firstInput.y + firstInput.height + 80, staleOwner);
     assert.equal(sharedNode.x + sharedNode.width + 80, firstEditor.x, staleOwner);
     assert(visibleNode(arranged, 'second:fusion').x > firstEditor.x, staleOwner);
   }
