@@ -1,5 +1,5 @@
 import { Children, cloneElement, isValidElement, memo, useCallback, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from 'react';
-import { BaseEdge, ConnectionMode, getBezierPath, Handle, Position, ReactFlow, SelectionMode, useUpdateNodeInternals, type Connection, type ConnectionLineComponentProps, type Edge, type EdgeChange, type EdgeProps, type Node, type NodeChange, type NodeProps } from '@xyflow/react';
+import { BaseEdge, ConnectionMode, getBezierPath, Handle, Position, ReactFlow, ReactFlowProvider, SelectionMode, useUpdateNodeInternals, type Connection, type ConnectionLineComponentProps, type Edge, type EdgeChange, type EdgeProps, type Node, type NodeChange, type NodeProps } from '@xyflow/react';
 import { boundsOf, FUSION_WIDTH, type CanvasImage, type Viewport } from '../canvas';
 import { canConnectCanvasNodes, canvasConnectionSides, type CanvasConnection, type CanvasConnectionInput, type CanvasConnectionNode, type CanvasConnectionNodes } from '../canvas-connections';
 import { magneticDragDelta, type DragSnapContext, type SnapGuides } from '../canvas-snapping';
@@ -113,6 +113,12 @@ type Props = {
 // Adapts the existing product components/data to real React Flow nodes and edges.
 // Business operations and their history continue to use the shared canvas model.
 export function ReactFlowCanvas(props: Props) {
+  // Workspaces can coexist while hidden. A shared store lets one canvas replace
+  // another's nodes/callbacks, then reset them when that workspace unmounts.
+  return <ReactFlowProvider><ReactFlowCanvasInstance {...props} /></ReactFlowProvider>;
+}
+
+function ReactFlowCanvasInstance(props: Props) {
   const latest = useRef(props); latest.current = props;
   const selectionRef = useRef(props.selectedIds); selectionRef.current = props.selectedIds;
   const connectionSelectionRef = useRef(props.selectedConnectionIds ?? []); connectionSelectionRef.current = props.selectedConnectionIds ?? [];

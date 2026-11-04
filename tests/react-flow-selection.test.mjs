@@ -29,7 +29,7 @@ test('marquee selection supports Shift removal/addition without dragging or inte
 
   const cache = path.resolve('node_modules/.cache/lc-selection-test');
   await mkdir(cache, { recursive: true });
-  const bundled = await build({ entryPoints: ['src/components/ReactFlowCanvas.tsx'], bundle: true, packages: 'external', format: 'esm', jsx: 'automatic', loader: { '.css': 'empty' }, write: false });
+  const bundled = await build({ entryPoints: ['src/components/ReactFlowCanvas.tsx'], bundle: true, packages: 'external', format: 'esm', jsx: 'automatic', loader: { '.css': 'empty' }, define: { 'import.meta.env.BASE_URL': '"/"' }, write: false });
   const modulePath = path.join(cache, 'adapter.mjs');
   await writeFile(modulePath, bundled.outputFiles[0].text);
   const { createElement: h, useState, act } = await import('react');

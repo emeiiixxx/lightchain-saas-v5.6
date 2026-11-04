@@ -25,6 +25,7 @@ jobs:
       - run: npm ci
       - run: node scripts/sync-asset-aliases.mjs --check
       - run: node scripts/run-canvas-performance-tests.mjs
+      - run: node --test tests/react-flow-selection.test.mjs tests/react-flow-workspace-isolation.test.mjs
       - run: node scripts/build-pages.mjs
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
