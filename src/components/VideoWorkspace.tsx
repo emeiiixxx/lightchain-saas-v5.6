@@ -44,6 +44,7 @@ import { ImageConnection } from './ImageConnection';
 import { canGenerateVideoWorkflow, normalizeVideoWorkflowSettings, createVideoWorkflow, removeVideoWorkflowSources, videoReferenceLimits, videoWorkflowBox, videoWorkflowReferences, videoWorkflowSourceIds, videoWorkflowSize, videoWorkflowTitle, type VideoWorkflow, type VideoReference } from '../video-workflow';
 import { arrangeVideoWorkflowMedia, reconcileVideoWorkflowLayout, type VideoLayoutState } from '../video-workflow-layout';
 import { centerVideoFlowAddition } from '../video-flow-addition-layout';
+import { FLOW_BRANCH_GAP } from '../canvas-connected-layout';
 import { bindCompletedTaskResults, createFashionVideoDemoResult, createMaterialDemoResults, createVideoDemoResult, demoPlaceholderSize } from '../video-workspace-demo';
 import { cropMaterialGrid, gridCropExample } from '../grid-crop';
 import { copyVideoCanvasSelection, pasteVideoCanvasSelection, prepareVideoCanvasMedia, readCanvasMedia, sizeVideoCanvasMedia, type VideoCanvasMedia } from '../video-canvas-media';
@@ -79,7 +80,7 @@ const contextCopy = {
 };
 type Snapshot = { images: VideoCanvasMedia[]; workflows: VideoWorkflow[]; materialWorkflows?: MaterialWorkflow[]; upscaleWorkflows?: VideoUpscaleWorkflow[]; selected: string[]; layout?: VideoLayoutState };
 type DemoResult = Omit<VideoCanvasMedia, 'x' | 'y'>;
-type DemoTaskRecord = { editorId?: string; timer: number | null; status: CanvasTask['status']; results: DemoResult[] };
+type DemoTaskRecord = { editorId?: string; timer: number | null; status: CanvasTask['status']; results: DemoResult[]; renderController?: AbortController };
 const DEMO_TASK_DURATION = 3000;
 const MEDIA_FILENAME_SPACE = 24;
 type VideoClipboard = CanvasClipboard<VideoCanvasMedia>;
@@ -379,6 +380,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       const hasSlot = snapshot.images.some(image => image.generation?.taskId === id);
       if ((!task.editorId || editors.has(task.editorId)) && hasSlot) continue;
       if (task.timer !== null) window.clearTimeout(task.timer);
+      task.renderController?.abort();
       task.timer = null; task.status = 'failed'; removed.add(id);
     }
     if (removed.size) {
@@ -401,7 +403,11 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     return () => {
       activeRef.current = false; uploadEpoch.current++;
       pendingMediaRead.current?.abort();
-      demoTaskRecords.current.forEach(task => { if (task.timer !== null) window.clearTimeout(task.timer); }); demoTaskRecords.current.clear();
+      demoTaskRecords.current.forEach(task => {
+        if (task.timer !== null) window.clearTimeout(task.timer);
+        task.renderController?.abort();
+      });
+      demoTaskRecords.current.clear();
       ownedUrls.current.forEach(url => URL.revokeObjectURL(url)); ownedUrls.current.clear();
     };
   }, []);
@@ -676,8 +682,14 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     animateView(fitImages(results, element.clientWidth, element.clientHeight));
     element.focus({ preventScroll: true });
   }
-  function startDemoTask(editorId: string | undefined, sourceIds: string[], results: DemoResult[], ratio = 'auto', previous = current.current, templateSource?: VideoCanvasMedia, templateMode?: VideoWorkflow['mode']) {
+  function startDemoTask(editorId: string | undefined, sourceIds: string[], results: DemoResult[], {
+    ratio = 'auto', templateSource, templateMode, renderVideo,
+  }: {
+    ratio?: string; templateSource?: VideoCanvasMedia; templateMode?: VideoWorkflow['mode'];
+    renderVideo?: (signal: AbortSignal) => Promise<DemoResult>;
+  } = {}) {
     if (!results.length) return;
+    const previous = current.current;
     const editor = [...previous.workflows.map(videoWorkflowBox), ...(previous.materialWorkflows ?? []).map(materialWorkflowBox), ...(previous.upscaleWorkflows ?? []).map(videoUpscaleWorkflowBox)].find(node => node.id === editorId);
     if (editorId && !editor) return;
     const materialNode = previous.materialWorkflows?.find(node => node.id === editorId);
@@ -688,16 +700,16 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const id = crypto.randomUUID();
     const boundResults = namedResults.map(result => ({ ...result, generatedByEditorId: editorId, generatedTaskId: id }));
     const source = sourceIds.map(sourceId => previous.images.find(image => image.id === sourceId && !image.generation)).find(Boolean) ?? templateSource;
-    const size = demoPlaceholderSize(ratio, source);
+    const size = renderVideo ? results[0] : demoPlaceholderSize(ratio, source);
     const placeholders: DemoResult[] = namedResults.map(result => ({
-      id: result.id, name: result.name, generatedFile: result.generatedFile, url: '', ...size,
+      id: result.id, name: result.name, generatedFile: result.generatedFile, url: '', width: size.width, height: size.height,
       generatedByEditorId: editorId, generatedTaskId: id, generation: { taskId: id, status: 'running' },
     }));
     const task: DemoTaskRecord = { editorId, timer: null, status: 'running', results: boundResults };
     demoTaskRecords.current.set(id, task);
     setTasks(previous => [{ id, status: 'running', createdAt: new Date().toISOString(), resultIds: boundResults.map(result => result.id), resultFiles: boundResults.map(result => ({ id: result.id, name: result.name, thumbnailUrl: result.url })) }, ...previous]);
     appendDemoPlaceholders(previous, editor, sourceIds, placeholders);
-    task.timer = window.setTimeout(() => {
+    const settle = () => {
       if (task.status !== 'running') return;
       task.timer = null;
       const latest = current.current;
@@ -713,9 +725,35 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       // Finished videos use their actual ratio. Recenter only result branches
       // whose dimensions changed, without moving the camera or adding history.
       replace(latest, true);
-      const thumbnailUrl = results.find(result => result.id === slots[0].id)?.url;
-      setTasks(previousTasks => previousTasks.map(task => task.id === id ? { ...task, status: 'completed', thumbnailUrl } : task));
-    }, DEMO_TASK_DURATION);
+      const thumbnailUrl = task.results.find(result => result.id === slots[0].id)?.url;
+      const resultFiles = task.results.map(result => ({ id: result.id, name: result.name, thumbnailUrl: result.url }));
+      setTasks(previousTasks => previousTasks.map(record => record.id === id ? { ...record, status: 'completed', thumbnailUrl, resultFiles } : record));
+    };
+    if (!renderVideo) {
+      task.timer = window.setTimeout(settle, DEMO_TASK_DURATION);
+      return;
+    }
+    const controller = new AbortController();
+    task.renderController = controller;
+    void renderVideo(controller.signal).then(result => {
+      const url = result.video?.url;
+      if (controller.signal.aborted || task.status !== 'running') {
+        if (url?.startsWith('blob:')) URL.revokeObjectURL(url);
+        return;
+      }
+      if (url?.startsWith('blob:')) ownedUrls.current.add(url);
+      const slot = boundResults[0];
+      task.results = [{ ...result, id: slot.id, name: slot.name, generatedFile: slot.generatedFile, generatedTaskId: id,
+        ...(result.video && { video: { ...result.video, name: slot.name } }) }];
+      settle();
+    }).catch(() => {
+      if (controller.signal.aborted || task.status !== 'running') return;
+      task.status = 'failed';
+      replace(current.current);
+      setTasks(records => records.map(record => record.id === id ? { ...record, status: 'failed' } : record));
+      if (activeRef.current) notify(locale === 'zh-CN' ? '按首帧比例生成视频失败，请重试。'
+        : locale === 'ja' ? '先頭フレームの比率で動画を生成できませんでした。もう一度お試しください。' : 'Could not create the video at the first frame’s aspect ratio. Please try again.', 'error');
+    });
   }
   async function generateVideoDemo(id: string) {
     const previous = current.current, node = previous.workflows.find(item => item.id === id);
@@ -724,10 +762,24 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     pendingVideoExamples.current.add(id);
     const epoch = uploadEpoch.current;
     try {
+      if (node.mode === 'frames' && node.main) {
+        const main = node.main;
+        const linked = previous.images.find(image => image.id === main.sourceImageId && image.url === main.url);
+        const source = linked?.naturalWidth && linked.naturalHeight ? linked : await prepareMainImage(main);
+        const latest = current.current.workflows.find(item => item.id === id);
+        if (!activeRef.current || epoch !== uploadEpoch.current || !latest || latest.main?.url !== main.url || latest.main.sourceImageId !== main.sourceImageId || !canGenerateVideoWorkflow(latest)) return;
+        const frame = { width: source.naturalWidth!, height: source.naturalHeight! };
+        if (!(frame.width > 0 && frame.height > 0)) throw new Error('invalid_first_frame_dimensions');
+        const slot = sizeVideoCanvasMedia({ id: crypto.randomUUID(), name: 'result.mp4', url: '', ...frame });
+        startDemoTask(id, videoWorkflowSourceIds(latest), [slot], {
+          renderVideo: signal => createFashionVideoDemoResult(id, locale, frame, signal),
+        });
+        return;
+      }
       const result = await createFashionVideoDemoResult(id, locale);
       const latest = current.current.workflows.find(item => item.id === id);
       if (!activeRef.current || epoch !== uploadEpoch.current || !latest || !canGenerateVideoWorkflow(latest)) return;
-      startDemoTask(id, videoWorkflowSourceIds(latest), [result], latest.ratio);
+      startDemoTask(id, videoWorkflowSourceIds(latest), [result], { ratio: latest.ratio });
     } catch {
       if (activeRef.current && epoch === uploadEpoch.current) notify(videoReferenceUploadMessages[locale].error, 'error');
     } finally {
@@ -741,7 +793,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const prepared = await prepareVideoTemplateGeneration(template, replacements, locale);
     if (signal.aborted || !activeRef.current || uploadEpoch.current !== epoch) return false;
     const source = prepared.images[0];
-    startDemoTask(undefined, [], [prepared.result], prepared.workflow.ratio, current.current, source ? { ...source, x: 0, y: 0 } : undefined, prepared.workflow.mode);
+    startDemoTask(undefined, [], [prepared.result], { ratio: prepared.workflow.ratio, templateSource: source ? { ...source, x: 0, y: 0 } : undefined, templateMode: prepared.workflow.mode });
     requestAnimationFrame(() => { if (activeRef.current) canvas.current?.focus({ preventScroll: true }); });
     return true;
   }
@@ -779,7 +831,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     if (node.kind !== 'gridSplit') {
       const results = createMaterialDemoResults(node, locale);
       const ratio = node.kind === 'storyboard' ? `${results[0].naturalWidth}:${results[0].naturalHeight}` : node.ratio;
-      startDemoTask(node.id, materialWorkflowSourceIds(node), results, ratio);
+      startDemoTask(node.id, materialWorkflowSourceIds(node), results, { ratio });
       return;
     }
     if (pendingGridCrops.current.has(id)) return;
@@ -795,7 +847,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       }
       results.forEach(result => ownedUrls.current.add(result.url));
       const first = results[0];
-      startDemoTask(id, materialWorkflowSourceIds(latest), results, `${first.naturalWidth}:${first.naturalHeight}`);
+      startDemoTask(id, materialWorkflowSourceIds(latest), results, { ratio: `${first.naturalWidth}:${first.naturalHeight}` });
     } catch {
       if (activeRef.current && epoch === uploadEpoch.current) notify(locale === 'zh-CN' ? '图片裁切失败，请重新选择参考图。'
         : locale === 'ja' ? '画像を分割できませんでした。参照画像を選び直してください。' : 'Unable to crop the image. Please select the reference again.', 'error');
@@ -876,8 +928,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       const scene = sceneItems(previous);
       // Stack new inputs in the editor's left column without moving existing assets.
       let overlaps: CanvasImage[];
-      while ((overlaps = scene.filter(item => source!.x < item.x + item.width + 40 && source!.x + source!.width + 40 > item.x && source!.y < item.y + item.height + 40 && source!.y + source!.height + 40 > item.y)).length) {
-        source.y = Math.max(...overlaps.map(item => item.y + item.height)) + 40;
+      while ((overlaps = scene.filter(item => source!.x < item.x + item.width + 40 && source!.x + source!.width + 40 > item.x && source!.y < item.y + item.height + FLOW_BRANCH_GAP && source!.y + source!.height + FLOW_BRANCH_GAP > item.y)).length) {
+        source.y = Math.max(...overlaps.map(item => item.y + item.height)) + FLOW_BRANCH_GAP;
       }
       images = [...images, source];
     }

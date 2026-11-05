@@ -100,23 +100,30 @@ export function createVideoDemoResult(editorId: string, locale: Locale): DemoRes
   });
 }
 
-let fashionVideoExample: Promise<UploadedVideo> | undefined;
+let fashionVideoExample: Promise<{ clip: Blob; video: UploadedVideo }> | undefined;
 
-// Keep the supplied clip intact; derive its poster and dimensions together so
-// the canvas never uses a different video's thumbnail or assumed aspect ratio.
-export async function createFashionVideoDemoResult(editorId: string, locale: Locale): Promise<DemoResult> {
+// Derive the poster and dimensions from the same MP4 that will be played and downloaded.
+export async function createFashionVideoDemoResult(editorId: string, locale: Locale, frame?: { width: number; height: number }, signal = new AbortController().signal): Promise<DemoResult> {
   if (!fashionVideoExample) {
     fashionVideoExample = (async () => {
       const url = `${import.meta.env.BASE_URL}assets/fashion-video-example/result.mp4`;
       const response = await fetch(url);
       if (!response.ok) throw new Error('Unable to load example video');
-      const file = new File([await response.blob()], 'result.mp4', { type: 'video/mp4' });
+      const clip = await response.blob();
+      const file = new File([clip], 'result.mp4', { type: 'video/mp4' });
       const video = await readVideoReference(file, new AbortController().signal);
       URL.revokeObjectURL(video.url);
-      return { ...video, url };
+      return { clip, video: { ...video, url } };
     })().catch(error => { fashionVideoExample = undefined; throw error; });
   }
-  const source = await fashionVideoExample;
+  const example = await fashionVideoExample;
+  signal.throwIfAborted();
+  let source = example.video;
+  if (frame && source.width * frame.height !== source.height * frame.width) {
+    const { exportFirstFrameVideo } = await import('./first-frame-video-export');
+    const mp4 = await exportFirstFrameVideo(example.clip, frame, Math.max(source.width, source.height), signal);
+    source = await readVideoReference(new File([mp4], 'result.mp4', { type: 'video/mp4' }), signal);
+  }
   const name = `${copy[locale].video}.mp4`;
   return sizeVideoCanvasMedia({
     id: crypto.randomUUID(), name, url: source.posterUrl,

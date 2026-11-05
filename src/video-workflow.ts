@@ -66,8 +66,9 @@ export function normalizeVideoWorkflowSettings(node: VideoWorkflow): VideoWorkfl
   const resolution = resolutions.includes(node.resolution) ? node.resolution : config.defaultResolution;
   const audio = generationMode === 'professional' && node.audio === 'mute' ? 'mute' : 'auto';
   const duration = clampVideoDuration(node.duration, generationMode);
-  if (generationMode === node.generationMode && resolution === node.resolution && audio === node.audio && duration === node.duration) return node;
-  return { ...node, generationMode, resolution, audio, duration };
+  const ratio = node.mode === 'frames' ? 'auto' : node.ratio;
+  if (generationMode === node.generationMode && resolution === node.resolution && audio === node.audio && duration === node.duration && ratio === node.ratio) return node;
+  return { ...node, generationMode, resolution, audio, duration, ratio };
 }
 
 export const videoReferenceLimits = { image: 9, video: 3 } as const;

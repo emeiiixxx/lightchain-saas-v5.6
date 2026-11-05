@@ -16,7 +16,7 @@ const copy = {
   en: { settings: 'Generation settings', mode: 'Generation mode', fast: 'Fast mode', professional: 'Professional mode', sample: 'Preview mode', ratio: 'Aspect ratio', resolution: 'Resolution', resolutionHelp: 'About resolution', resolutionHint: 'Create a low-cost 480p preview quickly. Once satisfied, select the video to upscale it.', duration: 'Duration', auto: 'Auto', audio: 'Audio', smart: 'Smart', mute: 'Mute', seconds: 's' },
   ja: { settings: '生成設定', mode: '生成モード', fast: 'クイックモード', professional: 'プロモード', sample: 'プレビューモード', ratio: '比率', resolution: '解像度', resolutionHelp: '解像度について', resolutionHint: '480Pで低コストの動画を素早く生成。満足したら動画を選択して高画質化できます。', duration: '動画の長さ', auto: '自動', audio: '音声', smart: '自動', mute: 'ミュート', seconds: 's' },
 };
-type Settings = Pick<VideoWorkflow, 'ratio' | 'resolution' | 'duration'> & Partial<Pick<VideoWorkflow, 'generationMode' | 'audio'>>;
+type Settings = Pick<VideoWorkflow, 'mode' | 'ratio' | 'resolution' | 'duration'> & Partial<Pick<VideoWorkflow, 'generationMode' | 'audio'>>;
 type Option = { value: string; label: string; icon?: string };
 
 function ParameterSegments({ label, options, value, onChange, onSelect, vertical = false }: {
@@ -55,7 +55,13 @@ export function VideoGenerationSettings({ locale, value, onChange, autoIcon, che
     const seconds = (index + 1) * 5;
     return { value: `${seconds}s`, label: `${seconds}${t.seconds}` };
   });
-  const summary = `${includeModeInSummary ? `${t[generationMode]} ｜ ` : ''}${value.ratio === 'auto' ? t.auto : value.ratio} ｜ ${value.resolution === '480p' ? t.sample : value.resolution} ｜ ${duration}`;
+  const showRatio = value.mode === 'references';
+  const summary = [
+    includeModeInSummary && t[generationMode],
+    showRatio && (value.ratio === 'auto' ? t.auto : value.ratio),
+    value.resolution === '480p' ? t.sample : value.resolution,
+    duration,
+  ].filter(Boolean).join(' ｜ ');
   const summaryIconUrl = summaryIcon ?? (value.ratio === 'auto' && autoIcon ? autoIcon : ratioIcon(value.ratio));
 
   function changeGenerationMode(next: string) {
@@ -147,8 +153,8 @@ export function VideoGenerationSettings({ locale, value, onChange, autoIcon, che
       <section className="video-generation-mode-setting"><h3>{t.mode}</h3><ParameterSegments label={t.mode} value={generationMode}
         onChange={changeGenerationMode} onSelect={changeGenerationMode}
         options={[{ value: 'fast', label: t.fast }, { value: 'professional', label: t.professional }]} /></section>
-      <section><h3>{t.ratio}</h3><ParameterSegments label={t.ratio} vertical value={value.ratio} onChange={ratio => onChange({ ratio })}
-        options={ratios.map(ratio => ({ value: ratio, label: ratio === 'auto' ? t.auto : ratio, icon: ratioIcon(ratio) }))} /></section>
+      {showRatio && <section><h3>{t.ratio}</h3><ParameterSegments label={t.ratio} vertical value={value.ratio} onChange={ratio => onChange({ ratio })}
+        options={ratios.map(ratio => ({ value: ratio, label: ratio === 'auto' ? t.auto : ratio, icon: ratioIcon(ratio) }))} /></section>}
       <section><div className="video-resolution-heading"><h3>{t.resolution}</h3>
         {generationMode === 'professional' && <button type="button" className="video-resolution-help" aria-label={t.resolutionHelp} data-tooltip={t.resolutionHint} data-tooltip-side="right" data-tooltip-width="200">
           <span className="icon" aria-hidden="true" style={{ width: 16, height: 16, '--icon-url': `url("${assetBase}resolution-info.svg")` } as CSSProperties} />

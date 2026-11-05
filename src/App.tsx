@@ -44,6 +44,7 @@ import { createImageResults } from './canvas-image-results';
 import { withCanvasOriginOrder } from './canvas-origin-order';
 import { withCanvasLayoutGroups } from './canvas-layout-groups';
 import { centerAddedFusionBranches } from './fusion-local-centering';
+import { FLOW_BRANCH_GAP } from './canvas-connected-layout';
 import { rememberGenerationSettingsChange } from './generation-settings-memory';
 import { canvasImageTaskResults, resolveImageTaskSlots, type CanvasImageTaskRecord } from './canvas-image-tasks';
 import { createCanvasFileNamer } from './canvas-media-filename';
@@ -811,8 +812,8 @@ export default function App() {
       const x = position.x - item.width - 80;
       let y = position.y + (workflowHeight(owner.fusion) - item.height) / 2;
       let collisions;
-      while ((collisions = occupied.filter(node => x < node.x + node.width + 16 && x + item.width + 16 > node.x && y < node.y + node.height + 16 && y + item.height + 16 > node.y)).length) {
-        y = Math.max(...collisions.map(node => node.y + node.height)) + 40;
+      while ((collisions = occupied.filter(node => x < node.x + node.width + 16 && x + item.width + 16 > node.x && y < node.y + node.height + FLOW_BRANCH_GAP && y + item.height + FLOW_BRANCH_GAP > node.y)).length) {
+        y = Math.max(...collisions.map(node => node.y + node.height)) + FLOW_BRANCH_GAP;
       }
       const added: CanvasImage = { id: crypto.randomUUID(), name: item.name, url: item.url, width: item.width, height: item.height, x, y, layoutTaskId: target };
       created.push(added); occupied.push(added);
