@@ -15,6 +15,29 @@ export function imageBatchSize(items: Omit<CanvasImage, 'x' | 'y'>[]) {
     height: boxes.reduce((height, box) => Math.max(height, box.height), 0) };
 }
 
+function addedImageRows(items: Omit<CanvasImage, 'x' | 'y'>[]) {
+  const rows: { items: { item: Omit<CanvasImage, 'x' | 'y'>; bounds: Bounds }[]; width: number; height: number }[] = [];
+  for (const item of items) {
+    const bounds = imageBounds({ ...item, x: 0, y: 0 });
+    let row = rows.at(-1);
+    if (!row || row.items.length === 5) {
+      row = { items: [], width: 0, height: 0 };
+      rows.push(row);
+    }
+    row.width += (row.items.length ? CANVAS_IMAGE_GAP : 0) + bounds.width;
+    row.height = Math.max(row.height, bounds.height);
+    row.items.push({ item, bounds });
+  }
+  return rows;
+}
+
+export function addedImageBatchSize(items: Omit<CanvasImage, 'x' | 'y'>[]) {
+  const rows = addedImageRows(items);
+  return { width: rows.reduce((width, row) => Math.max(width, row.width), 0),
+    height: rows.reduce((height, row) => height + row.height, 0) + Math.max(0, rows.length - 1) * CANVAS_IMAGE_GAP,
+    rowCount: rows.length };
+}
+
 // Logical creation groups are independent of the user's selectable layer groups.
 export function restoreCanvasContentGroups(items: CanvasImage[]): CanvasImage[] {
   const byId = new Map(items.map(item => [item.id, item]));
@@ -37,18 +60,22 @@ export function restoreCanvasContentGroups(items: CanvasImage[]): CanvasImage[] 
 export function placeAddedImages(items: Omit<CanvasImage, 'x' | 'y'>[], existing: CanvasImage[], viewport: Bounds,
   options: { point?: Point; filenameTopSpace: number }): CanvasImage[] {
   if (!items.length) return [];
-  let right = 0;
-  const row = items.map(item => {
-    const bounds = imageBounds({ ...item, x: 0, y: 0 });
-    const positioned = { ...item, x: right - bounds.x, y: -bounds.y };
-    right += bounds.width + CANVAS_IMAGE_GAP;
-    return positioned;
+  let rowTop = 0;
+  const positioned = addedImageRows(items).flatMap(row => {
+    let right = 0;
+    const images = row.items.map(({ item, bounds }) => {
+      const image = { ...item, x: right - bounds.x, y: rowTop - bounds.y };
+      right += bounds.width + CANVAS_IMAGE_GAP;
+      return image;
+    });
+    rowTop += row.height + CANVAS_IMAGE_GAP + options.filenameTopSpace;
+    return images;
   });
-  const bounds = selectionBounds(row);
+  const bounds = selectionBounds(positioned);
   const previous = existing.length ? selectionBounds(existing) : null;
   const left = options.point?.x ?? previous?.x ?? viewport.x + (viewport.width - bounds.width) / 2;
   const top = options.point?.y ?? (previous
     ? previous.y + previous.height + CANVAS_IMAGE_GAP + options.filenameTopSpace
     : viewport.y + (viewport.height - bounds.height + options.filenameTopSpace) / 2);
-  return row.map(item => ({ ...item, x: item.x + left, y: item.y + top }));
+  return positioned.map(item => ({ ...item, x: item.x + left, y: item.y + top }));
 }

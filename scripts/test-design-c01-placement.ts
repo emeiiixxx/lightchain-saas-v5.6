@@ -98,19 +98,24 @@ test('manual addition uses the current bottom of every object, not the latest ad
   assert.equal(afterArrangement.y - 80, 3180);
 });
 
-test('right-click additions retain their exact world anchor and varying widths stay 80px apart', () => {
-  const items = [output('small', { width: 70, height: 180 }), output('wide', { width: 600, height: 200 }), output('third', { width: 300 })];
+test('right-click additions retain their anchor and wrap after five images regardless of viewport width', () => {
+  const items = [output('small', { width: 70, height: 180 }), output('wide', { width: 600, height: 200 }),
+    output('third', { width: 300 }), output('fourth'), output('fifth'), output('sixth')];
   const existing = [tile('occupied', 300, 200)];
   const result = placeAddedImages(items, existing, viewport, { point: { x: 320, y: 240 }, filenameTopSpace: 80 });
-  assert.deepEqual(result.map(item => ({ x: item.x, y: item.y })), [{ x: 320, y: 240 }, { x: 470, y: 240 }, { x: 1150, y: 240 }]);
-  assert.equal(result[2].x + result[2].width > viewport.width, true);
+  assert.deepEqual(result.map(item => ({ x: item.x, y: item.y })), [
+    { x: 320, y: 240 }, { x: 470, y: 240 }, { x: 1150, y: 240 },
+    { x: 1530, y: 240 }, { x: 1710, y: 240 }, { x: 320, y: 600 },
+  ]);
 });
 
-test('empty manual additions center their full row including filename space', () => {
-  const result = placeAddedImages([output('first', { width: 800 }), output('second', { width: 500, height: 200 })], [], viewport, { filenameTopSpace: 60 });
+test('empty manual additions center their wrapped batch including filename space', () => {
+  const result = placeAddedImages([output('first', { width: 800 }), output('second', { width: 500, height: 200 }),
+    output('third'), output('fourth'), output('fifth'), output('sixth')], [], viewport, { filenameTopSpace: 60 });
   const bounds = selectionBounds(result);
   near(bounds.x + bounds.width / 2, 500);
   near(bounds.y - 60 + (bounds.height + 60) / 2, 400);
+  near(result[5].y - result[1].y - result[1].height, 80 + 60);
 });
 
 test('logical source groups survive user regrouping and follow source ancestry in restored data', () => {

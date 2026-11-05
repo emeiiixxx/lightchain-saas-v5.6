@@ -16,7 +16,7 @@ import { expandGroups, imageBounds, selectionBounds, type Alignment, type Bounds
 import { intersectsViewport, screenBounds } from './canvas-toolbar';
 import { placeAgentImageBatch } from './agent-image-placement';
 import { placeToolbarImageBatch } from './toolbar-image-placement';
-import { imageBatchFitZoom, imageBatchSize, placeAddedImages, restoreCanvasContentGroups } from './canvas-image-additions';
+import { addedImageBatchSize, imageBatchFitZoom, imageBatchSize, placeAddedImages, restoreCanvasContentGroups } from './canvas-image-additions';
 import { createDesignCanvasFileNamer } from './canvas-image-filename';
 import { canvasMediaFilename, type GeneratedMediaFile } from '../canvas-media-filename';
 import { createCopyFilenameAllocator } from '../canvas-copy-filename';
@@ -754,10 +754,14 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
       generating: false, generationFailed: false, groupId: undefined, groupedAt: undefined }));
     const shouldMoveView = !options?.point && options?.focus !== false;
     if (!shouldMoveView) focusAnimation.current?.();
-    const targetZoom = shouldMoveView ? imageBatchFitZoom(imageBatchSize(pending),
-      { width: viewport.right - viewport.left, height: viewport.bottom - viewport.top }, IMAGE_FILENAME_TOP_SPACE, state.camera.zoom) : state.camera.zoom;
-    const additions = placeAddedImages(pending, state.images,
-      { ...start, width: (viewport.right - viewport.left) / state.camera.zoom, height: (viewport.bottom - viewport.top) / state.camera.zoom },
+    const worldViewport = { ...start, width: (viewport.right - viewport.left) / state.camera.zoom,
+      height: (viewport.bottom - viewport.top) / state.camera.zoom };
+    // Five images per row; reserve one fixed-size filename band per row when fitting.
+    const batchSize = addedImageBatchSize(pending);
+    const targetZoom = shouldMoveView ? imageBatchFitZoom(batchSize,
+      { width: viewport.right - viewport.left, height: viewport.bottom - viewport.top },
+      IMAGE_FILENAME_TOP_SPACE * batchSize.rowCount, state.camera.zoom) : state.camera.zoom;
+    const additions = placeAddedImages(pending, state.images, worldViewport,
       { point: options?.point, filenameTopSpace: IMAGE_FILENAME_TOP_SPACE / targetZoom });
     remember(state.images);
     const next = [...state.images, ...additions]; live.current.images = next;
