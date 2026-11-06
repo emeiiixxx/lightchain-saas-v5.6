@@ -34,3 +34,5 @@ jobs:
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          timeout: 1800000 # Allow Pages up to 30 minutes to sync the demo assets.
