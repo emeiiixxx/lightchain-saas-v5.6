@@ -13,6 +13,34 @@ const reconcile = (images: CanvasImage[], nodes: MaterialWorkflow[], saved?: Vid
 const arrange = (images: CanvasImage[], nodes: MaterialWorkflow[], saved: VideoLayoutState) =>
   arrangeVideoWorkflowMedia(images, [], nodes, [], saved);
 
+test('a new cross-group node takes the slot immediately after its last source, ahead of an earlier dependent', () => {
+  const images = ['a', 'b', 'c', 'd'].map(image);
+  const nodes = images.map(item => node(item.id + '-node', [item.id]));
+  const initial = reconcile(images, nodes);
+  const withY = [...nodes, node('y', ['a', 'c'])];
+  const before = reconcile(images, withY, initial);
+  const withX = [...withY, node('x', ['c', 'a', 'b'])];
+  const after = reconcile(images, withX, before);
+  const expected = ['a', 'b', 'c', 'x', 'y', 'd'];
+  const readingOrder = (state: VideoLayoutState) => ['d', 'c', 'y', 'a', 'x', 'b'].sort((a, b) =>
+    state.groupPositions![state.owners[a]] - state.groupPositions![state.owners[b]]);
+  assert.deepEqual(readingOrder(after), expected);
+  const verifyLayout = (state: VideoLayoutState) => {
+    const positions = arrange(images, withX, state);
+    const topRow = ['a-node', 'b-node', 'c-node', 'x', 'y'];
+    for (let i = 1; i < topRow.length; i++) assert(positions.get(topRow[i])!.x > positions.get(topRow[i - 1])!.x);
+    assert(positions.get('d-node')!.y > Math.max(...topRow.map(id => positions.get(id)!.y)));
+    assert.deepEqual(arrange(images, withX, reconcile(images, withX, state)), positions);
+  };
+  verifyLayout(after);
+  const legacy: VideoLayoutState = structuredClone(after);
+  delete legacy.groupPositions;
+  delete legacy.groupPositionsVersion;
+  verifyLayout(legacy);
+  const changed = [...withY, node('x', ['a', 'd'])];
+  assert.deepEqual(readingOrder(reconcile(images, changed, after)), expected);
+});
+
 test('video nodes join one existing group or create a distinct group when inputs span multiple groups', () => {
   const images = ['a', 'b', 'fresh', 'cross-fresh'].map(image);
   const initial = [node('a-node', ['a']), node('b-node', ['b'])];

@@ -54,9 +54,7 @@ export function arrangeVideoWorkflowMedia(images: VideoCanvasMedia[], workflows:
       if (group && parent && group !== parent) dependencies.get(group)!.add(parent);
     }
   }
-  const orderedGroups = [...members.keys()].sort((a, b) => state.groupSortOrder![a] - state.groupSortOrder![b]
-    || (state.groupCreatedOrder?.[a] ?? state.groupOrder[a]) - (state.groupCreatedOrder?.[b] ?? state.groupOrder[b])
-    || a.localeCompare(b));
+  const orderedGroups = [...members.keys()].sort((a, b) => state.groupPositions[a] - state.groupPositions[b]);
   const stages = orderedLayoutStages(orderedGroups, dependencies);
   const related = placeConnectedGroupStages(stages.map(groups => groups.map(id => ({
     layout: layoutConnectedGroup(members.get(id)!, state.order), vertices: members.get(id)!,

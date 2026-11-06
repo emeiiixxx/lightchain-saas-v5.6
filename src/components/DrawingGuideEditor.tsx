@@ -21,6 +21,7 @@ const eraserSizeCopy = {
   en: { size: 'Eraser size', decrease: 'Decrease eraser size', increase: 'Increase eraser size' },
   ja: { size: '消しゴムのサイズ', decrease: '消しゴムを小さくする', increase: '消しゴムを大きくする' },
 };
+const clampGuideZoom = (zoom: number) => Math.max(0.1, Math.min(4, zoom));
 type StraightLine = { anchor: GuidePoint; axis: 'horizontal' | 'vertical' | null };
 type Gesture = { pointerId: number; kind: 'draw'; lastPointer: GuidePoint; straight: StraightLine | null }
   | { pointerId: number; kind: 'pan'; clientX: number; clientY: number; view: Viewport };
@@ -159,7 +160,7 @@ export function DrawingGuideEditor({ image, locale, phase, onClose, onSave }: Pr
       if (!rect.width || !rect.height) return;
       if (!priorSize) {
         const bottom = rect.width < 900 ? 176 : 112;
-        const zoom = Math.max(.05, Math.min(Math.max(1, rect.width - 64) / dimensions.width, Math.max(1, rect.height - bottom - 96) / dimensions.height));
+        const zoom = clampGuideZoom(Math.min(Math.max(1, rect.width - 64) / dimensions.width, Math.max(1, rect.height - bottom - 96) / dimensions.height));
         changeView({ zoom, x: (rect.width - dimensions.width * zoom) / 2, y: 96 + (rect.height - bottom - 96 - dimensions.height * zoom) / 2 });
       } else {
         const current = viewRef.current;
@@ -225,7 +226,8 @@ export function DrawingGuideEditor({ image, locale, phase, onClose, onSave }: Pr
       const x = event.clientX - rect.left, y = event.clientY - rect.top;
       const current = viewRef.current;
       const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? rect.height : 1);
-      const zoom = Math.max(.05, Math.min(8, current.zoom * Math.exp(-Math.max(-600, Math.min(600, delta)) * .0015)));
+      const zoom = clampGuideZoom(current.zoom * Math.exp(-Math.max(-600, Math.min(600, delta)) * .0015));
+      if (zoom === current.zoom) return;
       const ratio = zoom / current.zoom;
       changeView({ zoom, x: x - (x - current.x) * ratio, y: y - (y - current.y) * ratio });
       showCursor(event);

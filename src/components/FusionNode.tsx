@@ -31,9 +31,9 @@ const mergeCopy = {
 };
 
 const referenceCopy = {
-  'zh-CN': { help: '参考图排序说明', hint: '支持拖拽素材调整顺序', added: (limit: number) => `最多${limit}张，已添加` },
-  en: { help: 'About reference order', hint: 'Drag references to change their order', added: (limit: number) => `Up to ${limit}, added` },
-  ja: { help: '参考画像の並び順について', hint: '素材をドラッグして順序を変更できます', added: (limit: number) => `最大${limit}枚、追加済み` },
+  'zh-CN': { help: '参考图排序说明', hint: '支持拖拽调整顺序', added: (limit: number) => `最多${limit}张，已添加` },
+  en: { help: 'About reference order', hint: 'Drag to reorder', added: (limit: number) => `Up to ${limit}, added` },
+  ja: { help: '参考画像の並び順について', hint: 'ドラッグで順序を変更できます', added: (limit: number) => `最大${limit}枚、追加済み` },
 };
 
 type Props = { image: CanvasImage; locale: Locale; onChange: (patch: Partial<FusionSettings>) => void; onAddMain: () => void; onReference: (source: 'upload' | 'canvas') => void; onEditGuide: () => void; onGenerate: () => void };

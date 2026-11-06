@@ -23,6 +23,59 @@ function twoGroups() {
   return snapshot([...items, editor('b', ['b1', 'b2'])], items);
 }
 
+// Same order as the review canvas: D's image arrives before C's, but D's
+// workflow is created last. X takes B's image and the results of A and C.
+function reviewCanvas() {
+  let items = snapshot(['a', 'b', 'd', 'c'].map(id => image(id)));
+  for (const id of ['a', 'b', 'c', 'd']) {
+    const workflow = editor(`node-${id}`, [id]);
+    items = snapshot([...items, workflow, image(`out-${id}`, { generatedByEditorId: workflow.id })], items);
+  }
+  const x = editor('x', ['b', 'out-a', 'out-c']);
+  x.fusion = { ...x.fusion!, kind: 'batch', mainImages: x.fusion!.references, references: [] };
+  return snapshot([...items, x], items);
+}
+
+const reviewOrder = (items: CanvasImage[]) => {
+  const placed = nodes(items);
+  return ['node-a', 'node-b', 'node-d', 'node-c', 'x'].sort((a, b) =>
+    placed.get(a + ':fusion')!.x - placed.get(b + ':fusion')!.x);
+};
+
+test('arranging keeps an established group ahead of a later group made from an older image', () => {
+  const items = reviewCanvas();
+  assert.deepEqual(reviewOrder(items), ['node-a', 'node-b', 'node-c', 'x', 'node-d']);
+});
+
+test('two new nodes referencing the same groups place the newest directly after the last source', () => {
+  let items = snapshot(['a', 'b', 'c'].map(id => image(id)));
+  for (const id of ['node-a', 'node-b', 'node-c', 'y', 'x']) {
+    const inputs = id.startsWith('node-') ? [id.slice(5)] : ['c', 'a'];
+    items = snapshot([...items, editor(id, inputs)], items);
+  }
+  const placed = nodes(items);
+  const expected = ['node-a', 'node-b', 'node-c', 'x', 'y'];
+  assert.deepEqual([...expected].sort((a, b) => placed.get(a + ':fusion')!.x - placed.get(b + ':fusion')!.x), expected);
+  assert.deepEqual(nodes(arrangeImages(items)), placed);
+});
+
+test('an old preview preserves the order of unrelated groups while inserting a cross-group node', () => {
+  const items = structuredClone(reviewCanvas());
+  // C was displayed after D in this snapshot, although its workflow was
+  // created first. X references only A, B and C. D stays ahead of C.
+  const oldOrder = ['node-a', 'node-b', 'node-d', 'x', 'node-c'].map(id => `video-group:${id}:fusion`);
+  for (const item of items) {
+    for (const member of [item.layoutMeta?.image, item.layoutMeta?.editor]) {
+      if (!member?.group) continue;
+      member.group.position = oldOrder.indexOf(member.group.id);
+      delete member.group.positionVersion;
+    }
+  }
+  const migrated = snapshot(items);
+  assert.deepEqual(reviewOrder(migrated), ['node-a', 'node-b', 'node-d', 'node-c', 'x']);
+  assert.deepEqual(snapshot(migrated), migrated);
+});
+
 test('deleting the oldest main input preserves the existing group and its position in the group sequence', () => {
   const before = twoGroups();
   const original = canvasLayoutGroups(before);

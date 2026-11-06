@@ -7,6 +7,9 @@ export type VideoLayoutState = {
   // Frozen placement key: a new cross-group flow starts after every source
   // group; later reference edits never reorder an existing group.
   groupSortOrder?: Record<string, number>;
+  // Reading order shared by both Flow workspaces; absent in older snapshots.
+  groupPositions?: Record<string, number>;
+  groupPositionsVersion?: 1;
   // Media provenance is frozen when each canvas instance first appears.
   originOrder?: Record<string, number>;
   // Version 1 groupOrder values use original upload order rather than the
@@ -44,7 +47,7 @@ export function videoLayoutOrder(vertices: VideoLayoutVertex[], order: Record<st
   return result;
 }
 
-export function reconcileVideoLayout(vertices: VideoLayoutVertex[], saved?: VideoLayoutState): VideoLayoutState {
+export function reconcileVideoLayout(vertices: VideoLayoutVertex[], saved?: VideoLayoutState): VideoLayoutState & { groupPositions: Record<string, number> } {
   const order: Record<string, number> = {};
   let nextOrder = saved?.nextOrder ?? 0;
   const byId = new Map(vertices.map(vertex => [vertex.id, vertex]));
@@ -185,5 +188,50 @@ export function reconcileVideoLayout(vertices: VideoLayoutVertex[], saved?: Vide
     return value;
   }
   Object.keys(groupOrder).forEach(resolveGroupSortOrder);
-  return { order, nextOrder, owners, groupOrder, groupSortOrder, originOrder, originVersion: 1, groupCreatedOrder };
+  const groupPositions = resolveGroupPositions(groupSortOrder, groupCreatedOrder, byId, owners, saved);
+  return { order, nextOrder, owners, groupOrder, groupSortOrder, groupPositions, groupPositionsVersion: 1, originOrder, originVersion: 1, groupCreatedOrder };
+}
+
+function resolveGroupPositions(
+  sortOrder: Record<string, number>, createdOrder: Record<string, number>,
+  vertices: ReadonlyMap<string, VideoLayoutVertex>, owners: Record<string, string>, saved?: VideoLayoutState,
+): Record<string, number> {
+  const previous = saved?.groupPositions ?? {};
+  const ids = Object.keys(sortOrder);
+  const pending = ids.filter(id => !validOrder(previous[id]));
+  const recorded = ids.filter(id => validOrder(previous[id]));
+  const migrate = recorded.length > 0 && saved?.groupPositionsVersion !== 1;
+  if (!migrate && !pending.length) return Object.fromEntries(ids.map(id => [id, previous[id]]));
+
+  const byCreation = (a: string, b: string) => createdOrder[a] - createdOrder[b] || a.localeCompare(b);
+  const sourceGroups = (id: string) => {
+    const founder = id.startsWith('video-group:') ? vertices.get(id.slice('video-group:'.length)) : undefined;
+    return new Set(founder?.kind === 'workflow'
+      ? founder.sources.map(source => owners[source]).filter(parent => parent && parent !== id) : []);
+  };
+  const sequence = recorded.sort((a, b) => previous[a] - previous[b]);
+  // Initial groups use primary-image chronology. Once a sequence exists,
+  // forming a new independent group appends it even if its image is older.
+  const byImage = (a: string, b: string) => sortOrder[a] - sortOrder[b] || byCreation(a, b);
+  sequence.push(...pending.sort(recorded.length ? byCreation : byImage));
+  // Restore older snapshots by replaying cross-group insertions only. Existing
+  // independent groups keep their saved relative order even if their workflow
+  // creation order differs. Current snapshots only place newly formed groups.
+  const toPlace = migrate ? [...sequence] : pending;
+  const unplaced = new Set(toPlace);
+  function insertAfterSources(id: string) {
+    if (!unplaced.delete(id)) return;
+    const parents = sourceGroups(id);
+    if (parents.size < 2) return;
+    // When migrating a saved group, a later edit may have connected a group
+    // that did not exist at its creation. Keep its historical order in that case.
+    if (validOrder(saved?.groupSortOrder?.[id]) && [...parents].some(parent =>
+      createdOrder[parent] > createdOrder[id] || sortOrder[parent] > sortOrder[id])) return;
+    for (const parent of parents) insertAfterSources(parent);
+    sequence.splice(sequence.indexOf(id), 1);
+    const lastSource = sequence.reduce((last, other, index) => parents.has(other) ? index : last, -1);
+    sequence.splice(lastSource + 1, 0, id);
+  }
+  toPlace.sort(byCreation).forEach(insertAfterSources);
+  return Object.fromEntries(sequence.map((id, index) => [id, index]));
 }

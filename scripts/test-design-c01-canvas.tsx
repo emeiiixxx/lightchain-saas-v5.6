@@ -76,7 +76,10 @@ test('manual additions select the batch and use current arranged content bounds 
     const beforeLargeZoom = board().camera.zoom;
     await act(async () => { board().addImages([asset('large', 5000, 200)]); });
     const large = board().images.at(-1)!;
-    assert.equal(board().camera.zoom, beforeLargeZoom, 'manual additions only pan, even when the new image exceeds the viewport');
+    const view = board().camera;
+    assert.ok(view.zoom < beforeLargeZoom, 'shrink only when the new batch cannot fit');
+    assert.ok(large.x * view.zoom + view.x >= 0 && (large.x + large.width) * view.zoom + view.x <= board().size.width);
+    assert.ok(large.y * view.zoom + view.y - IMAGE_FILENAME_TOP_SPACE >= 0 && (large.y + large.height) * view.zoom + view.y <= board().size.height);
     near(large.y, oldBounds.y + oldBounds.height + 80 + IMAGE_FILENAME_TOP_SPACE / board().camera.zoom);
     assert.deepEqual(board().selectedIds, [large.id]);
     await act(async () => { board().arrange('vertical'); });
@@ -90,6 +93,57 @@ test('manual additions select the batch and use current arranged content bounds 
     assert.deepEqual(board().images.slice(0, -1), arranged, 'adding must not move existing arranged content');
   });
 });
+
+for (const modifier of ['ctrlKey', 'metaKey'] as const) {
+  test(`canvas toolbar focus: ${modifier} copies and pastes the selection at the pointer without moving the view`, async () => {
+    await withCanvas(async board => {
+      const canvas = board().canvasRef.current!;
+      const toolbar = document.createElement('div');
+      toolbar.dataset.canvasUi = ''; toolbar.setAttribute('role', 'toolbar');
+      const button = toolbar.appendChild(document.createElement('button'));
+      canvas.parentElement!.appendChild(toolbar);
+      const press = async (target: HTMLElement, key: string) => {
+        const event = new dom.window.KeyboardEvent('keydown', { key, code: 'Key' + key.toUpperCase(), [modifier]: true, bubbles: true, cancelable: true });
+        await act(async () => { target.focus(); target.dispatchEvent(event); });
+        return event.defaultPrevented;
+      };
+      assert.equal(await press(button, 'v'), false, 'an empty canvas clipboard does not consume native paste');
+      await act(async () => {
+        board().addImages([asset('pair-a'), asset('pair-b', 40, 80)], { point: { x: -60, y: 140 } });
+        board().zoomAt(2, { x: 500, y: 360 });
+      });
+      const originals = [...board().images], camera = { ...board().camera };
+      assert.equal(await press(button, 'c'), true);
+      assert.equal(board().canPaste, true);
+      await act(async () => { canvas.dispatchEvent(new dom.window.MouseEvent('pointermove', { clientX: 760, clientY: 320 })); });
+      const editor = toolbar.appendChild(document.createElement('textarea'));
+      assert.equal(await press(editor, 'v'), false, 'native text paste remains available');
+      const dialog = toolbar.appendChild(document.createElement('dialog'));
+      dialog.setAttribute('open', '');
+      assert.equal(await press(button, 'v'), false);
+      dialog.remove();
+      assert.equal(board().images.length, originals.length);
+      assert.equal(await press(button, 'v'), true);
+      const copies = board().images.slice(originals.length);
+      assert.deepEqual(board().images.slice(0, originals.length), originals);
+      assert.deepEqual(board().selectedIds, copies.map(item => item.id));
+      assert.equal(copies.length, 2);
+      const bounds = selectionBounds(copies);
+      near(bounds.x * camera.zoom + camera.x, 760);
+      near(bounds.y * camera.zoom + camera.y, 320);
+      near(copies[1].x - copies[0].x, originals[1].x - originals[0].x);
+      near(copies[1].y - copies[0].y, originals[1].y - originals[0].y);
+      assert.deepEqual(board().camera, camera);
+      await act(async () => { board().undo(); });
+      assert.deepEqual(board().images, originals, 'one undo removes the entire pasted batch');
+      await act(async () => { board().selectMany(originals.map(item => item.id)); });
+      assert.equal(await press(button, 'd'), true);
+      const duplicated = selectionBounds(board().images.slice(originals.length));
+      near(duplicated.x, selectionBounds(originals).x + 32);
+      near(duplicated.y, selectionBounds(originals).y + 32);
+    });
+  });
+}
 
 test('right-click records world coordinates at menu opening and adds there without changing the camera', async () => {
   await withCanvas(async board => {

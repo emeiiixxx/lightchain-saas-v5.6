@@ -31,7 +31,5 @@ export function groupTaskBlocks(items: CanvasImage[], related: LayoutBlock[], ta
     group.nodes.push(node);
     groups.set(id, group);
   }
-  return [...groups].sort(([a], [b]) => (state.groupSortOrder?.[a] ?? state.groupOrder[a]) - (state.groupSortOrder?.[b] ?? state.groupOrder[b])
-    || (state.groupCreatedOrder?.[a] ?? state.groupOrder[a]) - (state.groupCreatedOrder?.[b] ?? state.groupOrder[b])
-    || a.localeCompare(b)).map(([, block]) => block);
+  return [...groups].sort(([a], [b]) => state.groupPositions[a] - state.groupPositions[b]).map(([, block]) => block);
 }

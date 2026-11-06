@@ -578,18 +578,21 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
   const copySelected = useCallback(() => {
     finishPlacement();
     const items = live.current.images.filter(item => live.current.selectedIds.includes(item.id) && !item.generating && !item.generationFailed);
-    if (items.length) { setCopied(items.map(item => ({ ...item }))); notify('已复制，可在画布中粘贴', 'success'); }
+    if (!items.length) return false;
+    setCopied(items.map(item => ({ ...item }))); notify('已复制，可在画布中粘贴', 'success');
+    return true;
   }, [notify, finishPlacement]);
-  const paste = useCallback((at = contextMenu?.worldPoint) => {
-    if (!copied.length) return;
-    if (at) { insertCopies(copied, at); return; }
+  const paste = useCallback((menuPoint?: Point) => {
+    if (!copied.length) return false;
+    if (menuPoint) { insertCopies(copied, menuPoint); return true; }
     const { size } = live.current;
     const pointer = hoverPoint.current;
     const { left, right } = editingViewport();
     const point = pointer && pointer.x >= 0 && pointer.x <= size.width && pointer.y >= 0 && pointer.y <= size.height
       ? pointer : { x: (left + right) / 2, y: size.height / 2 };
     insertCopies(copied, worldPoint(point));
-  }, [copied, insertCopies, editingViewport, worldPoint, contextMenu]);
+    return true;
+  }, [copied, insertCopies, editingViewport, worldPoint]);
   const updateImages = useCallback((patches: (Partial<CanvasImage> & { id: string })[], record = false) => {
     if (lock.current) return;
     finishPlacement();
@@ -1116,21 +1119,30 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     const keydown = (e: KeyboardEvent) => {
       alt.current = e.altKey; updateMoveCursor();
       if (e.defaultPrevented || e.isComposing || editing(e.target) || document.querySelector('dialog[open]')) return;
-      const duplicateShortcut = (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && (e.code === 'KeyD' || e.key.toLowerCase() === 'd');
-      // Toolbar buttons can retain focus after a canvas operation. Duplicate
-      // still acts on the current selection, as the context menu advertises.
-      if (!duplicateShortcut && e.target instanceof Element && e.target.closest('button,a')) return;
+      const key = e.key.toLowerCase();
+      const command = (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey;
+      const duplicateShortcut = command && (e.code === 'KeyD' || key === 'd');
+      const clipboardShortcut = command && (key === 'c' || key === 'v');
+      const button = e.target instanceof Element ? e.target.closest('button,a') : null;
+      // A canvas toolbar button can retain keyboard focus while the pointer is back on the canvas.
+      if (button && !duplicateShortcut && !(clipboardShortcut && button.closest('[data-canvas-ui][role="toolbar"],.zoom-tools'))) return;
       if (lock.current) { if (e.code === 'Space' || ['Backspace', 'Delete', '+', '-', '='].includes(e.key)) e.preventDefault(); return; }
       if (gesture.current?.copy && e.key !== 'Escape') { if (e.key !== 'Alt') e.preventDefault(); return; }
       if (duplicateShortcut) {
         e.preventDefault(); duplicate(); setContextMenu(null);
         canvas.focus({ preventScroll: true }); return;
       }
+      if (clipboardShortcut) {
+        if (key === 'c' && window.getSelection()?.toString()) return;
+        if (key === 'c' ? copySelected() : paste()) {
+          e.preventDefault(); setContextMenu(null); canvas.focus({ preventScroll: true });
+        }
+        return;
+      }
       if (e.metaKey || e.ctrlKey) {
-        const key = e.key.toLowerCase();
         if (key === 'a') { e.preventDefault(); selectMany(live.current.images.filter(item => !item.generating).map(item => item.id)); return; }
         if (key === 'g') { e.preventDefault(); groupSelection(e.shiftKey); return; }
-        if (['c', 'v'].includes(key)) { e.preventDefault(); if (key === 'c') copySelected(); else paste(); setContextMenu(null); return; }
+        if (key === 'c' || key === 'v') return;
       }
       if (e.code === 'Space') { e.preventDefault(); space.current = true; setSpacePressed(true); }
       if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); removeSelected(); }

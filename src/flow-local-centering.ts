@@ -56,36 +56,63 @@ export function centerAddedFlowBranches(
 
   const order = Object.fromEntries(next.map((vertex, index) => [vertex.id, state.order[vertex.id] ?? index]));
   const sequence = new Map(videoLayoutOrder(next, order).map((vertex, index) => [vertex.id, index]));
-  const rootsOf = (branch: Branch) => [...current.values()].filter(vertex => keyOf(branchOf(vertex)) === keyOf(branch));
-  const branches = [...pending.values()].sort((a, b) =>
-    Math.min(...rootsOf(a).map(vertex => sequence.get(vertex.id)!))
-    - Math.min(...rootsOf(b).map(vertex => sequence.get(vertex.id)!)));
-
-  for (const branch of branches) {
-    const roots = rootsOf(branch);
+  const consumers = new Map<string, LocalFlowVertex[]>();
+  for (const vertex of next) for (const source of sourcesOf(vertex)) {
+    const list = consumers.get(source) ?? [];
+    list.push(vertex);
+    consumers.set(source, list);
+  }
+  const ancestorsOf = (ids: string[]) => {
+    const found = new Set(ids);
+    const queue = [...found];
+    for (let i = 0; i < queue.length; i++) for (const source of current.get(queue[i])?.sources ?? []) {
+      if (!current.has(source) || found.has(source)) continue;
+      found.add(source); queue.push(source);
+    }
+    return found;
+  };
+  const families = new Map<string, { roots: LocalFlowVertex[]; owner: string; fixed: Set<string> }>();
+  for (const branch of pending.values()) {
+    const roots = (consumers.get(branch.sources[0]) ?? [])
+      .filter(vertex => keyOf(branchOf(vertex)) === keyOf(branch));
     if (!roots.length) continue;
-    // Inputs and their ancestors stay fixed, including references from other
-    // groups. Descendant traversal also stops at every ownership boundary.
-    const fixed = new Set(branch.sources);
-    const ancestors = [...fixed];
-    for (let index = 0; index < ancestors.length; index++) {
-      for (const id of current.get(ancestors[index])?.sources ?? []) {
-        if (!current.has(id) || fixed.has(id)) continue;
-        fixed.add(id); ancestors.push(id);
+    const rootIds = new Set(roots.map(vertex => vertex.id));
+    const fixed = ancestorsOf(branch.sources);
+    // A+B and A share a branch level even though their input lists differ.
+    // A later join referencing A and an earlier branch's result is a
+    // descendant, however; it must stay attached to that result.
+    const checked = new Set(rootIds);
+    for (let i = 0; i < roots.length; i++) for (const source of sourcesOf(roots[i])) {
+      for (const sibling of consumers.get(source) ?? []) {
+        if (checked.has(sibling.id)) continue;
+        checked.add(sibling.id);
+        if (sibling.kind !== branch.kind || ownerOf(sibling) !== branch.owner || fixed.has(sibling.id)) continue;
+        const upstream = ancestorsOf(sourcesOf(sibling));
+        if ([...rootIds].some(id => upstream.has(id))) continue;
+        roots.push(sibling); rootIds.add(sibling.id);
+        for (const id of upstream) fixed.add(id);
       }
     }
+    families.set(JSON.stringify([...rootIds].sort()), { roots, owner: branch.owner, fixed });
+  }
+  const familiesInOrder = [...families.values()].sort((a, b) =>
+    Math.min(...a.roots.map(vertex => sequence.get(vertex.id)!))
+    - Math.min(...b.roots.map(vertex => sequence.get(vertex.id)!)));
+  for (const { roots, owner, fixed } of familiesInOrder) {
+    // Inputs and their ancestors stay fixed, including references from other
+    // groups. Descendant traversal also stops at every ownership boundary.
     const scope = new Set<string>();
     const queue = roots.map(vertex => vertex.id);
     for (let index = 0; index < queue.length; index++) {
       const id = queue[index];
       const vertex = current.get(id);
-      if (!vertex || fixed.has(id) || scope.has(id) || ownerOf(vertex) !== branch.owner) continue;
+      if (!vertex || fixed.has(id) || scope.has(id) || ownerOf(vertex) !== owner) continue;
       scope.add(id);
-      for (const child of current.values()) if (child.sources.includes(id)) queue.push(child.id);
+      for (const child of consumers.get(id) ?? []) queue.push(child.id);
     }
     const rootIds = new Set(roots.filter(vertex => scope.has(vertex.id)).map(vertex => vertex.id));
     if (!rootIds.size) continue;
-    const inputs = branch.sources.map(id => current.get(id)!);
+    const inputs = [...new Set(roots.flatMap(sourcesOf))].map(id => current.get(id)!);
     const left = Math.min(...inputs.map(vertex => vertex.x));
     const top = Math.min(...inputs.map(vertex => vertex.y));
     const bounds: FlowLayoutRect = {
@@ -98,7 +125,7 @@ export function centerAddedFlowBranches(
     let anchorId = '__local-flow-anchor__';
     while (current.has(anchorId)) anchorId += '_';
     const anchor: FlowLayoutVertex = {
-      id: anchorId, kind: branch.kind === 'workflow' ? 'media' : 'workflow',
+      id: anchorId, kind: roots[0].kind === 'workflow' ? 'media' : 'workflow',
       width: bounds.width, height: bounds.height, sources: [],
     };
     const vertices = [...scope].map(id => {

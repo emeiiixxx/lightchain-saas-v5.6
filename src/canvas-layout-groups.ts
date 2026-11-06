@@ -2,7 +2,7 @@ import { workflowSources, type CanvasImage } from './canvas';
 import { canvasImageOriginOrders } from './canvas-origin-order';
 import { reconcileVideoLayout, type VideoLayoutState, type VideoLayoutVertex } from './video-layout-groups';
 
-type CanvasLayoutGroup = { id: string; order: number; sortOrder?: number; createdOrder: number };
+type CanvasLayoutGroup = { id: string; order: number; sortOrder?: number; createdOrder: number; position?: number; positionVersion?: 1 };
 type CanvasLayoutMember = { vertexId: string; order: number; group?: CanvasLayoutGroup };
 export type CanvasLayoutMetadata = { image?: CanvasLayoutMember; editor?: CanvasLayoutMember };
 
@@ -26,11 +26,11 @@ function savedMembers(items: CanvasImage[]) {
   return members;
 }
 
-export function canvasLayoutGroups(items: CanvasImage[], previous: CanvasImage[] = []): VideoLayoutState {
+export function canvasLayoutGroups(items: CanvasImage[], previous: CanvasImage[] = []) {
   const vertices = verticesOf(items);
   const stored = new Map([...savedMembers(previous), ...savedMembers(items)]);
   const origins = canvasImageOriginOrders(items, previous);
-  const saved: VideoLayoutState = { order: {}, nextOrder: 0, owners: {}, groupOrder: {}, groupSortOrder: {}, groupCreatedOrder: {}, originOrder: {}, originVersion: 1 };
+  const saved: VideoLayoutState = { order: {}, nextOrder: 0, owners: {}, groupOrder: {}, groupSortOrder: {}, groupPositions: {}, groupPositionsVersion: 1, groupCreatedOrder: {}, originOrder: {}, originVersion: 1 };
   for (const member of stored.values()) saved.nextOrder = Math.max(saved.nextOrder, member.order + 1);
   for (const vertex of vertices) {
     const member = stored.get(vertex.id);
@@ -40,6 +40,10 @@ export function canvasLayoutGroups(items: CanvasImage[], previous: CanvasImage[]
         saved.owners[vertex.id] = member.group.id;
         saved.groupOrder[member.group.id] = member.group.order;
         if (member.group.sortOrder !== undefined) saved.groupSortOrder![member.group.id] = member.group.sortOrder;
+        if (member.group.position !== undefined) {
+          saved.groupPositions![member.group.id] = member.group.position;
+          if (!member.group.positionVersion) delete saved.groupPositionsVersion;
+        }
         saved.groupCreatedOrder![member.group.id] = member.group.createdOrder;
       }
     }
@@ -112,13 +116,14 @@ export function withCanvasLayoutGroups(items: CanvasImage[], previous: CanvasIma
     const group = state.owners[id];
     return { vertexId: id, order: state.order[id], ...(group ? { group: {
       id: group, order: state.groupOrder[group], sortOrder: state.groupSortOrder?.[group] ?? state.groupOrder[group],
-      createdOrder: state.groupCreatedOrder![group],
+      createdOrder: state.groupCreatedOrder![group], position: state.groupPositions[group], positionVersion: 1,
     } } : {}) };
   };
   const equal = (a: CanvasLayoutMember | undefined, b: CanvasLayoutMember | undefined) =>
     a?.vertexId === b?.vertexId && a?.order === b?.order && a?.group?.id === b?.group?.id
     && a?.group?.order === b?.group?.order && a?.group?.sortOrder === b?.group?.sortOrder
-    && a?.group?.createdOrder === b?.group?.createdOrder;
+    && a?.group?.createdOrder === b?.group?.createdOrder && a?.group?.position === b?.group?.position
+    && a?.group?.positionVersion === b?.group?.positionVersion;
   return items.map(item => {
     const image = item.nodeOnly ? undefined : member(item.id);
     const editor = item.fusion ? member(`${item.id}:fusion`) : undefined;
