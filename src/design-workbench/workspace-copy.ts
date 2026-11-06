@@ -186,6 +186,7 @@ export const workspaceCopy: Record<string, readonly [string, string]> = {
 '穿透选择': ['Select behind', '背面の要素を選択'], '放大画布': ['Zoom in', 'キャンバスを拡大'], '缩小画布': ['Zoom out', 'キャンバスを縮小'],
 '适合屏幕': ['Fit to screen', '画面に合わせる'], '实际大小': ['Actual size', '実際のサイズ'],
 '复制为图片': ['Copy as image', '画像としてコピー'], '粘贴': ['Paste', '貼り付け'], '剪切': ['Cut', '切り取り'],
+'画布菜单': ['Canvas menu', 'キャンバスメニュー'],
 '全选': ['Select all', 'すべて選択'], '多选': ['Multi-select', '複数選択'], '取消': ['Cancel', 'キャンセル'],
 '建组': ['Group', 'グループ化'], '解组': ['Ungroup', 'グループ解除'],
 '资产': ['Assets', 'アセット'], '生成记录': ['Generation records', '生成記録'], '任务': ['Tasks', 'タスク'],

@@ -117,8 +117,8 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     return () => document.fonts?.removeEventListener('loadingdone', loaded);
   }, []);
   const projectCover = useMemo(() => resolveProjectCover(images), [images]);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; id: string | null; worldPoint?: Point } | null>(null);
-  const copied = useRef<CanvasImage[]>([]);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; id: string | null; worldPoint: Point } | null>(null);
+  const [copied, setCopied] = useState<CanvasImage[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const hoveredIdRef = useRef<string | null>(null);
@@ -578,16 +578,18 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
   const copySelected = useCallback(() => {
     finishPlacement();
     const items = live.current.images.filter(item => live.current.selectedIds.includes(item.id) && !item.generating && !item.generationFailed);
-    if (items.length) { copied.current = items.map(item => ({ ...item })); notify('已复制，可在画布中粘贴', 'success'); }
+    if (items.length) { setCopied(items.map(item => ({ ...item }))); notify('已复制，可在画布中粘贴', 'success'); }
   }, [notify, finishPlacement]);
-  const paste = useCallback((at?: Point) => {
+  const paste = useCallback((at = contextMenu?.worldPoint) => {
+    if (!copied.length) return;
+    if (at) { insertCopies(copied, at); return; }
     const { size } = live.current;
     const pointer = hoverPoint.current;
     const { left, right } = editingViewport();
     const point = pointer && pointer.x >= 0 && pointer.x <= size.width && pointer.y >= 0 && pointer.y <= size.height
       ? pointer : { x: (left + right) / 2, y: size.height / 2 };
-    insertCopies(copied.current, at ?? contextMenu?.worldPoint ?? worldPoint(point));
-  }, [insertCopies, editingViewport, worldPoint, contextMenu]);
+    insertCopies(copied, worldPoint(point));
+  }, [copied, insertCopies, editingViewport, worldPoint, contextMenu]);
   const updateImages = useCallback((patches: (Partial<CanvasImage> & { id: string })[], record = false) => {
     if (lock.current) return;
     finishPlacement();
@@ -988,10 +990,12 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
       finishCopyDrag(false);
       cancelShape(); setShapeTool(null);
       const state = live.current;
-      const hit = movableImageAt(state.images, local(e), state.camera);
+      const point = local(e);
+      const hit = movableImageAt(state.images, point, state.camera);
       e.preventDefault(); gesture.current = null; setPanning(false); setMarquee(null);
-      if (!hit) { setSelected(null); setContextMenu({ x: e.clientX, y: e.clientY, id: null, worldPoint: worldPoint({ x: e.clientX - canvas.getBoundingClientRect().left, y: e.clientY - canvas.getBoundingClientRect().top }) }); return; }
-      live.current.selected = hit.id; setSelected(hit.id); setContextMenu({ x: e.clientX, y: e.clientY, id: hit.id });
+      const id = hit?.id ?? null;
+      setSelected(id);
+      setContextMenu({ x: e.clientX, y: e.clientY, id, worldPoint: worldPoint(point, state.camera) });
     };
     const down = (e: PointerEvent) => {
       if (lock.current) { e.preventDefault(); return; }
@@ -1155,5 +1159,5 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     setMode('select'); setShapeTool(kind); setSelected(null); setContextMenu(null);
     canvasRef.current?.focus({ preventScroll: true });
   }, [restored, cancelShape, finishPlacement, setSelected]);
-  return { shapeTool, selectShapeTool, restored, lookupImageFilename, projectCover, isolationActive: isolation.amount > 0 && images.some(image => image.id === isolation.id && !image.generating), locked, setInteractionLocked, setQuickEditing, blankClickVersion, setIsolatedImageId, editingViewport, focusImage, focusAgentResults, addAgentImages, selectedIds, hoveredId, marquee, selectMany, updateImages, renameImage, groupSelection, alignSelection, contextMenu, setContextMenu, copySelected, paste, reorder, reorderLayer, setCover, resetCover, downloadImage, size, mode, effectiveMode, setMode: chooseMode, beginEdit, updateSelected, duplicate, arrange, redo, canUndo: !images.some(image => image.generating) && history.current.length > 0, canRedo: !images.some(image => image.generating) && future.current.length > 0, historyVersion, canvasRef, images, selected, setSelected, camera, panning, upload, addImages, beginGeneration, beginResultRetry, finishGeneration, zoomAt, navigateMinimap, fit, returnToContent, removeSelected, undo };
+  return { shapeTool, selectShapeTool, restored, lookupImageFilename, projectCover, isolationActive: isolation.amount > 0 && images.some(image => image.id === isolation.id && !image.generating), locked, setInteractionLocked, setQuickEditing, blankClickVersion, setIsolatedImageId, editingViewport, focusImage, focusAgentResults, addAgentImages, selectedIds, hoveredId, marquee, selectMany, updateImages, renameImage, groupSelection, alignSelection, contextMenu, setContextMenu, copySelected, paste, canPaste: copied.length > 0, reorder, reorderLayer, setCover, resetCover, downloadImage, size, mode, effectiveMode, setMode: chooseMode, beginEdit, updateSelected, duplicate, arrange, redo, canUndo: !images.some(image => image.generating) && history.current.length > 0, canRedo: !images.some(image => image.generating) && future.current.length > 0, historyVersion, canvasRef, images, selected, setSelected, camera, panning, upload, addImages, beginGeneration, beginResultRetry, finishGeneration, zoomAt, navigateMinimap, fit, returnToContent, removeSelected, undo };
 }

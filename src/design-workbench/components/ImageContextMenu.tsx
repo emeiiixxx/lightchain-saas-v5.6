@@ -4,6 +4,7 @@ import { useCanvas } from '../useCanvas';
 import { usePresence } from '../usePresence';
 import { useLocale } from '../LocaleContext';
 import { Icon } from './ui';
+import { Icon as CanvasIcon } from '../../components/ui';
 
 type Board = ReturnType<typeof useCanvas>;
 const coverNewUsedKey = 'lc-v56-design-project-cover-used';
@@ -71,6 +72,10 @@ export function ImageContextMenu({ board, onUpload }: { board: Board; onUpload: 
     return () => { window.removeEventListener('pointerdown', dismiss); window.removeEventListener('resize', resize); };
   }, [board.contextMenu]);
   const perform = (action: () => void) => { action(); close(); board.canvasRef.current?.focus({ preventScroll: true }); };
+  const pasteHere = () => {
+    const point = shown.value?.worldPoint;
+    if (point && board.canPaste) perform(() => board.paste(point));
+  };
   const openSub = (kind: 'download' | 'order') => setSubmenu(kind);
   const keys = (e: KeyboardEvent<HTMLDivElement>) => {
     e.stopPropagation();
@@ -78,8 +83,10 @@ export function ImageContextMenu({ board, onUpload }: { board: Board; onUpload: 
     if (shown.value?.id && (e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && (e.code === 'KeyD' || e.key.toLowerCase() === 'd')) {
       e.preventDefault(); perform(board.duplicate); return;
     }
-    if (shown.value?.id && (e.metaKey || e.ctrlKey) && ['c', 'v'].includes(e.key.toLowerCase())) {
-      e.preventDefault(); const key = e.key.toLowerCase(); perform(key === 'c' ? board.copySelected : board.paste); return;
+    if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey) {
+      const key = e.key.toLowerCase();
+      if (key === 'v') { e.preventDefault(); pasteHere(); return; }
+      if (key === 'c' && shown.value?.id) { e.preventDefault(); perform(board.copySelected); return; }
     }
     if (shown.value?.id && (e.key === 'Delete' || e.key === 'Backspace')) { e.preventDefault(); perform(board.removeSelected); return; }
     if (e.key === 'Escape') { e.preventDefault(); perform(() => {}); return; }
@@ -96,8 +103,12 @@ export function ImageContextMenu({ board, onUpload }: { board: Board; onUpload: 
     }
   };
   if (!shown.value) return null;
-  if (shown.value.id === null) return <div ref={root} className="image-context-menu" role="menu" tabIndex={-1} aria-label={t('上传图片')} data-canvas-ui data-workbench-menu data-phase={shown.phase} inert={shown.phase === 'exit'} style={{ left: position.x, top: position.y }} onKeyDown={keys} onContextMenu={event => event.preventDefault()}>
+  const pasteItem = board.canPaste && <button type="button" role="menuitem" aria-keyshortcuts={mac ? 'Meta+V' : 'Control+V'} onPointerEnter={() => setSubmenu(null)} onFocus={() => setSubmenu(null)} onClick={pasteHere}>
+    <CanvasIcon name="canvasPaste" size={20} /><span>{t('粘贴')}</span><kbd>{modifier} + V</kbd>
+  </button>;
+  if (shown.value.id === null) return <div ref={root} className="image-context-menu" role="menu" tabIndex={-1} aria-label={t('画布菜单')} data-canvas-ui data-workbench-menu data-phase={shown.phase} inert={shown.phase === 'exit'} style={{ left: position.x, top: position.y }} onKeyDown={keys} onContextMenu={event => event.preventDefault()}>
     <button type="button" role="menuitem" onClick={() => { const point = shown.value?.worldPoint; close(); onUpload(point); }}><Icon name="canvas-imgIconSystem5" size={20} /><span>{t('上传图片')}</span></button>
+    {pasteItem}
   </div>;
   const subTrigger = (kind: 'download' | 'order', label: string, icon: string) => <button type="button" role="menuitem" data-sub={kind} aria-haspopup="menu" aria-expanded={submenu === kind} onPointerEnter={() => openSub(kind)} onClick={() => openSub(kind)}><Icon name={icon} size={20} /><span>{t(label)}</span><Icon name="context-img" size={16} /></button>;
   const item = (label: string, icon: string, action: () => void, shortcut?: string) => <button type="button" role="menuitem" onPointerEnter={() => setSubmenu(null)} onFocus={() => setSubmenu(null)} onClick={() => perform(action)}><Icon name={icon} size={20} /><span>{t(label)}</span>{shortcut && <kbd>{shortcut}</kbd>}</button>;
@@ -120,6 +131,7 @@ export function ImageContextMenu({ board, onUpload }: { board: Board; onUpload: 
     <div className="element-menu-divider" role="separator" />
     {subTrigger('order', '图层顺序', 'context-imgLeftIcon1')}
     {validImage && item('复制', 'context-imgLeftIcon2', board.copySelected, `${modifier} + C`)}
+    {pasteItem}
     {validImage && item('复制并粘贴', 'context-imgLeftIcon3', board.duplicate, `${modifier} + D`)}
     {canSetCover && <button type="button" role="menuitem" onPointerEnter={() => setSubmenu(null)} onFocus={() => setSubmenu(null)} onClick={updateProjectCover}><Icon name="context-project-cover" size={20} /><span>{t(isManualCover ? '恢复默认封面' : '设为项目封面')}</span>{!coverUsed && !isManualCover && <span className="image-context-new-badge">NEW</span>}</button>}
     <div className="element-menu-divider" role="separator" />
