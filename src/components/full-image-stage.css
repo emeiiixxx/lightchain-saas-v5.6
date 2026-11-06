@@ -1,0 +1,5 @@
+.full-image-stage { position: absolute; inset: 0; overflow: clip; touch-action: none; user-select: none; cursor: grab; }
+.full-image-stage.is-panning { cursor: grabbing; }
+/* Wheel and drag track the pointer directly, outside the global 200ms UI transition. */
+.full-image-center { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); transition: none; pointer-events: none; }
+.full-image-content { display: block; width: 100%; height: 100%; object-fit: contain; }
