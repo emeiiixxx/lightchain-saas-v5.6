@@ -4,6 +4,8 @@
 /* Figma 54:17860: original 32px artwork, hotspot at the foreground arrow tip. */
 .lc-react-flow:is([data-copy-drag='true'], [data-copy-hint='true']), .lc-react-flow:is([data-copy-drag='true'], [data-copy-hint='true']) * { cursor: url('/assets/cursors/copy.svg') 4 7, copy !important; }
 .lc-react-flow .react-flow__pane { cursor: default; }
+.lc-react-flow .react-flow__pane.selection { -webkit-user-select: none; user-select: none; }
+.lc-react-flow .react-flow__pane :is(input, textarea, [contenteditable]:not([contenteditable='false'])) { -webkit-user-select: text; user-select: text; }
 .lc-react-flow[data-hand='true'] .react-flow__pane { cursor: grab; }
 .lc-react-flow .react-flow__pane.dragging { cursor: grabbing; }
 /* The drag marquee is outline-only; the selected group owns its own fill. */

@@ -47,7 +47,7 @@ test('marquee selection supports Shift removal/addition without dragging or inte
     }, ...['a', 'b', 'editor'].map((id, i) => h('div', {
       key: id, [id === 'editor' ? 'data-fusion-id' : 'data-canvas-id']: id,
       style: { left: 100 + i * 200, top: 100, width: 100, height: 100 },
-    }, id === 'editor' ? h('button', { onClick: () => controlClicks++ }, 'control') : id)));
+    }, id === 'editor' ? h('div', null, h('button', { onClick: () => controlClicks++ }, 'control'), h('textarea', { defaultValue: 'Prompt' })) : id)));
   }
   const root = createRoot(document.getElementById('root'));
   const mouse = (target, type, shiftKey = false, x = 120, y = 120) => target.dispatchEvent(new window.MouseEvent(type, { bubbles: true, cancelable: true, view: window, button: 0, buttons: type === 'mouseup' ? 0 : 1, clientX: x, clientY: y, shiftKey }));
@@ -68,7 +68,12 @@ test('marquee selection supports Shift removal/addition without dragging or inte
   try {
     await act(async () => { root.render(h(Fixture)); });
     const pane = document.querySelector('.react-flow__pane');
-    await act(async () => { pointer(pane, 'pointerdown', 50, 50); });
+    await act(async () => {
+      const field = document.querySelector('[data-fusion-id="editor"] textarea');
+      assert.equal(pointer(field, 'pointerdown', 510, 110), true, 'direct input interaction must keep native text selection');
+      pointer(field, 'pointerup', 510, 110);
+      assert.equal(pointer(pane, 'pointerdown', 50, 50), false, 'starting a marquee must cancel native page selection');
+    });
     await act(async () => { pointer(pane, 'pointermove', 650, 250); });
     await act(async () => { pointer(pane, 'pointerup', 650, 250); mouse(pane, 'click', false, 650, 250); });
     assert.deepEqual(selected, ['a', 'b', 'editor:fusion'], 'marquee must select images and editor');

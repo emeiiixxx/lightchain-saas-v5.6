@@ -336,6 +336,10 @@ function ReactFlowCanvasInstance(props: Props) {
       hoverPoint.current = { x: e.clientX, y: e.clientY }; copyModifier.current = e.altKey;
       copyClick.current = false;
       if (copyGesture.current) { e.preventDefault(); e.stopPropagation(); return; }
+      // React Flow handles this drag via pointer events. Suppress the native text selection Safari starts on the pane.
+      if (e.button === 0 && e.isPrimary && e.pointerType !== 'touch' && e.target instanceof Element && e.target.matches('.react-flow__pane.selection')) {
+        e.preventDefault();
+      }
       if (e.button === 0 && e.altKey && !props.hand && !props.referenceMode && props.onPrepareCopyDrag && e.target instanceof Element
         && !e.target.closest(`${controlSelector},.nodrag,.react-flow__handle,.react-flow__edgeupdater`)) {
         const id = e.target.closest('.react-flow__node')?.getAttribute('data-id');
