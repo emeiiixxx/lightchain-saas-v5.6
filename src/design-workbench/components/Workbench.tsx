@@ -1,7 +1,7 @@
 import { EditableFilename } from '../../components/EditableFilename';
 import { useInputMemory } from '../useInputMemory';
 import { useEventCallback } from '../useEventCallback';
-import { readDemoState, writeDemoState, restoreDemoUrls, rememberDemoAsset } from '../demo-storage';
+import { readDemoState, writeDemoState, restoreDemoUrls } from '../demo-storage';
 import { retryRecordTarget } from '../retry-record';
 import { PrintPlacementDialog } from './PrintPlacementDialog';
 import { TextEditDialog } from './TextEditDialog';
@@ -15,7 +15,9 @@ import type { Notify } from '../notification';
 import { prepareMainImage, type LibraryImage } from '../asset-library';
 import { useLocale } from '../LocaleContext';
 import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { Button, Divider, Icon } from './ui';
+import { AssetPicker } from './AssetPicker';
 import { usePresence } from '../usePresence';
 import { ElementMenu } from './ElementMenu';
 import { FullImageViewer, type FullImageViewerImage } from './FullImageViewer';
@@ -159,24 +161,21 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       board.selectMany(board.selectedIds.filter(selectedId => selectedId !== item.canvasImageId));
     }
   };
-  const attachmentUrls = useRef(new Set<string>());
-  useEffect(() => () => { attachmentUrls.current.forEach(url => URL.revokeObjectURL(url)); }, []);
   const fileInput = useRef<HTMLInputElement>(null);
-  const imageInput = useRef<HTMLInputElement>(null);
-  const addAttachments = (input: HTMLInputElement, kind: 'file' | 'image') => {
-    const files = Array.from(input.files ?? []).filter(file => kind === 'file' || file.type.startsWith('image/'));
-    const added = files.map(file => {
-      const url = kind === 'image' ? URL.createObjectURL(file) : undefined;
-      if (url) {
-        attachmentUrls.current.add(url);
-        // Accepted Agent tasks retain reference URLs in their local records.
-        void rememberDemoAsset(url, file).catch(() => { /* Keep this session usable when local storage is unavailable. */ });
-      }
-      return { id: crypto.randomUUID(), name: file.name, kind, url };
-    });
+  const [agentImagePickerOpen, setAgentImagePickerOpen] = useState(false);
+  const shownAgentImagePicker = usePresence(agentImagePickerOpen ? true : null);
+  const focusAfterImagePicker = useRef(false);
+  const addFileAttachments = (input: HTMLInputElement) => {
+    const added = Array.from(input.files ?? []).map(file => ({ id: crypto.randomUUID(), name: file.name, kind: 'file' as const }));
     setAttachments(prev => [...prev, ...added]);
     input.value = '';
     textarea.current?.focus();
+  };
+  const confirmAgentImages = (images: Omit<CanvasImage, 'x' | 'y'>[]) => {
+    if (!agentImagePickerOpen) return;
+    setAttachments(previous => [...previous, ...images.map(image => ({ id: image.id, name: image.name, kind: 'image' as const, url: image.url }))]);
+    focusAfterImagePicker.current = true;
+    setAgentImagePickerOpen(false);
   };
   const [conversationId, setConversationId] = useState('agent-demo-20261028');
   const [conversation, setConversation] = useState<AgentMessage[]>(() => demoConversation.map(message => ({ ...message, conversationId: 'agent-demo-20261028' })));
@@ -687,6 +686,11 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
   const zoomOptions = [...new Set([10, 30, 50, 100, 200, zoomPercent])].sort((a, b) => a - b);
   const shownPreview = usePresence(preview);
   const textarea = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    if (shownAgentImagePicker.value || !focusAfterImagePicker.current) return;
+    focusAfterImagePicker.current = false;
+    textarea.current?.focus({ preventScroll: true });
+  }, [shownAgentImagePicker.value]);
   const selected = board.images.find(i => i.id === board.selected);
   const hovered = !board.locked && !board.isolationActive && !board.selectedIds.includes(board.hoveredId ?? '')
     ? board.images.find(item => item.id === board.hoveredId) : undefined;
@@ -916,10 +920,9 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
                 <Button variant="outline" className="agent-add" onClick={() => toggleMenu('attachments')} aria-label={t("添加附件")} aria-haspopup="menu" aria-expanded={menu === 'attachments'} aria-controls="agent-attachment-menu"><Icon name="agent-composer-20261029/add" size={24} /></Button>
                 {shownMenu.value === 'attachments' && <div id="agent-attachment-menu" className="agent-attachment-menu" role="menu" aria-label={t("上传类型")} data-phase={shownMenu.phase} inert={shownMenu.phase === 'exit'}>
                   <button type="button" role="menuitem" onClick={() => { setMenu(null); fileInput.current?.click(); }}><span className="agent-attachment-icon agent-attachment-icon--file"><Icon name="agent-add-file" size={16} /></span><span>{t("文件")}</span></button>
-                  <button type="button" role="menuitem" onClick={() => { setMenu(null); imageInput.current?.click(); }}><span className="agent-attachment-icon agent-attachment-icon--image"><Icon name="agent-add-image" size={16} /></span><span>{t("图片")}</span></button>
+                  <button type="button" role="menuitem" onClick={() => { setMenu(null); setAgentImagePickerOpen(true); }}><span className="agent-attachment-icon agent-attachment-icon--image"><Icon name="agent-add-image" size={16} /></span><span>{t("图片")}</span></button>
                 </div>}
-                <input ref={fileInput} hidden type="file" multiple aria-label={t("选择要上传的文件")} onChange={e => addAttachments(e.currentTarget, 'file')} />
-                <input ref={imageInput} hidden type="file" accept="image/*" multiple aria-label={t("选择要上传的图片")} onChange={e => addAttachments(e.currentTarget, 'image')} />
+                <input ref={fileInput} hidden type="file" multiple aria-label={t("选择要上传的文件")} onChange={e => addFileAttachments(e.currentTarget)} />
               </div>
               <button type="button" className="agent-send" disabled={agentRequestState === 'thinking' || (!activeAgentRequestId && (board.locked || !board.restored || !recordsRestored || (!prompt.trim() && !composerAttachments.length)))} aria-label={t(activeAgentRequestId && agentRequestState !== 'thinking' ? '停止请求' : '发送设计需求')} data-tooltip={t(activeAgentRequestId && agentRequestState !== 'thinking' ? '停止请求' : '发送设计需求')} onClick={() => {
                 if (activeAgentRequestId) { stopAgentRequest(); return; }
@@ -932,6 +935,9 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
         </>}
       </div>
     </aside>}
+    {shownAgentImagePicker.value && createPortal(<div onDragEnter={event => event.stopPropagation()} onDragOver={event => event.stopPropagation()} onDragLeave={event => event.stopPropagation()} onDrop={event => event.stopPropagation()}>
+      <AssetPicker locale={locale} phase={shownAgentImagePicker.phase} uploads={uploads} onUpload={onRememberUpload} onConfirm={image => confirmAgentImages([image])} onConfirmBatch={confirmAgentImages} onClose={() => setAgentImagePickerOpen(false)} />
+    </div>, document.body)}
     {!localEdit && quickEditVisible.value && board.images.find(item => item.id === quickEditVisible.value) && <QuickEditComposer onNotify={onNotify} key={quickEditVisible.value} draft={inputMemory.drafts[`quick:${quickEditVisible.value}`] ?? createQuickEditDraft()} onDraftChange={update => {
       inputMemory.update(`quick:${quickEditVisible.value}`, update);
     }} uploads={uploads} onUpload={onRememberUpload} board={board} image={board.images.find(item => item.id === quickEditVisible.value)!} phase={quickEditVisible.phase} onClose={() => setQuickEdit(null)} generating={generatingSources.current.has(quickEditVisible.value)} onSubmit={(request, draft) => { void generateQuickEdit(request, draft, quickEditVisible.value!); }} />}
