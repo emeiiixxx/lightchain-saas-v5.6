@@ -45,6 +45,27 @@ import { IMAGE_FILENAME_TOP_SPACE } from '../canvas-renderer';
 import { ShapeToolMenu } from './ShapeToolMenu';
 import { useCanvasFilenameTooltip } from '../useCanvasFilenameTooltip';
 
+function removeLegacyQuickEditMessages(messages: AgentMessage[]): AgentMessage[] {
+  const retained: AgentMessage[] = [];
+  const isPlainMessage = (message: AgentMessage) => Object.keys(message).every(key => ['role', 'text', 'conversationId'].includes(key));
+  for (let index = 0; index < messages.length; index++) {
+    const message = messages[index];
+    const reply = messages[index + 1];
+    // Only remove the exact legacy tool-message pair, never an Agent request or result.
+    if (message.role === 'user' && reply?.role === 'assistant'
+      && reply.text === '已记录设计需求。当前为交互 Demo，暂未接入 AI 生成。'
+      && message.conversationId === reply.conversationId
+      && isPlainMessage(message) && isPlainMessage(reply)
+      && /(?:^|\n)(?:编辑图片|Edit image|編集対象)：[^\n]+/.test(message.text)
+      && /^.+ \| .+ \| .+$/.test(message.text.split('\n').at(-1) ?? '')) {
+      index++;
+      continue;
+    }
+    retained.push(message);
+  }
+  return retained;
+}
+
 async function restoreTextEditTags(record: GenerationRecord): Promise<GenerationRecord> {
   const input = record.textEdit;
   if (!input || !record.tags.some(tag => tag.label === '原图（框选区域）')) return record;
@@ -191,11 +212,11 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       if (!active) return;
       if (value) {
         setConversationId(value.activeId);
-        setConversation(value.conversation.map(message => ({ ...message, conversationId: value.activeId })));
+        setConversation(removeLegacyQuickEditMessages(value.conversation).map(message => ({ ...message, conversationId: value.activeId })));
         setSavedConversations(value.savedConversations.map((messages, index) => {
           const id = messages.find(message => message.conversationId)?.conversationId ?? `agent-history-${index}`;
-          return messages.map(message => ({ ...message, conversationId: id }));
-        }));
+          return removeLegacyQuickEditMessages(messages).map(message => ({ ...message, conversationId: id }));
+        }).filter(messages => messages.length));
       }
       setConversationsRestored(true);
     }).catch(() => { if (active) setConversationsRestored(true); });
@@ -461,7 +482,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       if (generationMounted.current) { failDemoBatch(id, placeholders); onNotify('生成失败，请重试', 'error'); }
     }).finally(() => { if (sourceId) generatingSources.current.delete(sourceId); });
   };
-  const generateQuickEdit = async (request: string, draft: QuickEditDraft, sourceId: string, independent = false) => {
+  const generateQuickEdit = async (draft: QuickEditDraft, sourceId: string, independent = false) => {
     inputMemory.flush();
     const source = board.images.find(item => item.id === sourceId);
     if (!source || generatingSources.current.has(sourceId)) return;
@@ -479,7 +500,6 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     const isPrint = independent && localEditTool === '印花上身';
     const supportsPrompt = !isPrint;
     setGenerationRecords(previous => [{ id, replayable: true, sourceId, sourceIds, title: independent ? `款式 - ${localEditTool}` : '快捷编辑', time, supportsPrompt, printMode: isPrint ? (draft.printMode ?? 'position') : undefined, prompt: supportsPrompt ? (draft.value.trim() || undefined) : undefined, generating: true, count, resultHeight: 92 * placeholders[0].height / placeholders[0].width, ratio: draft.ratio, resolution: draft.resolution, tags: [{ label: '服装图', image: source.url }, ...draft.references.map(ref => ({ label: independent && localEditTool === 'AI试衣' ? '模特图' : independent && localEditTool === '印花上身' ? '印花图' : '参考图', image: ref.url })), ...(isPrint ? [{ label: draft.printMode === 'repeat' ? '满印' : '指定位置' }] : [])], images: placeholders.map(item => ({ id: item.id, url: item.url, height: 92 * item.height / item.width, status: 'generating' })) }, ...previous]);
-    if (!independent) setConversation(previous => [...previous, { role: 'user', text: request, conversationId }, { role: 'assistant', text: '已记录设计需求。当前为交互 Demo，暂未接入 AI 生成。', conversationId }]);
     setQuickEdit(null);
     // C01 places the batch below all current canvas elements before rendering.
     // Decode in parallel with the demo delay, so loading starts immediately and lasts 3s.
@@ -940,16 +960,16 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     </div>, document.body)}
     {!localEdit && quickEditVisible.value && board.images.find(item => item.id === quickEditVisible.value) && <QuickEditComposer onNotify={onNotify} key={quickEditVisible.value} draft={inputMemory.drafts[`quick:${quickEditVisible.value}`] ?? createQuickEditDraft()} onDraftChange={update => {
       inputMemory.update(`quick:${quickEditVisible.value}`, update);
-    }} uploads={uploads} onUpload={onRememberUpload} board={board} image={board.images.find(item => item.id === quickEditVisible.value)!} phase={quickEditVisible.phase} onClose={() => setQuickEdit(null)} generating={generatingSources.current.has(quickEditVisible.value)} onSubmit={(request, draft) => { void generateQuickEdit(request, draft, quickEditVisible.value!); }} />}
+    }} uploads={uploads} onUpload={onRememberUpload} board={board} image={board.images.find(item => item.id === quickEditVisible.value)!} phase={quickEditVisible.phase} onClose={() => setQuickEdit(null)} generating={generatingSources.current.has(quickEditVisible.value)} onSubmit={draft => { void generateQuickEdit(draft, quickEditVisible.value!); }} />}
     {localEdit && selected && <QuickEditComposer onNotify={onNotify} key={`local-${localEditTool}-${localEdit}`} localEdit tool={localEditTool} onAdjustPrint={draft => setPrintPlacement({ source: selected, draft })} draft={inputMemory.drafts[`${localEditTool}:${localEdit}`] ?? createQuickEditDraft()} onDraftChange={update => {
       inputMemory.update(`${localEditTool}:${localEdit}`, update);
-    }} uploads={uploads} onUpload={onRememberUpload} board={board} image={selected} phase="enter" onClose={closeLocalEdit} generating={generatingSources.current.has(localEdit)} onSubmit={(request, draft) => { void generateQuickEdit(request, draft, localEdit, true); }} />}
+    }} uploads={uploads} onUpload={onRememberUpload} board={board} image={selected} phase="enter" onClose={closeLocalEdit} generating={generatingSources.current.has(localEdit)} onSubmit={draft => { void generateQuickEdit(draft, localEdit, true); }} />}
     {shownPrintPlacement.value && <PrintPlacementDialog source={shownPrintPlacement.value.source} draft={shownPrintPlacement.value.draft} phase={shownPrintPlacement.phase} onNotify={onNotify} onClose={() => setPrintPlacement(null)} onConfirm={() => {
       if (!printPlacement) return;
       const { source, draft } = printPlacement;
       const generationDraft = { ...draft, value: '' };
       setPrintPlacement(null);
-      void generateQuickEdit(t('印花上身'), generationDraft, source.id, true);
+      void generateQuickEdit(generationDraft, source.id, true);
     }} />}
     {shownTextEdit.value && <TextEditDialog key={shownTextEdit.value.id} source={shownTextEdit.value} phase={shownTextEdit.phase} onClose={() => setTextEdit(null)} onSubmit={(input, prompt) => generateTextEdit(input, prompt, shownTextEdit.value!.id)} />}
     <ImageContextMenu board={board} onUpload={onUpload} />

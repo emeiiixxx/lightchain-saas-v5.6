@@ -24,7 +24,7 @@ const COMPOSER_CHROME_HEIGHT = 212;
 export function QuickEditComposer({ board, image, phase, onClose, onSubmit, uploads, onUpload, draft, onDraftChange, generating = false, localEdit = false, tool = '局部修改', onAdjustPrint, onNotify }: {
   localEdit?: boolean; tool?: CanvasEditTool; onAdjustPrint?: (draft: QuickEditDraft) => void; onNotify: Notify;
   board: ReturnType<typeof useCanvas>; image: CanvasImage; phase: 'enter' | 'exit'; onClose: () => void;
-  onSubmit: (request: string, draft: QuickEditDraft) => void; uploads: LibraryImage[]; onUpload: (image: LibraryImage) => void; generating?: boolean;
+  onSubmit: (draft: QuickEditDraft) => void; uploads: LibraryImage[]; onUpload: (image: LibraryImage) => void; generating?: boolean;
   draft: QuickEditDraft; onDraftChange: Dispatch<SetStateAction<QuickEditDraft>>;
 }) {
   const { t, locale } = useLocale();
@@ -155,7 +155,7 @@ export function QuickEditComposer({ board, image, phase, onClose, onSubmit, uplo
   }, [menu]);
   const submit = () => {
     if (!canSubmit || generating || phase === 'exit') return;
-    onSubmit([value.trim() || toolTitle, `${t('编辑图片')}：${image.name}`, ...references.map(ref => `${t('参考图片')}：${ref.name}`), `${ratio === 'auto' ? t('智能') : ratio} | ${resolution} | ${t(`${count}张`)}`].join('\n'), draft);
+    onSubmit(draft);
   };
   const addFiles = async (files: FileList) => {
     if (reading.current) return;
