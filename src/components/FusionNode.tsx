@@ -1,3 +1,4 @@
+import { canvasMediaDisplayName } from '../canvas-media-filename';
 import { ProgressiveImage } from './ProgressiveImage';
 import { PromptTools } from './PromptTools';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -101,7 +102,7 @@ export function FusionNode({ image, locale, onChange, onAddMain, onReference, on
             const position = supportsReferenceSorting ? sorting.order.indexOf(reference.id) : index;
             return <div className={`fusion-reference-wrap${supportsReferenceSorting ? ' nodrag nopan' : ''}`} key={supportsReferenceSorting || merge ? reference.id : reference.url}
               role={supportsReferenceSorting ? 'group' : undefined}
-              aria-label={supportsReferenceSorting ? `${t.reference} ${position + 1}: ${reference.name}` : undefined}
+              aria-label={supportsReferenceSorting ? `${t.reference} ${position + 1}: ${canvasMediaDisplayName(reference.name)}` : undefined}
               aria-describedby={supportsReferenceSorting ? `${promptId}-reference-sort` : undefined}
               draggable={supportsReferenceSorting}
               ref={supportsReferenceSorting ? element => sorting.tile(reference.id, element) : undefined}
@@ -112,7 +113,7 @@ export function FusionNode({ image, locale, onChange, onAddMain, onReference, on
                 sorting.begin(event, { ...reference, kind: 'image' });
               } : undefined}
               onDragEnd={supportsReferenceSorting ? sorting.end : undefined}>
-            <div className="fusion-reference"><ProgressiveImage src={reference.url} alt={reference.name} /></div>
+            <div className="fusion-reference"><ProgressiveImage src={reference.url} alt={canvasMediaDisplayName(reference.name)} /></div>
             {supportsReferenceSorting && <span className="fusion-reference-number" aria-hidden="true">{position + 1}</span>}
             <Button variant="tonal" className="fusion-reference-remove" aria-label={`${t.remove} ${position + 1}`} title={t.remove} onClick={() => onChange({ references: references.filter((_, i) => i !== index), reference: undefined })}><Icon name="close" size={merge || supportsReferenceSorting ? 12 : 16} /></Button>
           </div>; })}

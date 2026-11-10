@@ -1,3 +1,4 @@
+import { canvasMediaDisplayName } from '../canvas-media-filename';
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react';
 import { Button, Divider, Icon, type IconName } from './ui';
 import type { CanvasImage } from '../canvas';
@@ -117,7 +118,7 @@ export function CutoutEditor({ image, phase, onClose, onApply }: Props) {
         </div>
       </div>
       <section className="cutout-image-panel"><header>绘制想要抠出的区域</header><div className="cutout-image-stage"><div className="cutout-image" style={{aspectRatio: `${image.width}/${image.height}`, width: `${Math.min(1, image.width/image.height)*100}%`}}>
-        <img ref={picture} src={image.url} alt={image.name} crossOrigin="anonymous" draggable={false}/>
+        <img ref={picture} src={image.url} alt={canvasMediaDisplayName(image.name)} crossOrigin="anonymous" draggable={false}/>
         <canvas data-brush={tool === 'brush'} onPointerEnter={showCursor} onPointerLeave={hideCursor} ref={mask} width={1000} height={Math.round(height)} aria-label="绘制抠图选区" onDoubleClick={() => {if(tool === 'pen' && active.current && active.current.points.length >= 3) {save([...marks, active.current]); active.current=null;}}} onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerCancel={() => {hideCursor(); active.current=null; paint(marks);}}/>
         <div ref={brushCursor} aria-hidden="true" className="cutout-brush-cursor" hidden={tool !== 'brush'} style={{width: `${size / 10}%`}}/>
       </div></div></section>

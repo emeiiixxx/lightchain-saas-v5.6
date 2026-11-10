@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react';
+import { canvasMediaDisplayName } from '../canvas-media-filename';
 import './editable-filename.css';
 
 const filenameSegmenter = typeof Intl.Segmenter === 'function' ? new Intl.Segmenter(undefined, { granularity: 'grapheme' }) : null;
@@ -8,12 +9,12 @@ const lengthError = () => document.documentElement.lang.startsWith('ja') ? 'フ�
   : document.documentElement.lang.startsWith('en') ? 'File names can contain up to 100 characters' : '文件名最多100个字符';
 
 /** Edit the basename only; the file's real format remains unchanged. */
-export function EditableFilename({ name, onRename, autoEdit = false, onEditingEnd, onValidationError, followPointer = false, className = '' }: {
+export function EditableFilename({ name, onRename, autoEdit = false, onEditingEnd, onValidationError, followPointer = false, hideExtension = true, className = '' }: {
   name: string; onRename?: (name: string) => void; autoEdit?: boolean; onEditingEnd?: () => void;
-  onValidationError?: (message: string) => void; followPointer?: boolean; className?: string;
+  onValidationError?: (message: string) => void; followPointer?: boolean; hideExtension?: boolean; className?: string;
 }) {
-  const suffix = name.match(/\.[^.]+$/)?.[0] ?? '';
-  const basename = suffix ? name.slice(0, -suffix.length) : name;
+  const basename = hideExtension ? canvasMediaDisplayName(name) : name;
+  const suffix = name.slice(basename.length);
   const [editing, setEditing] = useState(autoEdit);
   const [draft, setDraft] = useState(basename);
   const [invalid, setInvalid] = useState(false);
@@ -36,7 +37,7 @@ export function EditableFilename({ name, onRename, autoEdit = false, onEditingEn
     if (save && value && value + suffix !== name) onRename?.(value + suffix);
     setEditing(false); onEditingEnd?.();
   };
-  return <span className={`editable-filename nodrag nopan ${className}`} data-tooltip={editing ? undefined : name} data-tooltip-position={followPointer ? 'pointer' : 'pointer-stationary'}
+  return <span className={`editable-filename nodrag nopan ${className}`} data-tooltip={editing ? undefined : basename} data-tooltip-position={followPointer ? 'pointer' : 'pointer-stationary'}
     onDoubleClick={event => {
       if (!onRename) return;
       event.preventDefault(); event.stopPropagation(); if (editing) return; finished.current = false; setInvalid(false); setDraft(basename); setEditing(true);
@@ -47,6 +48,6 @@ export function EditableFilename({ name, onRename, autoEdit = false, onEditingEn
         event.stopPropagation();
         if (event.nativeEvent.isComposing) return;
         if (event.key === 'Enter' || event.key === 'Escape') { event.preventDefault(); finish(event.key === 'Enter'); }
-      }} onCopy={event => event.stopPropagation()} onPaste={event => event.stopPropagation()} onCut={event => event.stopPropagation()} /> : name}
+      }} onCopy={event => event.stopPropagation()} onPaste={event => event.stopPropagation()} onCut={event => event.stopPropagation()} /> : basename}
   </span>;
 }

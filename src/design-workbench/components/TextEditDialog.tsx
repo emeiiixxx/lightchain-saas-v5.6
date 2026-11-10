@@ -1,3 +1,4 @@
+import { canvasMediaDisplayName } from '../../canvas-media-filename';
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { CanvasImage } from '../useCanvas';
 import { useLocale } from '../LocaleContext';
@@ -229,7 +230,7 @@ export function TextEditDialog({ source, phase, onClose, onSubmit }: {
       </aside>
       <div ref={stage} className="text-edit-stage" tabIndex={-1} data-gesture={dragging} data-wheel={wheeling} data-pan={space || (dragging && gesture.current?.mode === 'pan')} onPointerDown={startGesture} onPointerMove={moveGesture} onPointerUp={finishGesture} onPointerCancel={event => finishGesture(event, true)} onLostPointerCapture={event => finishGesture(event, true)}>
         {!guideOpen && <div className="text-edit-image" ref={media} style={{ width: shownWidth, height: shownHeight, left: (size.width - shownWidth) / 2 + pan.x, top: (size.height - shownHeight) / 2 + pan.y }}>
-          <img src={source.url} alt={source.name} draggable={false} />
+          <img src={source.url} alt={canvasMediaDisplayName(source.name)} draggable={false} />
           {box && <div className="text-edit-selection" style={{ left: `${box.x / width * 100}%`, top: `${box.y / height * 100}%`, width: `${box.width / width * 100}%`, height: `${box.height / height * 100}%` }}>
             {['nw', 'n', 'ne', 'w', 'e', 'sw', 's', 'se'].map(handle => <button key={handle} type="button" data-text-handle={handle} className={`text-edit-handle text-edit-handle--${handle}`} aria-label={t('调整框选范围')} />)}
           </div>}

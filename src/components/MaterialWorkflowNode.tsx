@@ -1,3 +1,4 @@
+import { canvasMediaDisplayName } from '../canvas-media-filename';
 import { useEffect, useId, useRef, type CSSProperties, type KeyboardEvent } from 'react';
 import type { Locale } from '../i18n';
 import { canGenerateMaterialWorkflow, materialReferenceLimit, materialWorkflowHasBackView, materialWorkflowSize, materialWorkflowTitle, materialWorkflowViews, type MaterialView, type MaterialWorkflow } from '../material-workflow';
@@ -139,7 +140,7 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
       ref={reorder ? element => sorting.tile(reference.id, element) : undefined}
       style={reorder ? { order: index } : undefined} data-dragging={reorder && sorting.dragId === reference.id}
       onDragStart={event => { if (!reorder) { event.preventDefault(); return; } sorting.begin(event, reference); }} onDragEnd={finishDrag}>
-      <button type="button" className="video-reference-preview" aria-label={`${t.preview} ${reference.name}`} aria-describedby={reorder ? `${id}-reorder` : undefined}
+      <button type="button" className="video-reference-preview" aria-label={`${t.preview} ${canvasMediaDisplayName(reference.name)}`} aria-describedby={reorder ? `${id}-reorder` : undefined}
         onClick={() => { if (Date.now() >= suppressPreviewUntil.current) onPreview(reference); }}
         onKeyDown={event => {
           if (!reorder || !event.altKey || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
@@ -147,10 +148,10 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
           const target = references[references.findIndex(item => item.id === reference.id) + (event.key === 'ArrowLeft' ? -1 : 1)];
           if (target) sorting.move('image', reference.id, target.id);
         }}>
-        <ProgressiveImage src={reference.url} alt={reference.name} width={64} height={64} />
+        <ProgressiveImage src={reference.url} alt={canvasMediaDisplayName(reference.name)} width={64} height={64} />
       </button>
       {reorder && index !== undefined && <span className="video-reference-number" aria-hidden="true">{index + 1}</span>}
-      <Button variant="tonal" className="video-reference-remove" title={t.remove} aria-label={`${t.remove} ${reference.name}`}
+      <Button variant="tonal" className="video-reference-remove" title={t.remove} aria-label={`${t.remove} ${canvasMediaDisplayName(reference.name)}`}
         onClick={() => onChange(field === 'back' ? { back: undefined } : { references: references.filter(item => item.id !== reference.id) })}>
         <Icon name="close" size={12} />
       </Button>

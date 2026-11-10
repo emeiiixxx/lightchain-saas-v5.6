@@ -1,3 +1,4 @@
+import { canvasMediaDisplayName } from '../../canvas-media-filename';
 import { useLocale } from '../LocaleContext';
 import { GenerationImageTag } from './GenerationImageTag';
 import { Button, Icon } from './ui';
@@ -31,7 +32,7 @@ export function AgentComposerAttachments({ items, onRemove, disabled = false }: 
         className="agent-composer-attachments__chip"
         data-kind={item.kind}
         data-provisional={!!item.provisional}
-        title={item.name}
+        title={item.kind === 'image' ? canvasMediaDisplayName(item.name) : item.name}
       >
         {item.kind === 'image' && item.url
           ? <GenerationImageTag src={item.url} label={label} active={!disabled} disabled={disabled} />

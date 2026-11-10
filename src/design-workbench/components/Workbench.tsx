@@ -1,3 +1,4 @@
+import { canvasMediaDisplayName } from '../../canvas-media-filename';
 import { EditableFilename } from '../../components/EditableFilename';
 import { useInputMemory } from '../useInputMemory';
 import { useEventCallback } from '../useEventCallback';
@@ -104,10 +105,11 @@ function ImageProperties({ board, onReplace, onAction, rotationLocked, onNotify 
   if (board.selectedIds.length > 1) return <div className="properties-empty">{t('已选择')} {board.selectedIds.length} {t(board.images.some(item => board.selectedIds.includes(item.id) && item.shape) ? '个元素' : '张图片')}</div>;
   const item = board.images.find(i => i.id === board.selected);
   if (!item) return <div className="properties-empty properties-empty--unselected"><img src="/assets/design-workbench/properties-empty-selection.png" alt="" width={120} height={120} /><p>{t("请先选择图层")}</p></div>;
+  const displayName = item.shape ? t(item.name) : item.generating ? t('生成中') : item.generationFailed ? t('生成失败') : canvasMediaDisplayName(item.name);
   const update = (patch: Partial<CanvasImage>) => board.updateSelected(patch, false);
   const field = (label: string, key: 'x' | 'y' | 'width' | 'height', prefix: string) => <NumberField label={label} prefix={prefix} value={item[key]} min={key === 'width' || key === 'height' ? 1 : undefined} begin={board.beginEdit} change={n => update({ [key]: n })} />;
   return <div className="image-properties" key={item.id}>
-    <div className="property-title"><h2 title={item.name}>{item.shape ? t(item.name) : item.generating ? t("生成中") : item.generationFailed ? t("生成失败") : item.name}</h2>{!item.shape && <Button icon="prop-imgLeftIcon" onClick={onReplace}>{t("替换图片")}</Button>}</div>
+    <div className="property-title"><h2 title={displayName}>{displayName}</h2>{!item.shape && <Button icon="prop-imgLeftIcon" onClick={onReplace}>{t("替换图片")}</Button>}</div>
     {!item.shape && <div className="property-actions">{[['prop-imgNameInpaint', t("局部编辑")], ['prop-imgNameConvertTo3DTile', t("转3D平铺")], ['prop-imgNameImageEdit', t("图片编辑")]].map(([icon, label]) => <button key={label} onClick={() => onAction(label)}><Icon name={icon} size={16} /><span>{label}</span></button>)}</div>}
     <Divider />
     <section className="property-section"><h3>{t("基础参数")}</h3>
@@ -838,7 +840,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       return <div key={`filename:${item.id}:${item.id === renamingId}`} data-canvas-ui={item.id === renamingId ? true : undefined} className="canvas-selected-filename" style={{ left: box.x, top: box.y - IMAGE_FILENAME_TOP_SPACE, width: box.width }}>
         <span className="canvas-selected-filename-icon" aria-hidden="true" />
         {item.id === renamingId ? <EditableFilename name={item.name} autoEdit followPointer onRename={name => board.renameImage(item.id, name)} onValidationError={message => onNotify(message, 'error')} onEditingEnd={() => setRenamingId(null)} />
-          : <span className="canvas-selected-filename-text">{item.name}</span>}
+          : <span className="canvas-selected-filename-text">{canvasMediaDisplayName(item.name)}</span>}
       </div>;
     })}
     {board.selectedIds.length > 1 && !board.marquee && <MultiSelectionControls key={board.selectedIds.join('|')} board={board} onNotify={onNotify} onTechPack={unavailable} />}

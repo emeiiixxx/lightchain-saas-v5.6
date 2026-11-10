@@ -47,7 +47,7 @@ import { centerAddedFusionBranches } from './fusion-local-centering';
 import { FLOW_BRANCH_GAP } from './canvas-connected-layout';
 import { rememberGenerationSettingsChange } from './generation-settings-memory';
 import { canvasImageTaskResults, resolveImageTaskSlots, type CanvasImageTaskRecord } from './canvas-image-tasks';
-import { createCanvasFileNamer } from './canvas-media-filename';
+import { canvasMediaDisplayName, createCanvasFileNamer } from './canvas-media-filename';
 import { isProjectCoverCandidate, projectCoverMessages, resolveProjectCover, toggleProjectCover, withProjectCoverOrder } from './canvas-project-cover';
 import { getMotionDurationMs } from './motion';
 import { PromptLibraryProvider } from './PromptLibraryContext';
@@ -884,7 +884,7 @@ export default function App() {
       return source ? <ImageConnection zoom={view.zoom} key={`cutout:${result.id}`} image={source} target={result} active={selectedIds.includes(source.id) || selectedIds.includes(result.id)} /> : null;
     })}
     {images.filter(n => !n.nodeOnly).map(n => <div key={n.id} data-image data-canvas-id={n.id} className={`canvas-image ${(canvasReference ? canvasReference.ids.includes(n.id) : selectedIds.includes(n.id)) ? 'selected' : ''}`} style={{ left: n.x, top: n.y, width: n.width, height: n.height, opacity: canvasReference && n.generation ? .35 : undefined, zIndex: foregroundIds.has(n.id) ? 3 : raisedIds.has(n.id) ? 2 : undefined } as React.CSSProperties}
-      tabIndex={canvasReference && n.generation ? -1 : 0} role="button" aria-label={`${t.image}: ${n.name}`} aria-disabled={!!canvasReference && !!n.generation} aria-pressed={canvasReference ? canvasReference.ids.includes(n.id) : selectedIds.includes(n.id)}
+      tabIndex={canvasReference && n.generation ? -1 : 0} role="button" aria-label={`${t.image}: ${canvasMediaDisplayName(n.name)}`} aria-disabled={!!canvasReference && !!n.generation} aria-pressed={canvasReference ? canvasReference.ids.includes(n.id) : selectedIds.includes(n.id)}
       onFocus={e => { if (document.documentElement.dataset.focusNavigation === 'keyboard' && !canvasReference && e.target === e.currentTarget && !selectedRef.current.includes(n.id)) setSelectedIds([n.id]); }} onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || (e.key === ' ' && document.documentElement.dataset.focusNavigation === 'keyboard'))) { e.preventDefault(); if (canvasReference) { sceneEvents.toggleCanvasReference(n.id); return; } setSelectedIds(e.shiftKey ? selectedIds.includes(n.id) ? selectedIds.filter(id => id !== n.id) : [...selectedIds, n.id] : [n.id]); } }}
       onPointerDown={e => sceneEvents.selectReferenceImage(e, n.id)}
       onContextMenu={e => {
@@ -901,9 +901,9 @@ export default function App() {
       }}>
       {!n.generation && <CanvasMediaFilename name={n.name} url={n.url} onRename={name => sceneEvents.renameImage(n.id, name)} />}
       {n.projectCover && isProjectCoverCandidate(n) && <CanvasProjectCoverBadge locale={locale} />}
-      <Button hidden={!!canvasReference || !!n.generation} variant="tonal" className="image-preview-button nodrag nopan" aria-label={`${t.viewFull} · ${n.name}`} title={t.viewFull} data-overlay onClick={event => { event.stopPropagation(); if (!n.generation) setPreviewImage(n); }}><Icon name="viewFull" size={20} /></Button>
+      <Button hidden={!!canvasReference || !!n.generation} variant="tonal" className="image-preview-button nodrag nopan" aria-label={`${t.viewFull} · ${canvasMediaDisplayName(n.name)}`} title={t.viewFull} data-overlay onClick={event => { event.stopPropagation(); if (!n.generation) setPreviewImage(n); }}><Icon name="viewFull" size={20} /></Button>
       {n.generation ? <CanvasGenerationPlaceholder locale={locale} failed={n.generation.status === 'failed'} />
-        : <ProgressiveImage src={n.url} alt={n.name} width={n.width} height={n.height} fit="contain" />}
+        : <ProgressiveImage src={n.url} alt={canvasMediaDisplayName(n.name)} width={n.width} height={n.height} fit="contain" />}
     </div>)}
     {images.filter(n => n.fusion).map(n => {
       const sources = workflowSources(images, n), source = sources[0];
@@ -914,7 +914,7 @@ export default function App() {
         }) } } : n;
       return <div key={`${n.id}:fusion`}>
       {sources.map(input => <ImageConnection key={input.id} zoom={view.zoom} image={input} target={{...fusionPosition(n),id:`${n.id}:fusion`,width:workflowWidth(n.fusion),height:workflowHeight(n.fusion)}} active={selectedIds.includes(input.id) || selectedIds.includes(`${n.id}:fusion`)} />)}
-      <div className="fusion-position" data-workflow-kind={n.fusion?.kind} data-fusion-id={n.id} data-selected={selectedIds.includes(`${n.id}:fusion`)} tabIndex={0} role="group" aria-label={`${n.fusion?.kind === 'batch' ? t.batchEdit : n.fusion?.kind === 'directed' ? t.directed : n.fusion?.kind === 'lingerie' ? t.lingerie : n.fusion?.kind === 'flat' ? t.flat : n.fusion?.kind === 'merge' ? t.mergeImages : t.fusion} · ${n.name}`}
+      <div className="fusion-position" data-workflow-kind={n.fusion?.kind} data-fusion-id={n.id} data-selected={selectedIds.includes(`${n.id}:fusion`)} tabIndex={0} role="group" aria-label={`${n.fusion?.kind === 'batch' ? t.batchEdit : n.fusion?.kind === 'directed' ? t.directed : n.fusion?.kind === 'lingerie' ? t.lingerie : n.fusion?.kind === 'flat' ? t.flat : n.fusion?.kind === 'merge' ? t.mergeImages : t.fusion} · ${canvasMediaDisplayName(n.name)}`}
         style={{ left: fusionPosition(n).x, top: fusionPosition(n).y, width: workflowWidth(n.fusion), height: workflowHeight(n.fusion), zIndex: foregroundIds.has(`${n.id}:fusion`) ? 3 : raisedIds.has(n.id) ? 2 : undefined } as React.CSSProperties}
         onFocus={() => { if (document.documentElement.dataset.focusNavigation === 'keyboard' && !canvasReference && !selectedRef.current.includes(`${n.id}:fusion`)) setSelectedIds([`${n.id}:fusion`]); }}
         >
@@ -1060,8 +1060,8 @@ export default function App() {
           if (!event.ctrlKey && !event.metaKey && !event.shiftKey && Math.abs(event.deltaY) > Math.abs(event.deltaX)) event.currentTarget.scrollLeft += event.deltaY;
         }}>
           {canvasReferencePreviews.map(image => <div className="canvas-reference-preview" role="listitem" key={image.id}>
-            <ProgressiveImage src={image.url} alt={image.name} width={56} height={56} fit="contain" />
-            <Button variant="tonal" className="canvas-reference-remove" title={locale === 'en' ? 'Remove from selection' : locale === 'ja' ? '選択を解除' : '取消选择'} aria-label={`${locale === 'en' ? 'Remove from selection' : locale === 'ja' ? '選択を解除' : '取消选择'}：${image.name}`} onClick={() => {
+            <ProgressiveImage src={image.url} alt={canvasMediaDisplayName(image.name)} width={56} height={56} fit="contain" />
+            <Button variant="tonal" className="canvas-reference-remove" title={locale === 'en' ? 'Remove from selection' : locale === 'ja' ? '選択を解除' : '取消选择'} aria-label={`${locale === 'en' ? 'Remove from selection' : locale === 'ja' ? '選択を解除' : '取消选择'}：${canvasMediaDisplayName(image.name)}`} onClick={() => {
               setCanvasReference(current => current ? { ...current, ids: current.ids.filter(id => id !== image.id) } : null);
             }}><Icon name="close" size={12} /></Button>
           </div>)}
@@ -1184,7 +1184,7 @@ export default function App() {
       onClose={closeModal} onConfirm={image => { addBatchImages([image], uploadPoint.current); closeModal(); }} onConfirmBatch={items => { addBatchImages(items, uploadPoint.current); closeModal(); }} />}
     {shownModal.value && shownModal.value !== 'upload' && !activeTool && <Dialog title={t[shownModal.value as 'help' | 'support' | 'credits' | 'project']} onClose={closeModal} closeLabel={t.close} phase={shownModal.phase}>
       {shownModal.value === 'help' ? <div className="text-sm leading-6"><p className="font-medium mb-3">{t.helpIntro}</p><ul className="help-list space-y-3 text-muted"><li>{t.helpUpload}</li><li>{t.shortcutSelect}</li><li>{t.helpPan}</li><li>{t.helpZoom}</li><li>{t.helpKeys}</li></ul><p className="text-xs text-muted mt-6">{t.localNote}</p></div>
-        : shownModal.value === 'project' ? <><div className="project-summary p-4 rounded-xl mb-4">{projectCover && <img className="project-summary-cover" src={projectCover.url} alt={projectCover.name} />}<p className="font-medium mb-1">{projectName}</p><p className="text-xs text-muted">{t.workspace} · {images.filter(n => !n.nodeOnly).length} {t.image}</p></div><p className="text-xs leading-5 text-muted">{t.localNote}</p><div className="flex justify-end mt-6"><Button variant="outline" size="m" onClick={closeModal}>{t.returnCanvas}</Button></div></>
+        : shownModal.value === 'project' ? <><div className="project-summary p-4 rounded-xl mb-4">{projectCover && <img className="project-summary-cover" src={projectCover.url} alt={canvasMediaDisplayName(projectCover.name)} />}<p className="font-medium mb-1">{projectName}</p><p className="text-xs text-muted">{t.workspace} · {images.filter(n => !n.nodeOnly).length} {t.image}</p></div><p className="text-xs leading-5 text-muted">{t.localNote}</p><div className="flex justify-end mt-6"><Button variant="outline" size="m" onClick={closeModal}>{t.returnCanvas}</Button></div></>
         : <p className="text-sm leading-6 text-muted">{shownModal.value === 'support' ? t.supportNote : t.creditsNote}</p>}
     </Dialog>}
   </div></PromptLibraryProvider>;

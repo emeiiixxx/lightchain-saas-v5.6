@@ -1,3 +1,4 @@
+import { canvasMediaDisplayName } from '../canvas-media-filename';
 import { useEffect, useId, useRef, useState, type DragEvent, type KeyboardEvent } from 'react';
 import type { LibraryImage } from '../asset-library';
 import { readImage } from '../canvas';
@@ -90,13 +91,13 @@ function TemplateImageField({ locale, slot, value, onChange, onUpload, onChoose,
       onDrop={event => { event.preventDefault(); event.stopPropagation(); dragDepth.current = 0; setDragging(false); void upload(Array.from(event.dataTransfer.files)); }}>
       {value ? <>
         <div className="video-template-thumbnail">
-          <img src={value.url} alt={value.name} />
+          <img src={value.url} alt={canvasMediaDisplayName(value.name)} />
           <div className="video-template-image-actions">
             <Button title={t.replace} aria-label={`${t.replace} · ${label}`} aria-haspopup="dialog" disabled={!active} onClick={choose}><Icon name="promptCoverReplace" size={16} /></Button>
             <Button title={t.remove} aria-label={`${t.remove} · ${label}`} disabled={!active} onClick={() => { request.current++; setBusy(false); onChange(); requestAnimationFrame(() => emptyButton.current?.focus()); }}><Icon name="promptTrash" size={16} /></Button>
           </div>
         </div>
-        <p className="video-template-file-name">{value.name}</p>
+        <p className="video-template-file-name">{canvasMediaDisplayName(value.name)}</p>
       </> : <button ref={emptyButton} type="button" className="video-template-upload-empty" aria-label={`${label} · ${placeholder}`} aria-describedby={`${id}-formats`} aria-haspopup="dialog" disabled={!active} onClick={choose}>
         <Icon name="promptCoverAddImage" size={24} /><span>{busy ? t.reading : placeholder}</span>
       </button>}

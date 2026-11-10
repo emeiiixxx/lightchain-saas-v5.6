@@ -1,3 +1,4 @@
+import { canvasMediaDisplayName } from '../canvas-media-filename';
 import { ProgressiveImage } from './ProgressiveImage';
 import { useEffect, useRef, useState } from 'react';
 import { Button, Dialog, Divider, Icon } from './ui';
@@ -183,16 +184,16 @@ export function AssetPicker({ locale, phase, uploads, videoUploads = [], onUploa
         onDrop={event => { event.preventDefault(); event.stopPropagation(); setDragOver(false); void upload(event.dataTransfer.files); }}>
         <Icon name="upload" size={32} /><span className="asset-upload-title">{busy ? t.reading : dragOver ? (allowVideo ? uploadText.drop : t.dropImagesHere) : t.localUpload}</span><span className="asset-upload-hint">{dragOver && !busy ? t.releaseToUpload : allowVideo ? uploadText.hint : allowSvg ? promptCoverMessages[locale].formats : t.localUploadHint}</span>
       </button>}
-      {visible.map(asset => multiple ? <button type="button" key={asset.id} className="asset-card asset-card--multiple" aria-label={asset.name} aria-pressed={chosen.some(item => item.id === asset.id)} disabled={busy} onClick={() => toggleAsset(asset)}>
+      {visible.map(asset => multiple ? <button type="button" key={asset.id} className="asset-card asset-card--multiple" aria-label={canvasMediaDisplayName(asset.name)} aria-pressed={chosen.some(item => item.id === asset.id)} disabled={busy} onClick={() => toggleAsset(asset)}>
         <ProgressiveImage src={isVideoAsset(asset) ? asset.posterUrl : asset.url} alt="" />
         {isVideoAsset(asset) && <span className="asset-video-marker" aria-hidden="true"><Icon name="historyVideo" size={16} /></span>}
         <span className="asset-checkbox" aria-hidden="true"><Icon name="selectionCheck" size={24} /></span>
       </button> : <div key={asset.id} className="asset-card" onClick={() => void useAsset(asset)}>
-        <ProgressiveImage src={isVideoAsset(asset) ? asset.posterUrl : asset.url} alt={asset.name} />
+        <ProgressiveImage src={isVideoAsset(asset) ? asset.posterUrl : asset.url} alt={canvasMediaDisplayName(asset.name)} />
         {isVideoAsset(asset) && <span className="asset-video-marker" aria-hidden="true"><Icon name="historyVideo" size={16} /></span>}
         <span className="asset-card-scrim" aria-hidden="true" />
         <div className="asset-card-actions">
-          <Button variant="primary" size="m" disabled={busy} aria-label={`${t.useAsset} · ${asset.name}`}>
+          <Button variant="primary" size="m" disabled={busy} aria-label={`${t.useAsset} · ${canvasMediaDisplayName(asset.name)}`}>
             {busy && usingId === asset.id ? t.reading : t.useAsset}
           </Button>
         </div>

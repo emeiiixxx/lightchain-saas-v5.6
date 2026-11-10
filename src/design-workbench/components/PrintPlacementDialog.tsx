@@ -1,3 +1,4 @@
+import { canvasMediaDisplayName } from '../../canvas-media-filename';
 import { useEffect, useRef, useState } from 'react';
 import { useLocale } from '../LocaleContext';
 import type { Notify } from '../notification';
@@ -44,7 +45,7 @@ export function PrintPlacementDialog({ source, draft, phase, onClose, onConfirm,
             <img src={demoGarment} alt={t('示例服装')} draggable={false} />
             {recognition === 'ready' && <div className="print-demo-mask print-demo-mask--selected" data-phase="enter" aria-hidden="true" />}
             {leftBusy.value && <div className="print-preview-scrim" data-phase={leftBusy.phase} role="status"><Spinner /><span>{t('智能识别中，请稍后...')}</span></div>}
-          </div> : pattern && <img className="print-placement-pattern" src={pattern.url} alt={pattern.name} draggable={false} />}
+          </div> : pattern && <img className="print-placement-pattern" src={pattern.url} alt={canvasMediaDisplayName(pattern.name)} draggable={false} />}
         </div>
         {repeat ? <div className="print-placement-tools print-mask-tools">
           {recognition === 'ready' && <span className="print-mask-region" data-phase="enter" role="checkbox" aria-checked="true" aria-readonly="true" aria-label={t('上装')}><Icon name="check-filled" size={16} />{t('上装')}</span>}
@@ -63,7 +64,7 @@ export function PrintPlacementDialog({ source, draft, phase, onClose, onConfirm,
         <span className="print-placement-label">{t('印花上身预览')}</span>
         <div className="print-placement-media">
           <div className="print-placement-garment">
-            <img src={repeat ? demoGarment : source.url} alt={repeat ? t('示例服装') : source.name} draggable={false} />
+            <img src={repeat ? demoGarment : source.url} alt={repeat ? t('示例服装') : canvasMediaDisplayName(source.name)} draggable={false} />
             {repeat ? <>
               {ready && pattern && <div className="print-demo-mask print-demo-pattern" data-phase="enter" style={{ backgroundImage: `url(${JSON.stringify(pattern.url)})`, backgroundSize: `${scale}% auto` }} aria-hidden="true" />}
               {rightOverlay.value && <div className="print-preview-scrim" data-phase={rightOverlay.phase} role="status">{rightOverlay.value === 'busy' && <Spinner />}<span>{t(rightOverlay.value === 'busy' ? '效果准备中...' : '请先从左侧智能识别或涂抹蒙版区域')}</span></div>}

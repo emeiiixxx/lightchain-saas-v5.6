@@ -1,5 +1,5 @@
 import { EditableFilename } from './EditableFilename';
-import { canvasMediaFilename } from '../canvas-media-filename';
+import { canvasMediaDisplayName, canvasMediaFilename } from '../canvas-media-filename';
 import { ProgressiveImage } from './ProgressiveImage';
 import { useEffect, useId, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Icon } from './ui';
@@ -112,7 +112,7 @@ export function CanvasTaskList({ tasks = emptyTasks, locale, onSelectTask, canSe
           </span>
         </>;
         return <div className="canvas-task-item" role="listitem" key={task.rowId}>
-          {selectable(task) ? <div role="button" tabIndex={0} className="canvas-task-row canvas-task-row--action" aria-label={`${file ? `${file.name} · ` : ''}${t.completed} · ${createdAt} · ${t.focusResult}`}
+          {selectable(task) ? <div role="button" tabIndex={0} className="canvas-task-row canvas-task-row--action" aria-label={`${file ? `${canvasMediaDisplayName(file.name)} · ` : ''}${t.completed} · ${createdAt} · ${t.focusResult}`}
             onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onSelectTask?.(task); } }} onClick={() => { if (selectable(task)) onSelectTask?.(task); }}>{content}</div> : <div className="canvas-task-row">{content}</div>}
         </div>;
       })}

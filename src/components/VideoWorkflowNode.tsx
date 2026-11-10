@@ -1,3 +1,4 @@
+import { canvasMediaDisplayName } from '../canvas-media-filename';
 import { useEffect, useId, useRef, type CSSProperties } from 'react';
 import type { Locale } from '../i18n';
 import { canGenerateVideoWorkflow, videoReferenceLimits, videoWorkflowReferences, videoWorkflowSize, videoWorkflowTitle, type VideoReference, type VideoWorkflow } from '../video-workflow';
@@ -117,7 +118,7 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
         sorting.begin(event, reference);
       }}
       onDragEnd={finishDrag}>
-      <button type="button" className="video-reference-preview" aria-label={t.preview + ' ' + reference.name} aria-describedby={reorder ? id + '-reorder' : undefined}
+      <button type="button" className="video-reference-preview" aria-label={t.preview + ' ' + canvasMediaDisplayName(reference.name)} aria-describedby={reorder ? id + '-reorder' : undefined}
         onClick={() => { if (Date.now() >= suppressPreviewUntil.current) onPreview(reference); }}
         onKeyDown={event => {
           if (!reorder || !event.altKey || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
@@ -126,10 +127,10 @@ export function VideoWorkflowNode({ node, locale, onChange, onMain, onReference,
           const target = items[items.findIndex(item => item.id === reference.id) + (event.key === 'ArrowLeft' ? -1 : 1)];
           if (target) sorting.move(reference.kind, reference.id, target.id);
         }}>
-        {reference.kind === 'video' ? <><video src={reference.url} muted playsInline preload="metadata" draggable={false} /><span className="video-reference-video-mark" aria-hidden="true"><NodeIcon src={referenceVideoIcon} size={12} /></span></> : <ProgressiveImage src={reference.url} alt={reference.name} width={reorder ? 64 : 48} height={reorder ? 64 : 48} />}
+        {reference.kind === 'video' ? <><video src={reference.url} muted playsInline preload="metadata" draggable={false} /><span className="video-reference-video-mark" aria-hidden="true"><NodeIcon src={referenceVideoIcon} size={12} /></span></> : <ProgressiveImage src={reference.url} alt={canvasMediaDisplayName(reference.name)} width={reorder ? 64 : 48} height={reorder ? 64 : 48} />}
       </button>
       {reorder && <span className="video-reference-number" aria-hidden="true">{index + 1}</span>}
-      <Button variant="tonal" className="video-reference-remove" title={t.remove} aria-label={t.remove + ' ' + reference.name} onClick={onRemove}><Icon name="close" size={12} /></Button>
+      <Button variant="tonal" className="video-reference-remove" title={t.remove} aria-label={t.remove + ' ' + canvasMediaDisplayName(reference.name)} onClick={onRemove}><Icon name="close" size={12} /></Button>
     </div>;
   }
   function referenceSection(kind: VideoReference['kind']) {

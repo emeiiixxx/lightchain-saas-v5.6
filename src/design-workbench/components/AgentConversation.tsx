@@ -1,3 +1,4 @@
+import { canvasMediaDisplayName } from '../../canvas-media-filename';
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { useLocale } from '../LocaleContext';
 import { exportImage, type DownloadFormat } from '../download-image';
@@ -112,12 +113,12 @@ function AgentImage({ result, onPreview, onReference, onSendToCanvas, canvasLock
   };
   return <>
     <div ref={container} className="agent-result-image" data-menu-open={menu !== null}>
-      <button className="agent-image-preview" type="button" aria-label={`${t('查看大图')} · ${name}`} onClick={() => {
+      <button className="agent-image-preview" type="button" aria-label={`${t('查看大图')} · ${canvasMediaDisplayName(name)}`} onClick={() => {
         setMenu(null);
         if (!image.current?.naturalWidth) { onNotify(t('图片尚未加载完成，请稍后重试。'), 'error'); return; }
         onPreview({ url: src, name, width: image.current.naturalWidth, height: image.current.naturalHeight });
       }}>
-        <img ref={image} src={src} alt={name} />
+        <img ref={image} src={src} alt={canvasMediaDisplayName(name)} />
       </button>
       <div className="agent-image-actions" role="toolbar" aria-label={t('图片操作')} data-workbench-menu onClick={event => event.stopPropagation()} onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); setMenu(null); } }} onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setMenu(null); }}>
         <Button aria-label={t('用作参考图')} title={t('用作参考图')} onClick={() => onReference(src, result.id)}><AgentArtwork name="reference" /></Button>

@@ -1,3 +1,4 @@
+import { canvasMediaDisplayName } from '../canvas-media-filename';
 import { useEffect, useRef, useState } from 'react';
 import { messages, type Locale } from '../i18n';
 import type { VideoReference } from '../video-workflow';
@@ -29,9 +30,9 @@ export function FullVideoViewer({ video, locale, phase, onClose }: Props) {
     Math.max(1, viewport.height - 160) / size.height,
   );
   const label = locale === 'zh-CN' ? '视频预览' : locale === 'ja' ? '動画プレビュー' : 'Video preview';
-  return <FullScreenViewer label={`${label} · ${video.name}`} closeLabel={t.close} phase={phase} onClose={close} className="full-video-viewer">
+  return <FullScreenViewer label={`${label} · ${canvasMediaDisplayName(video.name)}`} closeLabel={t.close} phase={phase} onClose={close} className="full-video-viewer">
     <div className="full-video-stage">
-      <video ref={player} src={video.url} poster={video.posterUrl} controls autoPlay playsInline aria-label={video.name}
+      <video ref={player} src={video.url} poster={video.posterUrl} controls autoPlay playsInline aria-label={canvasMediaDisplayName(video.name)}
         style={{ width: size.width * fit, height: size.height * fit }}
         onLoadedMetadata={event => {
           const element = event.currentTarget;

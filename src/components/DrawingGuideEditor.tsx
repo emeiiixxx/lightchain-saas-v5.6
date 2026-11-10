@@ -1,3 +1,4 @@
+import { canvasMediaDisplayName } from '../canvas-media-filename';
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
 import type { CanvasImage, Viewport } from '../canvas';
 import { assets } from '../assets';
@@ -361,7 +362,7 @@ export function DrawingGuideEditor({ image, locale, phase, onClose, onSave }: Pr
   return <dialog ref={dialog} className="draw-guide-editor" data-phase={phase} data-node-id="12:108" inert={phase === 'exit'} aria-label={t.title} onCancel={event => { event.preventDefault(); cancelGesture(); onClose(); }} onKeyDown={keyDown}>
     <div ref={stage} className="draw-guide-stage" tabIndex={0} role="region" aria-label={t.title} data-panning={panning} data-hand={spaceDown} data-ready={loadState === 'ready'} onPointerDown={start} onPointerMove={event => { if (!gesture.current) showCursor(event); }} onPointerEnter={showCursor} onPointerLeave={hideCursor} onContextMenu={event => event.preventDefault()}>
       <div className="draw-guide-image" style={{ width: dimensions.width, height: dimensions.height, transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})` }}>
-        <img key={attempt} src={image.url} alt={image.name} draggable={false} onLoad={() => setLoadState('ready')} onError={() => setLoadState('error')} />
+        <img key={attempt} src={image.url} alt={canvasMediaDisplayName(image.name)} draggable={false} onLoad={() => setLoadState('ready')} onError={() => setLoadState('error')} />
       </div>
       <canvas ref={layer} className="draw-guide-ink" aria-hidden="true" />
       <div ref={cursor} className="draw-guide-cursor" style={{ '--guide-cursor-size': `${size * view.zoom}px` } as CSSProperties} aria-hidden="true" hidden>

@@ -27,6 +27,13 @@ export function canvasMediaFilename(name: string, url = ''): string {
   return extension ? `${name}.${extension}` : name;
 }
 
+// Display the name body everywhere, while keeping the real filename for
+// storage, renaming and downloads. Dots in ordinary titles are not suffixes.
+export function canvasMediaDisplayName(name: string): string {
+  const dot = name.lastIndexOf('.');
+  return dot > 0 && filenameExtension(name) ? name.slice(0, dot) : name;
+}
+
 function mediaExtension(media: NamedMedia, override?: string): string {
   if (override) return override.replace(/^\./, '').toLowerCase();
   const source = media.video ?? media;

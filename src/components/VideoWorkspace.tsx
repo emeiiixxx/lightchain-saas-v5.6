@@ -20,7 +20,7 @@ import { CanvasGenerationPlaceholder } from './CanvasGenerationPlaceholder';
 import { CanvasMediaFilename } from './CanvasMediaFilename';
 import { CanvasProjectCoverBadge } from './CanvasProjectCoverBadge';
 import { useRememberProjectCoverUse } from '../project-cover-onboarding';
-import { canvasMediaFilename, createCanvasFileNamer } from '../canvas-media-filename';
+import { canvasMediaDisplayName, canvasMediaFilename, createCanvasFileNamer } from '../canvas-media-filename';
 import { isProjectCoverCandidate, projectCoverMessages, toggleProjectCover, withProjectCoverOrder } from '../canvas-project-cover';
 import { CanvasContextMenu } from './CanvasContextMenu';
 import { CutoutEditor } from './CutoutEditor';
@@ -1167,7 +1167,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   // Panning changes the camera, not scene content. Zoom and business changes
   // still update node geometry, labels, selection and connection appearance.
   const sceneContent = useMemo(() => <>
-    {snapshot.images.map(image => <div key={image.id} data-image data-canvas-id={image.id} data-node-id={image.video ? '97:6651' : undefined} className={`canvas-image${image.video ? ' canvas-video' : ''}${(canvasReference?.ids ?? snapshot.selected).includes(image.id) ? ' selected' : ''}`} style={{ left: image.x, top: image.y, width: image.width, height: image.height, opacity: canvasReference && !candidateIds.has(image.id) ? 0.35 : undefined }} role="button" tabIndex={canvasReference && !candidateIds.has(image.id) ? -1 : 0} aria-label={`${image.video ? m.video : t.image}: ${image.name}`} aria-pressed={(canvasReference?.ids ?? snapshot.selected).includes(image.id)} aria-disabled={!!canvasReference && !candidateIds.has(image.id)}
+    {snapshot.images.map(image => <div key={image.id} data-image data-canvas-id={image.id} data-node-id={image.video ? '97:6651' : undefined} className={`canvas-image${image.video ? ' canvas-video' : ''}${(canvasReference?.ids ?? snapshot.selected).includes(image.id) ? ' selected' : ''}`} style={{ left: image.x, top: image.y, width: image.width, height: image.height, opacity: canvasReference && !candidateIds.has(image.id) ? 0.35 : undefined }} role="button" tabIndex={canvasReference && !candidateIds.has(image.id) ? -1 : 0} aria-label={`${image.video ? m.video : t.image}: ${canvasMediaDisplayName(image.name)}`} aria-pressed={(canvasReference?.ids ?? snapshot.selected).includes(image.id)} aria-disabled={!!canvasReference && !candidateIds.has(image.id)}
       onPointerDownCapture={event => {
         if (!canvasReference || effectiveMode === 'hand' || event.button !== 0) return;
         event.preventDefault(); event.stopPropagation(); sceneEvents.toggleCanvasReference(image.id);
@@ -1187,9 +1187,9 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       {!image.generation && <CanvasMediaFilename onRename={name => sceneEvents.renameImage(image.id, name)} name={image.name} url={image.video?.url ?? image.url} kind={image.video || ['mp4', 'webm', 'mov', 'm4v'].includes(image.generatedFile?.extension ?? '') ? 'video' : 'image'} />}
       {image.projectCover && isProjectCoverCandidate(image) && <CanvasProjectCoverBadge locale={locale} />}
       {image.generation ? <CanvasGenerationPlaceholder locale={locale} failed={image.generation.status === 'failed'} /> : <>
-      {!canvasReference && (image.video ? <Button variant="tonal" className="image-preview-button video-canvas-play nodrag nopan" title={m.play} aria-label={`${m.play} · ${image.name}`} data-node-id="97:6653" onClick={event => { event.stopPropagation(); setVideoPreview(image.video!); }}><VideoIcon name="playVideo" size={20} /></Button>
-        : <Button variant="tonal" className="image-preview-button nodrag nopan" title={t.viewFull} aria-label={`${t.viewFull} · ${image.name}`} onClick={event => { event.stopPropagation(); setPreview(image); }}><Icon name="viewFull" size={20} /></Button>)}
-      <ProgressiveImage src={image.url} alt={image.name} width={image.width} height={image.height} fit="cover" />
+      {!canvasReference && (image.video ? <Button variant="tonal" className="image-preview-button video-canvas-play nodrag nopan" title={m.play} aria-label={`${m.play} · ${canvasMediaDisplayName(image.name)}`} data-node-id="97:6653" onClick={event => { event.stopPropagation(); setVideoPreview(image.video!); }}><VideoIcon name="playVideo" size={20} /></Button>
+        : <Button variant="tonal" className="image-preview-button nodrag nopan" title={t.viewFull} aria-label={`${t.viewFull} · ${canvasMediaDisplayName(image.name)}`} onClick={event => { event.stopPropagation(); setPreview(image); }}><Icon name="viewFull" size={20} /></Button>)}
+      <ProgressiveImage src={image.url} alt={canvasMediaDisplayName(image.name)} width={image.width} height={image.height} fit="cover" />
       </>}
     </div>)}
     {snapshot.workflows.flatMap(node => videoWorkflowSourceIds(node).map(sourceId => {
@@ -1313,8 +1313,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
           if (!event.ctrlKey && !event.metaKey && !event.shiftKey && Math.abs(event.deltaY) > Math.abs(event.deltaX)) event.currentTarget.scrollLeft += event.deltaY;
         }}>
           {canvasReferencePreviews.map(image => <div className="canvas-reference-preview" role="listitem" key={image.id}>
-            <ProgressiveImage src={image.url} alt={image.name} width={56} height={56} fit="contain" />
-            <Button variant="tonal" className="canvas-reference-remove" aria-label={`${locale === 'zh-CN' ? '取消选择' : locale === 'ja' ? '選択を解除' : 'Remove from selection'}：${image.name}`} onClick={() => setCanvasReference(previous => previous ? { ...previous, ids: previous.ids.filter(id => id !== image.id) } : null)}><Icon name="close" size={12} /></Button>
+            <ProgressiveImage src={image.url} alt={canvasMediaDisplayName(image.name)} width={56} height={56} fit="contain" />
+            <Button variant="tonal" className="canvas-reference-remove" aria-label={`${locale === 'zh-CN' ? '取消选择' : locale === 'ja' ? '選択を解除' : 'Remove from selection'}：${canvasMediaDisplayName(image.name)}`} onClick={() => setCanvasReference(previous => previous ? { ...previous, ids: previous.ids.filter(id => id !== image.id) } : null)}><Icon name="close" size={12} /></Button>
           </div>)}
         </div>}
         <div className="canvas-reference-footer">

@@ -1,3 +1,4 @@
+import { canvasMediaDisplayName } from '../canvas-media-filename';
 import { useId, type CSSProperties, type KeyboardEvent } from 'react';
 import type { Locale } from '../i18n';
 import type { UploadedVideo } from '../video-reference-upload';
@@ -59,12 +60,12 @@ export function VideoUpscaleWorkflowNode({ node, locale, onChange, onUpload, onP
         <div className="fusion-label" id={`${id}-video`}>{t.video}<span className="fusion-required">*</span></div>
         <div className="video-upscale-source" aria-labelledby={`${id}-video`}>
           {node.video ? <>
-            <button type="button" className="video-upscale-preview nodrag nopan" aria-label={`${t.preview} ${node.video.name}`}
+            <button type="button" className="video-upscale-preview nodrag nopan" aria-label={`${t.preview} ${canvasMediaDisplayName(node.video.name)}`}
               onClick={() => { if (node.video) onPreview(node.video); }}>
-              <ProgressiveImage src={node.video.posterUrl} alt={node.video.name} width={node.video.width} height={node.video.height} fit="contain" />
+              <ProgressiveImage src={node.video.posterUrl} alt={canvasMediaDisplayName(node.video.name)} width={node.video.width} height={node.video.height} fit="contain" />
               <span className="video-upscale-play" aria-hidden="true"><VideoIcon name="playVideo" size={24} /></span>
             </button>
-            <Button variant="tonal" className="video-upscale-remove nodrag nopan" title={t.remove} aria-label={`${t.remove} ${node.video.name}`}
+            <Button variant="tonal" className="video-upscale-remove nodrag nopan" title={t.remove} aria-label={`${t.remove} ${canvasMediaDisplayName(node.video.name)}`}
               onClick={() => onChange({ video: undefined })}><Icon name="close" size={12} /></Button>
           </> : <ReferenceSourceMenu className="video-upscale-empty nodrag nopan" addLabel={t.add} uploadLabel={t.uploadReference} canvasLabel={t.fromCanvas} onChoose={onUpload}>
             <span className="icon video-upscale-upload-icon" aria-hidden="true" style={{ width: 24, height: 24, '--icon-url': `url("${uploadIcon}")` } as CSSProperties} /><span>{t.add}</span>

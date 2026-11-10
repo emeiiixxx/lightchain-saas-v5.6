@@ -1,3 +1,4 @@
+import { canvasMediaDisplayName } from '../../canvas-media-filename';
 import { imageBounds } from '../canvas-selection';
 import { demoNotice } from '../demo-feedback';
 import type { Notify } from '../notification';
@@ -188,8 +189,8 @@ export function QuickEditComposer({ board, image, phase, onClose, onSubmit, uplo
     <div className={localEdit ? 'local-edit-input agent-composer' : 'quick-edit-input'}>
     <div className={autoGrow ? 'local-edit-content' : 'quick-edit-content'}>
     {localEdit && <div className="local-edit-media" data-component="Canvas/ToolMediaRow">
-      <div className="local-edit-image" data-component="Image/Asset" title={image.name}><img src={image.url} alt={copy.source} /></div>
-      {references.map(ref => <div className="local-edit-image local-edit-reference" data-component="Upload/ImageTile" key={ref.id} title={ref.name}><img src={ref.url} alt={ref.name} /><IconButton variant="tonal" size="s" icon="close" aria-label={`${t('移除')} ${ref.name}`} onClick={() => setReferences(previous => previous.filter(item => item.id !== ref.id))} /></div>)}
+      <div className="local-edit-image" data-component="Image/Asset" title={canvasMediaDisplayName(image.name)}><img src={image.url} alt={copy.source} /></div>
+      {references.map(ref => <div className="local-edit-image local-edit-reference" data-component="Upload/ImageTile" key={ref.id} title={canvasMediaDisplayName(ref.name)}><img src={ref.url} alt={canvasMediaDisplayName(ref.name)} /><IconButton variant="tonal" size="s" icon="close" aria-label={`${t('移除')} ${canvasMediaDisplayName(ref.name)}`} onClick={() => setReferences(previous => previous.filter(item => item.id !== ref.id))} /></div>)}
       {references.length < referenceLimit && (tryOn ? <div className="model-upload-anchor" ref={modelAnchor}>
         <Button className="local-edit-upload" aria-label={t('添加模特图')} aria-haspopup="menu" aria-expanded={menu === 'model'} aria-controls="try-on-model-menu" onClick={() => setMenu(menu === 'model' ? null : 'model')}><Icon name={inputIcon('add-image', 'quick-edit-imgIcon')} size={24} /><span>{referenceLabel}</span></Button>
         {shownMenu.value === 'model' && <div className="model-upload-menu" id="try-on-model-menu" onKeyDown={event => {
@@ -204,7 +205,7 @@ export function QuickEditComposer({ board, image, phase, onClose, onSubmit, uplo
         </div>}
       </div> : <Button className="local-edit-upload" aria-label={`${t('添加图片')} · ${referenceLabel}`} aria-haspopup="dialog" onClick={openReferences}><Icon name={inputIcon('add-image', 'quick-edit-imgIcon')} size={24} /><span>{referenceLabel}</span></Button>)}
     </div>}
-    {!localEdit && references.length > 0 && <div className="quick-edit-references">{references.map((ref, index) => <div className="quick-edit-chip" key={ref.id}><img src={ref.url} alt="" /><span title={ref.name}>{t('图片')}{index + 1}</span><Button aria-label={`${t('移除')} ${ref.name}`} onClick={() => { setReferences(prev => prev.filter(item => item.id !== ref.id)); setError(''); }}><Icon name="quick-edit-imgIconSystem" size={16} /></Button></div>)}</div>}
+    {!localEdit && references.length > 0 && <div className="quick-edit-references">{references.map((ref, index) => <div className="quick-edit-chip" key={ref.id}><img src={ref.url} alt="" /><span title={canvasMediaDisplayName(ref.name)}>{t('图片')}{index + 1}</span><Button aria-label={`${t('移除')} ${canvasMediaDisplayName(ref.name)}`} onClick={() => { setReferences(prev => prev.filter(item => item.id !== ref.id)); setError(''); }}><Icon name="quick-edit-imgIconSystem" size={16} /></Button></div>)}</div>}
     {!printApply && <textarea ref={textarea} aria-label={t('设计需求')} placeholder={localEdit ? copy.hint : t('描述你想如何修改这张图片')} value={value} onChange={e => setValue(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); submit(); } }} onPaste={e => { if (e.clipboardData.files.length) { e.preventDefault(); void addFiles(e.clipboardData.files); } }} />}
     {error && <p className="quick-edit-error" role="status">{error}</p>}
     </div>

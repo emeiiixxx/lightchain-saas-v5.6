@@ -1,3 +1,4 @@
+import { canvasMediaDisplayName } from '../canvas-media-filename';
 import { useEffect } from 'react';
 import type { useCanvas } from './useCanvas';
 import { imageBounds, type Bounds } from './canvas-selection';
@@ -46,7 +47,7 @@ export function useCanvasFilenameTooltip({ canvasRef, images, selectedIds, camer
     const move = (event: PointerEvent) => {
       if (event.pointerType === 'touch' || event.buttons) { hide(); return; }
       const entry = hit(event);
-      if (entry) showCanvasTooltip({ anchor: canvas, label: entry.item.name, bounds: entry.label!, pointer: { x: event.clientX, y: event.clientY } });
+      if (entry) showCanvasTooltip({ anchor: canvas, label: canvasMediaDisplayName(entry.item.name), bounds: entry.label!, pointer: { x: event.clientX, y: event.clientY } });
       else hide();
     };
     const down = (event: PointerEvent) => {

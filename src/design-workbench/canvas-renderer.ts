@@ -1,3 +1,4 @@
+import { canvasMediaDisplayName } from '../canvas-media-filename';
 import type { CanvasImage } from './useCanvas';
 import { paintShape } from './canvas-shapes';
 import { imageBounds } from './canvas-selection';
@@ -58,7 +59,7 @@ export function paintCanvasImageFilename(ctx: CanvasRenderingContext2D, image: C
   if (palette.filenameIcon) ctx.drawImage(filenameIcon(palette.filenameIcon, palette.filenameText), 0, -IMAGE_FILENAME_TOP_SPACE, 16, 16);
   ctx.font = `400 12px ${palette.fontFamily}`;
   ctx.fillStyle = palette.filenameText; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  ctx.fillText(filenameLabel(ctx, image.name, width - 20), 20, -IMAGE_FILENAME_TOP_SPACE + 8);
+  ctx.fillText(filenameLabel(ctx, canvasMediaDisplayName(image.name), width - 20), 20, -IMAGE_FILENAME_TOP_SPACE + 8);
   ctx.restore();
 }
 

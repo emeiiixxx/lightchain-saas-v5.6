@@ -86,7 +86,7 @@ export function CanvasLayerList({ images, selectedIds, disabled = false, onSelec
       }}>
       <span className="canvas-layer-icon">{image.shape ? <ShapeIcon kind={image.shape.kind} /> : <Icon name="canvas-image-name" size={20} />}</span>
       {image.generating || image.generationFailed ? <span className="canvas-layer-name">{t(image.generating ? '生成中' : '生成失败')}</span>
-        : <EditableFilename name={image.name} onRename={image.shape ? undefined : name => onRenameImage(image.id, name)} onValidationError={onValidationError} />}
+        : <EditableFilename name={image.name} hideExtension={!image.shape} onRename={image.shape ? undefined : name => onRenameImage(image.id, name)} onValidationError={onValidationError} />}
     </div>;
   };
 

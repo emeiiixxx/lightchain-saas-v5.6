@@ -1,3 +1,4 @@
+import { canvasMediaDisplayName } from '../../canvas-media-filename';
 import { ProgressiveImage } from './ProgressiveImage';
 import { createPortal } from 'react-dom';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -38,7 +39,7 @@ export function FullImageViewer({ image, locale, phase, onClose, images = [], se
     : Math.min(size.width / image.width, size.height / image.height);
   // The canvas workbench disables pointer events; mount outside it so the
   // thumbnail buttons and image gestures receive their own pointer events.
-  return createPortal(<dialog ref={dialog} className={`full-image-viewer${hasGallery ? ' full-image-viewer--gallery' : ''}${details ? ' full-image-viewer--task' : ''}`} data-phase={phase} data-node-id="68:27657" inert={phase === 'exit'} aria-label={`${t.viewFull} · ${image.name}`}
+  return createPortal(<dialog ref={dialog} className={`full-image-viewer${hasGallery ? ' full-image-viewer--gallery' : ''}${details ? ' full-image-viewer--task' : ''}`} data-phase={phase} data-node-id="68:27657" inert={phase === 'exit'} aria-label={`${t.viewFull} · ${canvasMediaDisplayName(image.name)}`}
     onCancel={event => { if (event.target !== event.currentTarget) return; event.preventDefault(); onClose(); }} onKeyDown={event => {
       if ((event.target instanceof Element && event.target.closest('[data-task-controls], input, textarea, [role=menu]')) || !hasGallery || phase === 'exit' || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
       event.preventDefault(); event.stopPropagation();
@@ -46,10 +47,10 @@ export function FullImageViewer({ image, locale, phase, onClose, images = [], se
       onSelect?.((selectedIndex + step + images.length) % images.length);
     }}>
     <FullImageStage key={`${selectedIndex}-${image.url}`} width={image.width * fit} height={image.height * fit} wheelFactor={wheelZoom.factor}>
-      {content ?? <ProgressiveImage className="full-image-content" src={image.url} alt={image.name} eager fit="contain" />}
+      {content ?? <ProgressiveImage className="full-image-content" src={image.url} alt={canvasMediaDisplayName(image.name)} eager fit="contain" />}
     </FullImageStage>
     {hasGallery && !details && <nav ref={thumbnails} className="full-image-thumbnails" aria-label={translate('图片缩略图')}>
-      {images.map((item, index) => <button key={item.url} type="button" aria-label={`${t.viewFull} · ${item.name}`} aria-current={index === selectedIndex ? 'true' : undefined} onClick={() => onSelect?.(index)}>
+      {images.map((item, index) => <button key={item.url} type="button" aria-label={`${t.viewFull} · ${canvasMediaDisplayName(item.name)}`} aria-current={index === selectedIndex ? 'true' : undefined} onClick={() => onSelect?.(index)}>
         <ProgressiveImage src={item.url} alt="" fit="contain" eager />
       </button>)}
     </nav>}

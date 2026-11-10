@@ -1,3 +1,4 @@
+import { canvasMediaDisplayName } from '../canvas-media-filename';
 import { useEffect, useId, useRef, useState } from 'react';
 import { assets } from '../assets';
 import { batchMainImages, fusionReferences, MAX_BATCH_MAIN_IMAGES, MAX_FUSION_REFERENCES, type CanvasImage, type FusionSettings } from '../canvas';
@@ -81,7 +82,7 @@ export function BatchEditNode({ image, locale, onChange, onMainImages, onReferen
           <span className="batch-main-add-tile"><Icon name="batchAdd" size={20} /></span><span className="batch-main-label">{t.addMain}</span>
         </ReferenceSourceMenu>}
         {mainImages.map((main, index) => <div className="batch-main-card" key={main.id}>
-          <span className="batch-main-preview"><ProgressiveImage src={main.url} alt={main.name} width={40} height={40} /></span>
+          <span className="batch-main-preview"><ProgressiveImage src={main.url} alt={canvasMediaDisplayName(main.name)} width={40} height={40} /></span>
           <span className="batch-main-label">{t.main}{index + 1}</span>
           <Button variant="tonal" className="batch-main-remove" aria-label={`${t.removeMain} ${index + 1}`} title={t.removeMain} onClick={() => onChange({ mainImages: mainImages.filter((_, i) => i !== index) })}><Icon name="batchClose" size={16 * 2 / 3} /></Button>
         </div>)}
@@ -91,7 +92,7 @@ export function BatchEditNode({ image, locale, onChange, onMainImages, onReferen
           <div className="batch-reference-heading"><span className="fusion-label">{t.reference}</span><span className="batch-reference-divider" aria-hidden="true" /><span className="batch-reference-count">{t.uploaded}<span>{references.length}</span>/{MAX_FUSION_REFERENCES}</span></div>
           <div className="batch-references">
             {references.map((reference, index) => <div className="fusion-reference-wrap" key={reference.id}>
-              <div className="fusion-reference"><ProgressiveImage src={reference.url} alt={reference.name} width={48} height={48} /></div>
+              <div className="fusion-reference"><ProgressiveImage src={reference.url} alt={canvasMediaDisplayName(reference.name)} width={48} height={48} /></div>
               <Button variant="tonal" className="fusion-reference-remove" aria-label={`${t.removeReference} ${index + 1}`} title={t.removeReference} onClick={() => onChange({ references: references.filter((_, i) => i !== index), reference: undefined })}><Icon name="batchClose" size={16 * 2 / 3} /></Button>
             </div>)}
             {references.length < MAX_FUSION_REFERENCES && <ReferenceSourceMenu addLabel={t.addReference} canvasLabel={t.canvas} onChoose={onReference}><Icon name="batchAddImage" size={20} /></ReferenceSourceMenu>}

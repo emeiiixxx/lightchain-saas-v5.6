@@ -4,7 +4,7 @@ import { recordHasPrompt, recordHasPromptActions } from '../generation-record-di
 import { TaskDetailPanel } from './TaskDetailPanel';
 import { CanvasLayerList } from './CanvasLayerList';
 import type { CanvasLayerEdge, CanvasLayerTarget } from '../canvas-layers';
-import { canvasMediaFilename } from '../../canvas-media-filename';
+import { canvasMediaDisplayName, canvasMediaFilename } from '../../canvas-media-filename';
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { useLocale } from '../LocaleContext';
 import type { Notify } from '../notification';
@@ -51,7 +51,7 @@ function RecordResults({ record, eager, onOpen, getResultName }: { record: Gener
     {record.images.length ? record.images.map((item, index) => <div className="generation-record-result" key={item.id ?? `${item.url}-${index}`} style={{ aspectRatio }}>
       {item.status === 'failed' || item.status === 'generating'
         ? <TaskResultPlaceholder status={item.status} />
-        : <button className="generation-record-result-open" type="button" aria-label={`${t('查看大图')} · ${t(record.title)} ${index + 1}`} data-tooltip={getResultName(index)} data-tooltip-position="pointer-stationary" onClick={() => onOpen(index)}><ProgressiveImage src={item.url} alt="" eager={eager} fit="contain" /></button>}
+        : <button className="generation-record-result-open" type="button" aria-label={`${t('查看大图')} · ${t(record.title)} ${index + 1}`} data-tooltip={canvasMediaDisplayName(getResultName(index))} data-tooltip-position="pointer-stationary" onClick={() => onOpen(index)}><ProgressiveImage src={item.url} alt="" eager={eager} fit="contain" /></button>}
     </div>) : Array.from({ length: count }, (_, index) => <div className="generation-record-loading" key={index} style={{ aspectRatio }}><GeneratingPlaceholder style={{ inset: 0 }} /></div>)}
   </div>;
 }
