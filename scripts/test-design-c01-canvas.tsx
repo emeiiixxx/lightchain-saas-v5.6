@@ -248,30 +248,63 @@ test('sequential Agent output can continue beside its previous result while tool
   });
 });
 
-test('send-to-canvas deduplicates result identity and re-adds only deleted results in the original conversation', async () => {
+test('send-to-canvas always adds an independent image below current content and can undo each send', async () => {
   await withCanvas(async board => {
-    const sent = [
-      { ...asset('send-one'), taskResultId: 'record:one' },
-      { ...asset('send-two', 140, 100), taskResultId: 'record:two' },
-    ];
-    await act(async () => { board().addAgentImages(sent, { agentConversationId: 'original-chat' }); });
-    const first = board().images.map(item => ({ ...item }));
-    let repeat = { addedCount: -1 };
-    await act(async () => { repeat = board().addAgentImages(sent, { agentConversationId: 'original-chat' }); });
-    assert.equal(repeat.addedCount, 0);
-    assert.equal(board().images.length, 2);
-    assert.equal(board().focusAgentResults(['record:one', 'missing']), false);
-    await act(async () => { board().selectMany([first[1].id]); });
-    await act(async () => { board().removeSelected(); });
+    let placeholders: CanvasImage[] = [];
+    await act(async () => { placeholders = board().beginGeneration(undefined, 1, {
+      placement: 'agent', agentConversationId: 'original-chat', taskRecordId: 'send-task',
+      outputSize: { width: 100, height: 100 },
+    }); });
+    await act(async () => { board().finishGeneration([placeholders[0].id], [asset('send-result')]); });
+    const original = { ...board().images[0] };
+    const taskFilename = board().lookupImageFilename(original.taskResultId!);
+    const sent: CanvasImage[] = [];
+    for (let index = 0; index < 2; index++) {
+      const before = [...board().images], bounds = selectionBounds(before), zoom = board().camera.zoom;
+      let additions: CanvasImage[] = [];
+      await act(async () => { additions = board().addImages([original], { focusMotion: 'generation' }); });
+      assert.equal(additions.length, 1);
+      const added = additions[0]; sent.push(added);
+      assert.equal(board().images.length, before.length + 1);
+      assert.deepEqual(board().images.slice(0, -1), before, 'existing images keep their positions and identities');
+      assert.ok(!before.some(item => item.id === added.id));
+      assert.equal(added.name, original.name, 'sending retains the name without allocating a new number or copy suffix');
+      assert.equal(added.taskResultId, undefined);
+      assert.equal(added.generationBatchId, undefined);
+      assert.equal(added.generatedFile, undefined);
+      assert.equal(added.agentConversationId, undefined);
+      near(added.x, bounds.x);
+      near(added.y, bounds.y + bounds.height + 80 + IMAGE_FILENAME_TOP_SPACE / zoom);
+      assert.deepEqual(board().selectedIds, [added.id]);
+      assert.equal(board().camera.zoom, zoom, 'sending does not zoom in');
+      const top = added.y * zoom + board().camera.y - IMAGE_FILENAME_TOP_SPACE;
+      assert.ok(top >= 0 && (added.y + added.height) * zoom + board().camera.y <= board().size.height);
+    }
+    assert.notEqual(sent[0].additionBatchId, sent[1].additionBatchId);
+    await act(async () => { board().undo(); });
+    assert.deepEqual(board().images, [original, sent[0]], 'one undo removes only the latest send');
+    await act(async () => { board().redo(); });
+    assert.deepEqual(board().images, [original, ...sent]);
+    await act(async () => { board().renameImage(sent[1].id, 'sent-image-renamed.png'); });
+    assert.deepEqual(board().lookupImageFilename(original.taskResultId!), taskFilename, 'renaming the new instance does not rename the generation task');
+    const beforeLocked = [...board().images];
+    await act(async () => { board().setInteractionLocked(true); });
+    assert.deepEqual(board().addImages([original], { focusMotion: 'generation' }), []);
+    assert.deepEqual(board().images, beforeLocked);
+  });
+});
+
+test('sending into an empty canvas centers and selects the newly added image', async () => {
+  await withCanvas(async board => {
+    await act(async () => { board().addImages([asset('send-empty', 200, 300)], { focusMotion: 'generation' }); });
+    const item = board().images[0], camera = board().camera;
     assert.equal(board().images.length, 1);
-    await act(async () => { repeat = board().addAgentImages(sent, { agentConversationId: 'original-chat' }); });
-    assert.equal(repeat.addedCount, 1);
-    assert.equal(board().images.length, 2);
-    assert.deepEqual(board().images[0], first[0]);
-    const restored = board().images.find(item => item.taskResultId === 'record:two')!;
-    assert.equal(restored.contentGroupId, first[0].contentGroupId);
-    assert.equal(restored.name, first[1].name, 're-sending retains the allocated filename');
-    assert.ok(restored.y > first[0].y + first[0].height);
+    assert.deepEqual(board().selectedIds, [item.id]);
+    near(item.x + item.width / 2, 800);
+    near((item.x + item.width / 2) * camera.zoom + camera.x, 800);
+    assert.equal(camera.zoom, 1);
+    await act(async () => { board().undo(); });
+    assert.deepEqual(board().images, []);
   });
 });
 

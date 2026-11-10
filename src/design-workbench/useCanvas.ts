@@ -744,8 +744,8 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
     animatePlacement(next, scope === 'canvas' ? () => fit({ animate: true }) : undefined);
   }, [remember, fit, arrangementViewport, finishPlacement, animatePlacement]);
 
-  const addImages = useCallback((items: Omit<CanvasImage, 'x' | 'y'>[], options?: { point?: Point; panDelay?: number; focus?: boolean }) => {
-    if (lock.current || !items.length) return;
+  const addImages = useCallback((items: Omit<CanvasImage, 'x' | 'y'>[], options?: { point?: Point; panDelay?: number; focus?: boolean; focusMotion?: 'generation' }) => {
+    if (lock.current || !items.length) return [];
     finishPlacement();
     const state = live.current, viewport = agentViewport();
     const start = worldPoint({ x: viewport.left, y: viewport.top });
@@ -776,8 +776,12 @@ export function useCanvas(notify: Notify, theme: 'dark' | 'light', locale = 'zh-
       // Small batches only pan; oversized batches shrink to fit without zooming in.
       const left = viewport.left + Math.max(0, (viewport.right - viewport.left - bounds.width * zoom) / 2);
       const top = viewport.top + Math.max(0, (viewport.bottom - viewport.top - bounds.height * zoom - IMAGE_FILENAME_TOP_SPACE) / 2);
-      transitionCamera({ x: left - bounds.x * zoom, y: top + IMAGE_FILENAME_TOP_SPACE - bounds.y * zoom, zoom }, true, undefined, MOTION_DURATION, options?.panDelay);
+      const adaptiveMotion = options?.focusMotion === 'generation';
+      transitionCamera({ x: left - bounds.x * zoom, y: top + IMAGE_FILENAME_TOP_SPACE - bounds.y * zoom, zoom }, true,
+        adaptiveMotion ? { x: (viewport.left + viewport.right) / 2, y: (viewport.top + viewport.bottom) / 2 } : undefined,
+        adaptiveMotion ? { width: viewport.right - viewport.left, height: viewport.bottom - viewport.top } : MOTION_DURATION, options?.panDelay);
     }
+    return additions;
   }, [agentViewport, transitionCamera, remember, worldPoint, finishPlacement, selectMany]);
 
   // New batches start below all canvas content. Toolbar tasks reserve their

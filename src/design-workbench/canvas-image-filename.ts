@@ -15,7 +15,7 @@ function extensionFor(image: ImageFile) {
 }
 
 // This Demo has one design canvas. Its ledger stays outside undo history and
-// keeps result identities even after deletion, including a later Agent send.
+// keeps generated result names available even after their canvas image is deleted.
 export function createDesignCanvasFileNamer() {
   const allocator = createCanvasFileNamer();
   const saved = readDemoState<Ledger>('image-filenames', { counters: [], results: {} });

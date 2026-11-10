@@ -762,18 +762,14 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
   }), [shownPanel.value, conversation, conversationId, generationRecords, board.images, board.lookupImageFilename]);
   const sendAgentResultToCanvas = useEventCallback(async (result: AgentImageResult, loaded?: HTMLImageElement) => {
     if (board.locked || !board.restored || result.status === 'generating' || result.status === 'failed') return;
-    // Existing results can be focused even if their old conversation URL is no
-    // longer loadable; placement always uses the current canvas instance.
-    if (board.focusAgentResults([result.id])) return;
     try {
       const asset = loaded
         ? { image: loaded, url: loaded.currentSrc || loaded.src, width: loaded.naturalWidth, height: loaded.naturalHeight, name: result.name }
         : await prepareMainImage({ id: crypto.randomUUID(), url: result.url, name: result.name });
       if (!generationMounted.current) return;
-      const agentConversationId = result.agentConversationId ?? conversationId;
-      const sourceIds = [...new Set(result.sourceIds ?? [])];
-      const outcome = board.addAgentImages([{ ...asset, id: crypto.randomUUID(), taskResultId: result.id, agentConversationId }], { agentConversationId, sourceIds });
-      if (outcome.addedCount) onNotify(t('已发送至画布'), 'success');
+      // Each send creates an independent image using normal addition placement.
+      const additions = board.addImages([{ ...asset, id: crypto.randomUUID() }], { focusMotion: 'generation' });
+      if (additions.length) onNotify(t('已发送至画布'), 'success');
     } catch { onNotify(t('图片加载失败，请重试'), 'error'); }
   });
   const selectLayerImage = useEventCallback((id: string) => board.selectMany([id]));
