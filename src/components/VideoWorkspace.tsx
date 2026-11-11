@@ -1254,7 +1254,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
                 else if (entry.id === 'proFashionVideo') addWorkflow(undefined, 'references');
                 else notify(v.pending);
               }}>
-              <VideoIcon name={entry.icon} size={24} /><span>{v[entry.label]}</span>{entry.id === 'templates' && <span className="entry-tool-badge video-entry-badge" data-node-id="64:2066">NEW</span>}
+              <VideoIcon name={entry.icon} size={24} /><span>{v[entry.label]}</span>{entry.id !== 'fashionVideo' && <span className="entry-tool-badge video-entry-badge" data-node-id="64:2066">NEW</span>}
             </Button>)}
           </div>
           <button type="button" className={`asset-upload video-upload${dropActive ? ' is-over' : ''}`} disabled={reading} aria-label={m.add} onClick={openAssets} data-node-id="64:2068"
