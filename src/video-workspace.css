@@ -2,18 +2,18 @@
 .video-workspace[hidden] { display: none; }
 .video-workspace-mark { position: relative; display: block; flex: 0 0 20px; width: 20px; height: 20px; }
 .video-workspace-mark > img { position: absolute; inset: 0; width: 20px; height: 20px; border-radius: 5px; object-fit: cover; }
-.video-empty-scroll { position: absolute; inset: 0; display: flex; justify-content: center; align-items: center; padding: 24px 24px 72px; overflow: auto; touch-action: pan-y; }
-.video-empty { display: flex; flex-direction: column; align-items: center; gap: 32px; width: 816px; max-width: 100%; flex: 0 0 auto; }
+.video-empty-scroll { position: absolute; inset: 0; display: flex; justify-content: safe center; align-items: center; padding: 24px 24px 72px; overflow: auto; touch-action: pan-x pan-y; }
+.video-empty { display: flex; flex-direction: column; align-items: center; gap: 32px; width: max-content; flex: 0 0 auto; }
 .video-empty-headline { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; text-align: center; }
 .video-empty-headline h1 { margin: 0; color: var(--text-secondary); font-size: 24px; font-weight: 700; line-height: 32px; }
 .video-empty-headline p { margin: 0; color: var(--text-tertiary); font-size: 16px; font-weight: 500; line-height: 24px; text-wrap: balance; }
-.video-entry-tools { display: flex; justify-content: center; flex-wrap: wrap; gap: 16px; width: 100%; }
-.video-entry-tool { position: relative; flex: 0 0 auto; width: auto; height: 48px; gap: 8px; border: 0; }
+.video-entry-tools { display: inline-flex; justify-content: center; flex-wrap: nowrap; gap: 16px; width: max-content; }
+.video-entry-tool { position: relative; flex: 0 0 auto; width: auto; height: 48px; padding-inline: 24px; gap: 8px; border: 0; white-space: nowrap; }
 /* Keep the Outline stroke inside the content-sized Figma button. */
 .video-entry-tool::after { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
 .video-entry-tool > .video-icon { flex-shrink: 0; }
-.video-entry-tool .video-entry-badge { top: -8px; left: 109px; right: auto; }
-.video-entry-tool:lang(en), .video-entry-tool:lang(ja) { padding-inline: 8px; font-size: 14px; }
+.video-entry-tool .video-entry-badge { top: -8px; left: auto; right: -4px; }
+.video-entry-tool:lang(en), .video-entry-tool:lang(ja) { font-size: 14px; }
 .video-entry-tool:lang(ja) > span:not(.icon):not(.entry-tool-badge) { font-size: 12px; }
 .video-upload { width: 640px; max-width: 100%; height: 360px; flex: 0 0 auto; border-radius: var(--radius-xl); -webkit-backdrop-filter: blur(var(--background-blur-s)); backdrop-filter: blur(var(--background-blur-s)); }
 .video-upload .asset-upload-hint { color: var(--text-placeholder); text-wrap: balance; }
@@ -50,6 +50,5 @@
   .video-empty-headline h1 { font-size: 22px; line-height: 30px; }
   .video-empty-headline p { font-size: 14px; line-height: 22px; }
   .video-entry-tools { gap: 12px; }
-  .video-entry-tool .video-entry-badge { left: auto; right: -4px; }
   .video-upload { height: 280px; }
 }
