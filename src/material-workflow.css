@@ -37,7 +37,6 @@
 .fusion-node-action.material-workflow-action { height: 57px; flex: 0 0 57px; margin: 0; padding: 12px; }
 .material-workflow-action > .generate-task-button { flex: 1; min-width: 0; width: 100%; padding: 0 20px; font-size: 14px; line-height: 20px; white-space: nowrap; }
 .material-workflow-node:lang(en) .material-prompt-heading .fusion-label { font-size: 13px; }
-.material-workflow-node:lang(en) .video-prompt-expansion { padding-inline: 0; }
 .material-workflow-node:lang(en) .material-view-choices > .lc-choice-chip { padding-inline: 10px; }
 @media (prefers-reduced-motion: reduce) {
   .material-reference-row > .fusion-reference, .material-back-reference > .fusion-reference { transition: none; }

@@ -11,7 +11,6 @@ import { GenerateTaskButton } from './GenerateTaskButton';
 import { MaterialGenerationSettings } from './MaterialGenerationSettings';
 import { ProgressiveImage } from './ProgressiveImage';
 import { PromptTools } from './PromptTools';
-import { Switch } from './Switch';
 import { ReferenceSourceMenu } from './ReferenceSourceMenu';
 import { useVideoReferenceSort } from './useVideoReferenceSort';
 import '../video-workflow-node.css';
@@ -27,7 +26,7 @@ const copy = {
     remove: '删除', preview: '预览', reorder: '按住 Alt 和左右方向键调整顺序',
     view: '选择视角', front: '正面', left45: '左45°', left: '左侧', right45: '右45°', right: '右侧', back: '背面', backReference: '背面参考图',
     storyboard: '分镜配置', crop: '裁切配置', four: '四宫格', nine: '九宫格',
-    prompt: '生图描述', placeholder: '请输入服装、人物动作、场景等', smartExpand: '智能扩写',
+    prompt: '生图描述', placeholder: '请输入服装、人物动作、场景等',
     expand: '展开编辑', save: '保存指令', library: '提示词库', clear: '清空', close: '关闭', count: '字数',
     settings: '生成设置', generate: '开始 AI 生成', outputCount: '生成数量', imageCount: (count: number) => `${count}张`,
   },
@@ -38,7 +37,7 @@ const copy = {
     remove: 'Delete', preview: 'Preview', reorder: 'Hold Alt and use left or right arrow to reorder',
     view: 'Choose view', front: 'Front', left45: 'Left 45°', left: 'Left', right45: 'Right 45°', right: 'Right', back: 'Back', backReference: 'Back reference',
     storyboard: 'Storyboard layout', crop: 'Crop layout', four: '2 × 2 grid', nine: '3 × 3 grid',
-    prompt: 'Image description', placeholder: 'Describe clothing, poses, settings, and more', smartExpand: 'Smart expand',
+    prompt: 'Image description', placeholder: 'Describe clothing, poses, settings, and more',
     expand: 'Expand editor', save: 'Save prompt', library: 'Prompt library', clear: 'Clear', close: 'Close', count: 'Characters',
     settings: 'Generation settings', generate: 'Start AI generation', outputCount: 'Image count', imageCount: (count: number) => String(count),
   },
@@ -49,7 +48,7 @@ const copy = {
     remove: '削除', preview: 'プレビュー', reorder: 'Alt と左右矢印キーで順序を変更',
     view: 'アングルを選択', front: '正面', left45: '左45°', left: '左側', right45: '右45°', right: '右側', back: '背面', backReference: '背面の参考画像',
     storyboard: '絵コンテの構成', crop: '分割設定', four: '4分割', nine: '9分割',
-    prompt: '画像の説明', placeholder: '服装、人物の動作、背景などを入力', smartExpand: 'スマート拡張',
+    prompt: '画像の説明', placeholder: '服装、人物の動作、背景などを入力',
     expand: '拡大編集', save: '指示を保存', library: 'プロンプト集', clear: 'クリア', close: '閉じる', count: '文字数',
     settings: '生成設定', generate: 'AI 生成を開始', outputCount: '生成枚数', imageCount: (count: number) => `${count}枚`,
   },
@@ -157,9 +156,6 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
       </Button>
     </div>;
   }
-  const expansionControl = <label className="video-prompt-expansion nodrag nopan"><span>{t.smartExpand}</span>
-    <Switch checked={node.smartExpand} aria-label={t.smartExpand} onCheckedChange={smartExpand => onChange({ smartExpand })} />
-  </label>;
   const gridLabel = single ? t.crop : t.storyboard;
 
   return <section ref={root} className="fusion-node material-workflow-node" lang={locale} style={materialWorkflowSize(node)}
@@ -205,13 +201,12 @@ export function MaterialWorkflowNode({ node, locale, onChange, onReference, onPr
         </div>
       </div>}
       {hasPrompt && <div className="fusion-field material-workflow-prompt">
-        <div className="material-prompt-heading"><label className="fusion-label" htmlFor={`${id}-prompt`}>{t.prompt}<span className="fusion-required">*</span></label>{node.kind === 'quick' && expansionControl}</div>
+        <div className="material-prompt-heading"><label className="fusion-label" htmlFor={`${id}-prompt`}>{t.prompt}<span className="fusion-required">*</span></label></div>
         <div className="fusion-textarea">
           <textarea id={`${id}-prompt`} className="nodrag nopan nowheel" value={node.prompt} placeholder={t.placeholder} required maxLength={promptLimit}
             onChange={event => updatePrompt(event.target.value)} onWheel={event => event.stopPropagation()} />
           <div className="fusion-textarea-footer">
             <div className="fusion-prompt-actions nodrag nopan"><PromptTools value={node.prompt} onChange={updatePrompt} labels={t} maxLength={promptLimit}
-              expandedHeaderAction={node.kind === 'quick' ? expansionControl : undefined}
               inlineIcons={{ expand: <NodeIcon src={assets.promptExpand} />, save: <NodeIcon src={assets.promptSave} />, library: <NodeIcon src={assets.promptLibrary} /> }} /></div>
             <span className="fusion-counter" aria-label={t.count}>{node.prompt.length}/{promptLimit}</span>
           </div>
