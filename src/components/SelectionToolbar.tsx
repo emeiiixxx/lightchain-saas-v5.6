@@ -11,8 +11,8 @@ type Action = keyof typeof messages['zh-CN'];
 type Props = { locale: Locale; multiple: boolean; onAction: (action: Action) => void; onDownload: () => void };
 export function SelectionToolbar({ locale, multiple, onAction, onDownload }: Props) {
   const t = messages[locale];
-  const action = (label: Action, icon: IconName, size = 16) => <Button key={label} onClick={() => onAction(label)}><Icon name={icon} size={size} />{t[label]}</Button>;
-  const iconAction = (label: Action, icon: IconName, handler = () => onAction(label)) => <Button key={label} className="canvas-icon-button" aria-label={t[label]} title={t[label]} onClick={handler}><Icon name={icon} size={20} /></Button>;
+  const action = (label: Action, icon: IconName, size = 16) => <Button key={label} variant="tool" onClick={() => onAction(label)}><Icon name={icon} size={size} />{t[label]}</Button>;
+  const iconAction = (label: Action, icon: IconName, handler = () => onAction(label)) => <Button key={label} variant="tool" className="canvas-icon-button" aria-label={t[label]} title={t[label]} onClick={handler}><Icon name={icon} size={20} /></Button>;
   return <MediaToolbar label={t.selectionTools} nodeId={multiple ? '57:25319' : '136:17032'}>
     {multiple ? <>
       {action('mergeImages', 'mergeImages', 20)}{action('batchEdit', 'batchEdit', 20)}{action('multiFlat', 'multiFlat', 20)}

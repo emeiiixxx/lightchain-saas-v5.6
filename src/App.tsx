@@ -51,6 +51,7 @@ import { canvasMediaDisplayName, createCanvasFileNamer } from './canvas-media-fi
 import { isProjectCoverCandidate, projectCoverMessages, resolveProjectCover, toggleProjectCover, withProjectCoverOrder } from './canvas-project-cover';
 import { getMotionDurationMs } from './motion';
 import { PromptLibraryProvider } from './PromptLibraryContext';
+import { fusionCanvasReferenceCandidates } from './fusion-canvas-references';
 
 type Theme = 'dark' | 'light' | 'system';
 type Page = 'canvas' | 'tryon' | 'video' | 'design';
@@ -111,6 +112,8 @@ export default function App() {
   const [referenceTarget, setReferenceTarget] = useState<ImagePickerTarget | null>(null);
   const shownReference = usePresence(referenceTarget);
   const [canvasReference, setCanvasReference] = useState<(ImagePickerTarget & { ids: string[] }) | null>(null);
+  const referenceCandidateIds = useMemo(() => new Set(canvasReference
+    ? fusionCanvasReferenceCandidates(images, canvasReference).map(image => image.id) : []), [images, canvasReference]);
   const shownCanvasReference = usePresence(canvasReference);
   const canvasReferencePreviews = shownCanvasReference.value?.ids.flatMap(id => images.find(image => image.id === id && !image.nodeOnly && !image.generation) ?? []) ?? [];
   const referencePreviewList = useRef<HTMLDivElement>(null);
@@ -793,6 +796,10 @@ export default function App() {
     const current = imageRef.current;
     const owner = current.find(item => item.id === target && (item.fusion?.kind === 'batch' || (item.fusion?.kind === 'flat' && item.fusion.batchFlat)));
     if (!owner?.fusion) return;
+    if (source === 'canvas') {
+      const allowed = new Set(fusionCanvasReferenceCandidates(current, { target, role: 'main' }).map(image => image.id));
+      if (additions.some(image => !allowed.has(image.id))) return;
+    }
     const existing = workflowInputs(owner.fusion);
     const ids = new Set(existing.flatMap(item => item.sourceImageId ? [item.sourceImageId] : []));
     const incoming = additions.filter(item => {
@@ -845,6 +852,10 @@ export default function App() {
   function addReferences(target: string, additions: FusionReference[], source: 'upload' | 'canvas' = 'upload') {
     const owner = imageRef.current.find(n => n.id === target);
     if (!owner?.fusion) return;
+    if (source === 'canvas') {
+      const allowed = new Set(fusionCanvasReferenceCandidates(imageRef.current, { target }).map(image => image.id));
+      if (additions.some(reference => !allowed.has(reference.id))) return;
+    }
     additions = additions.filter(reference => !imageRef.current.some(image => image.id === reference.id && image.generation));
     if (!additions.length) return;
     const merge = isMultiInputWorkflow(owner.fusion) && owner.fusion.kind !== 'batch';
@@ -860,8 +871,7 @@ export default function App() {
     const candidate = images.find(n => n.id === id);
     const settings = images.find(n => n.id === canvasReference.target)?.fusion;
     const merge = canvasReference.role === 'main' || (isMultiInputWorkflow(settings) && settings?.kind !== 'batch');
-    const existing = pickerImages(settings, canvasReference.role);
-    if (!candidate || candidate.nodeOnly || candidate.generation || existing.some(n => merge ? n.sourceImageId === candidate.id : n.url === candidate.url)) return;
+    if (!candidate || !referenceCandidateIds.has(id)) return;
     const picked = canvasReference.ids.includes(id);
     if (!picked && canvasReferenceCount >= pickerLimit(settings, canvasReference.role)) { announce(referenceLimitMessage(canvasReference.target, canvasReference.role)); return; }
     if (!picked && merge && isWorkflowDescendant(images, canvasReference.target, id)) { reportMergeCycle(); return; }
@@ -883,8 +893,8 @@ export default function App() {
       const source = images.find(item => !item.nodeOnly && item.id === result.sourceImageId);
       return source ? <ImageConnection zoom={view.zoom} key={`cutout:${result.id}`} image={source} target={result} active={selectedIds.includes(source.id) || selectedIds.includes(result.id)} /> : null;
     })}
-    {images.filter(n => !n.nodeOnly).map(n => <div key={n.id} data-image data-canvas-id={n.id} className={`canvas-image ${(canvasReference ? canvasReference.ids.includes(n.id) : selectedIds.includes(n.id)) ? 'selected' : ''}`} style={{ left: n.x, top: n.y, width: n.width, height: n.height, opacity: canvasReference && n.generation ? .35 : undefined, zIndex: foregroundIds.has(n.id) ? 3 : raisedIds.has(n.id) ? 2 : undefined } as React.CSSProperties}
-      tabIndex={canvasReference && n.generation ? -1 : 0} role="button" aria-label={`${t.image}: ${canvasMediaDisplayName(n.name)}`} aria-disabled={!!canvasReference && !!n.generation} aria-pressed={canvasReference ? canvasReference.ids.includes(n.id) : selectedIds.includes(n.id)}
+    {images.filter(n => !n.nodeOnly).map(n => <div key={n.id} data-image data-canvas-id={n.id} className={`canvas-image ${(canvasReference ? canvasReference.ids.includes(n.id) : selectedIds.includes(n.id)) ? 'selected' : ''}`} style={{ left: n.x, top: n.y, width: n.width, height: n.height, opacity: canvasReference && !referenceCandidateIds.has(n.id) ? .35 : undefined, zIndex: foregroundIds.has(n.id) ? 3 : raisedIds.has(n.id) ? 2 : undefined } as React.CSSProperties}
+      tabIndex={canvasReference && !referenceCandidateIds.has(n.id) ? -1 : 0} role="button" aria-label={`${t.image}: ${canvasMediaDisplayName(n.name)}`} aria-disabled={!!canvasReference && !referenceCandidateIds.has(n.id)} aria-pressed={canvasReference ? canvasReference.ids.includes(n.id) : selectedIds.includes(n.id)}
       onFocus={e => { if (document.documentElement.dataset.focusNavigation === 'keyboard' && !canvasReference && e.target === e.currentTarget && !selectedRef.current.includes(n.id)) setSelectedIds([n.id]); }} onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || (e.key === ' ' && document.documentElement.dataset.focusNavigation === 'keyboard'))) { e.preventDefault(); if (canvasReference) { sceneEvents.toggleCanvasReference(n.id); return; } setSelectedIds(e.shiftKey ? selectedIds.includes(n.id) ? selectedIds.filter(id => id !== n.id) : [...selectedIds, n.id] : [n.id]); } }}
       onPointerDown={e => sceneEvents.selectReferenceImage(e, n.id)}
       onContextMenu={e => {
@@ -927,7 +937,7 @@ export default function App() {
           : <FusionNode image={editorImage} locale={locale} onAddMain={() => setMainTarget(n.id)} onChange={patch => sceneEvents.updateFusion(n.id, patch)} onReference={source => sceneEvents.openImagePicker(n.id, source)} onEditGuide={() => setDrawingImage(editorImage)} onGenerate={() => sceneEvents.generateDemo(n.id)} />}
       </div>
     </div>;})}
-  </>, [images, selectedIds, canvasReference, foregroundIds, raisedIds, locale, t, view.zoom, sceneEvents]);
+  </>, [images, selectedIds, canvasReference, referenceCandidateIds, foregroundIds, raisedIds, locale, t, view.zoom, sceneEvents]);
 
   return <PromptLibraryProvider uploads={uploads} onUpload={rememberUpload} locale={locale}><div className="app-shell" data-library="Lightchain SaaS v5.1 libraries Beta" data-node-id="12:3127">
     <header className="topbar flex items-center justify-between gap-2 px-6" data-node-id="12:3148">

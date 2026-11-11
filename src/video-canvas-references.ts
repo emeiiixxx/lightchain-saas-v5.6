@@ -48,12 +48,12 @@ export function referenceOptions(state: ReferenceScene, target: WorkflowReferenc
   if (target.editor === 'material') {
     const node = state.materialWorkflows?.find(item => item.id === target.id);
     if (!node || target.kind !== 'image') return invalid;
+    bound = [...node.references, node.back].map(reference => reference?.sourceImageId);
     if (target.field === 'back') {
       if (!materialWorkflowHasBackView(node)) return invalid;
-      limit = 1; bound = [node.back?.sourceImageId];
+      limit = 1;
     } else {
       limit = Math.max(0, materialReferenceLimit(node.kind) - node.references.length);
-      bound = node.references.map(reference => reference.sourceImageId);
     }
   } else if (target.editor === 'upscale') {
     const node = state.upscaleWorkflows?.find(item => item.id === target.id);
@@ -62,17 +62,19 @@ export function referenceOptions(state: ReferenceScene, target: WorkflowReferenc
   } else {
     const node = state.workflows.find(item => item.id === target.id);
     if (!node) return invalid;
+    bound = [node.main, node.endFrame, ...node.references].map(reference => reference?.sourceImageId);
     if (target.field === 'references') {
       if (node.mode !== 'references') return invalid;
       const references = videoWorkflowReferences(node).filter(reference => reference.kind === target.kind);
       limit = Math.max(0, videoReferenceLimits[target.kind] - references.length);
-      bound = references.map(reference => reference.sourceImageId);
     } else {
       if (node.mode !== 'frames' || target.kind !== 'image') return invalid;
-      limit = 1; bound = [node[target.field]?.sourceImageId];
+      limit = 1;
     }
   }
   const excluded = downstreamIds(state, target.id);
+  // Exclude inputs across every slot, including retained inactive slots. A canvas
+  // instance cannot be added again through another field on the same editor.
   bound.forEach(id => { if (id) excluded.add(id); });
   const candidates = state.images.filter(image => !image.nodeOnly && !image.generation && !excluded.has(image.id)
     && (target.kind === 'video' ? Boolean(image.video?.url) : !image.video && Boolean(image.url)));

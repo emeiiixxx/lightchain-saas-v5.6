@@ -9,7 +9,7 @@ export function Icon({ name, size = 20, className = '' }: { name: IconName; size
   return <span aria-hidden="true" className={`icon ${className}`} style={{ width: size, height: size, '--icon-url': `url("${assets[name]}")` } as CSSProperties} />;
 }
 
-type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'outline' | 'ghost' | 'primary' | 'secondary' | 'tonal'; size?: 's' | 'm' | 'l'; icon?: IconName };
+type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'outline' | 'ghost' | 'tool' | 'primary' | 'secondary' | 'tonal'; size?: 's' | 'm' | 'l'; icon?: IconName };
 export function Button({ variant = 'ghost', size = 's', icon, children, className = '', title, ...props }: ButtonProps) {
   const iconOnly = (!children && !!icon) || (isValidElement(children) && children.type === Icon);
   const tooltip = title || (iconOnly ? props['aria-label'] : undefined);

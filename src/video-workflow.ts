@@ -99,7 +99,7 @@ export function canGenerateVideoWorkflow(node: VideoWorkflow): boolean {
 }
 
 // sourceImageId is the shared reference field; in this workspace it identifies
-// either an image or a video on the canvas. Multiple slots can share one source.
+// either an image or a video on the canvas. Existing references retain their identity.
 export function videoWorkflowSourceIds(node: VideoWorkflow): string[] {
   const references = node.mode === 'frames' ? [node.main, node.endFrame] : videoWorkflowReferences(node);
   return [...new Set(references.flatMap(reference => reference?.sourceImageId ? [reference.sourceImageId] : []))];

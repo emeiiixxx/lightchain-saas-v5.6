@@ -54,6 +54,9 @@ button:disabled { cursor: not-allowed; color: var(--text-disabled); }
 .lc-button--outline:hover:not(:disabled) { background: var(--control-fill-hover); color: var(--text-primary); }
 .lc-button--ghost { background: transparent; }
 .lc-button--ghost:hover:not(:disabled):where(:not([aria-pressed='true'])) { background: var(--state-hover); color: var(--text-primary); }
+/* Figma 3536:5958: Tool text and icon actions share the brand foreground. */
+.lc-button--tool { background: transparent; border: 0; }
+.lc-button--tool:is(:hover, [aria-expanded='true']):not(:disabled) { background: var(--state-hover); color: var(--text-brand); }
 /* 5.1 Beta IconButton / Tonal: 139:1673, 139:1682, 139:1691. */
 .lc-button--tonal { background: var(--surface-media-overlay); color: var(--text-on-brand-white); border: 0; }
 .lc-button--tonal:hover:not(:disabled) { background: var(--surface-media-overlay-strong); color: var(--text-on-brand-white); }
