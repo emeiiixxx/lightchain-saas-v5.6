@@ -583,7 +583,7 @@ export default function App() {
       remember(imageRef.current);
       imageRef.current = next; selectedRef.current = [];
       setImages(next); setSelectedIds([]);
-      setView(fitImages(canvasNodes(next), rect.width, rect.height));
+      animateView(fitImages(canvasNodes(next), rect.width, rect.height));
       announce(locale === 'zh-CN' ? '已载入功能示例，可修改节点配置继续体验' : locale === 'ja' ? '機能サンプルを表示しました。設定を変更してお試しください' : 'Example loaded. Edit the node settings to explore.');
     } catch {
       if (epoch === uploadEpoch.current) announce(locale === 'zh-CN' ? '示例图片加载失败，请重试' : locale === 'ja' ? 'サンプル画像を読み込めませんでした。再試行してください' : 'Could not load example images. Please try again.');
@@ -598,7 +598,7 @@ export default function App() {
     const bounds = boundsOf(canvasNodes([image]))!;
     const area = canvasSafeArea(r.width, r.height);
     if (bounds.x * current.zoom + current.x < area.x || (bounds.x + bounds.width) * current.zoom + current.x > area.x + area.width || bounds.y * current.zoom + current.y < area.y || (bounds.y + bounds.height) * current.zoom + current.y > area.y + area.height) {
-      setView(fitImages(canvasNodes([image]), r.width, r.height));
+      animateView(fitImages(canvasNodes([image]), r.width, r.height));
     }
   }
   function openFusion(kind: WorkflowKind = 'fusion') {
@@ -764,7 +764,7 @@ export default function App() {
     const rect = canvas.current?.getBoundingClientRect();
     if (rect) {
       const focusIds = new Set([...inputs.map(input => input.id), editor.id]);
-      setView(fitImages(canvasNodes(imageRef.current.filter(item => focusIds.has(item.id))), rect.width, rect.height));
+      animateView(fitImages(canvasNodes(imageRef.current.filter(item => focusIds.has(item.id))), rect.width, rect.height));
     }
   }
   function openBatchEdit() {
@@ -782,7 +782,7 @@ export default function App() {
     const rect = canvas.current?.getBoundingClientRect();
     if (rect) {
       const focusIds = new Set([...inputs.map(input => input.id), editor.id]);
-      setView(fitImages(canvasNodes(imageRef.current.filter(item => focusIds.has(item.id))), rect.width, rect.height));
+      animateView(fitImages(canvasNodes(imageRef.current.filter(item => focusIds.has(item.id))), rect.width, rect.height));
     }
   }
   function openImagePicker(target: string, source: 'upload' | 'canvas', role?: 'main') {
