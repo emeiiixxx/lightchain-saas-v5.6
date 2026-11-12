@@ -35,6 +35,7 @@ export function copyCanvasSelection(items: CanvasImage[], selected: string[], op
         editorSourceId: !isMultiInputWorkflow(item.fusion) && sourceId && imageIds.has(sourceId) ? sourceId : undefined,
         fusion: {
           kind: item.fusion.kind, position, prompt: item.fusion.prompt, ratio: item.fusion.ratio, ratioMode: item.fusion.ratioMode, resolution: item.fusion.resolution,
+          customRatioInput: item.fusion.customRatioInput ? { ...item.fusion.customRatioInput } : undefined,
           batchFlat: item.fusion.batchFlat, flatRegion: item.fusion.flatRegion, flatFace: item.fusion.flatFace,
           drawingGuide: sourceId && imageIds.has(sourceId) ? item.fusion.drawingGuide : undefined,
           mainImages: item.fusion.kind === 'batch' ? options?.preserveSelectedInputs

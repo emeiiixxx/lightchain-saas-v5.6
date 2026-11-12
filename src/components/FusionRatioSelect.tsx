@@ -1,6 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import type { Locale } from '../i18n';
+import type { FusionSettings } from '../canvas';
 import { fusionAspectRatios, parseFusionCustomRatio } from '../fusion-aspect-ratio';
 import { usePresence } from '../usePresence';
 import { Icon } from './ui';
@@ -17,7 +18,8 @@ type Props = {
   locale: Locale;
   value: string;
   custom: boolean;
-  onChange: (patch: { ratio: string; ratioMode?: 'custom' }) => void;
+  savedInput?: FusionSettings['customRatioInput'];
+  onChange: (patch: Partial<Pick<FusionSettings, 'ratio' | 'ratioMode' | 'customRatioInput'>>) => void;
 };
 
 function RatioIcon({ ratio, size = 20 }: { ratio: string; size?: number }) {
@@ -26,8 +28,9 @@ function RatioIcon({ ratio, size = 20 }: { ratio: string; size?: number }) {
     '--icon-url': `url("${import.meta.env.BASE_URL}assets/fusion-ratio/${file}.svg")` } as CSSProperties} />;
 }
 
-// Figma 202:12611 / 202:12857 / 202:13027. Drafts stay local until confirmed.
-export function FusionRatioSelect({ locale, value, custom, onChange }: Props) {
+// Figma 202:12611 / 202:12857 / 202:13027. Remember inputs independently
+// from the applied ratio, including when the virtualized node remounts.
+export function FusionRatioSelect({ locale, value, custom, savedInput, onChange }: Props) {
   const t = copy[locale];
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -84,7 +87,8 @@ export function FusionRatioSelect({ locale, value, custom, onChange }: Props) {
 
   function expand(fromKeyboard = false) {
     const [w = '', h = ''] = custom ? value.split(':') : [];
-    setWidth(w); setHeight(h); setEditing(false); setInvalid(false);
+    setWidth(savedInput?.width ?? w); setHeight(savedInput?.height ?? h);
+    setEditing(false); setInvalid(false);
     keyboardOpen.current = fromKeyboard;
     document.dispatchEvent(new CustomEvent('lc-select-open', { detail: id }));
     setOpen(true);
@@ -93,6 +97,12 @@ export function FusionRatioSelect({ locale, value, custom, onChange }: Props) {
     setOpen(false);
     if (restoreFocus) trigger.current?.focus({ preventScroll: true });
   }
+  function changeInput(field: 'width' | 'height', text: string) {
+    const input = { width, height, [field]: text };
+    setWidth(input.width); setHeight(input.height); setInvalid(false);
+    // Draft edits never apply a ratio or update the account's active settings.
+    onChange({ customRatioInput: input });
+  }
   function confirm() {
     const ratio = parseFusionCustomRatio(width, height);
     if (!ratio) { setInvalid(true); notify(t.invalid, 'error'); return; }
@@ -100,7 +110,7 @@ export function FusionRatioSelect({ locale, value, custom, onChange }: Props) {
     setWidth(w); setHeight(h); setInvalid(false); setEditing(false);
     const active = document.activeElement;
     if (active instanceof HTMLInputElement && menu.current?.contains(active)) active.blur();
-    onChange({ ratio, ratioMode: 'custom' });
+    onChange({ ratio, ratioMode: 'custom', customRatioInput: { width: w, height: h } });
   }
 
   return <div className="fusion-setting">
@@ -128,25 +138,27 @@ export function FusionRatioSelect({ locale, value, custom, onChange }: Props) {
         const next = event.key === 'ArrowDown' ? (index + 1) % buttons.length : event.key === 'ArrowUp' ? (index - 1 + buttons.length) % buttons.length : event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1 : -1;
         if (next >= 0) { event.preventDefault(); event.stopPropagation(); buttons[next]?.focus(); }
       }}>
-      <div className="fusion-ratio-custom" data-selected={custom && !editing} role="group" aria-label={t.custom}>
+      <div className="fusion-ratio-custom" data-selected={custom && !editing} data-editing={editing} role="group" aria-label={t.custom}>
         <RatioIcon ratio="custom" />
-        {!editing && <span className="fusion-ratio-custom-label" onClick={() => widthInput.current?.focus()}>{t.custom}</span>}
+        <span className="fusion-ratio-custom-label" aria-hidden={editing} onClick={() => widthInput.current?.focus()}><span>{t.custom}</span></span>
         <div className="fusion-ratio-fields">
           <label className="fusion-ratio-input" data-invalid={invalid}>
             <span aria-hidden="true">W</span><input ref={widthInput} aria-label={`${t.custom} ${t.width}`} aria-invalid={invalid} inputMode="numeric" autoComplete="off" placeholder={t.width} value={width}
-              onFocus={() => setEditing(true)} onChange={event => { setWidth(event.target.value); setInvalid(false); }} />
+              onFocus={() => setEditing(true)} onChange={event => changeInput('width', event.target.value)} />
           </label>
           <span aria-hidden="true">:</span>
           <label className="fusion-ratio-input" data-invalid={invalid}>
             <span aria-hidden="true">H</span><input aria-label={`${t.custom} ${t.height}`} aria-invalid={invalid} inputMode="numeric" autoComplete="off" placeholder={t.height} value={height}
-              onFocus={() => setEditing(true)} onChange={event => { setHeight(event.target.value); setInvalid(false); }} />
+              onFocus={() => setEditing(true)} onChange={event => changeInput('height', event.target.value)} />
           </label>
-          {editing && <button type="button" className="fusion-ratio-confirm" onClick={confirm}>{t.confirm}</button>}
+          <span className="fusion-ratio-confirm-slot" aria-hidden={!editing} inert={!editing}>
+            <button type="button" className="fusion-ratio-confirm" onClick={confirm}>{t.confirm}</button>
+          </span>
         </div>
       </div>
       <div className="fusion-ratio-divider" />
       {fusionAspectRatios.map(ratio => <button type="button" key={ratio} className="fusion-ratio-option" data-ratio-option data-selected={!editing && !custom && value === ratio} aria-pressed={!custom && value === ratio}
-        onClick={() => { onChange({ ratio, ratioMode: undefined }); close(true); }}>
+        onClick={() => { onChange({ ratio, ratioMode: undefined, customRatioInput: { width, height } }); close(true); }}>
         <RatioIcon ratio={ratio} /><span>{ratio === 'auto' ? t.auto : ratio}</span>
         {!editing && !custom && value === ratio && <RatioIcon ratio="check" size={16} />}
       </button>)}

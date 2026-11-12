@@ -18,7 +18,7 @@ export type FlatRegion = 'top' | 'bottom' | 'full';
 export type FlatFace = 'front' | 'back';
 export type DirectedFusionPoint = { id: string; reference: FusionReference; maskPreviewUrl?: string; maskSourceUrl?: string };
 export const MAX_DIRECTED_POINTS = 3;
-export type FusionSettings = { positionPinned?: boolean; kind?: WorkflowKind; position?: { x: number; y: number }; prompt: string; ratio: string; ratioMode?: 'custom'; resolution: string; reference?: FusionReference; references?: FusionReference[]; mainImages?: FusionReference[]; directedPoints?: DirectedFusionPoint[]; flatRegion?: FlatRegion; flatFace?: FlatFace; batchFlat?: boolean; drawingGuide?: DrawingGuide };
+export type FusionSettings = { positionPinned?: boolean; kind?: WorkflowKind; position?: { x: number; y: number }; prompt: string; ratio: string; ratioMode?: 'custom'; customRatioInput?: { width: string; height: string }; resolution: string; reference?: FusionReference; references?: FusionReference[]; mainImages?: FusionReference[]; directedPoints?: DirectedFusionPoint[]; flatRegion?: FlatRegion; flatFace?: FlatFace; batchFlat?: boolean; drawingGuide?: DrawingGuide };
 export const fusionReferences = (settings?: FusionSettings): FusionReference[] => settings?.references ?? (settings?.reference ? [settings.reference] : []);
 export const batchMainImages = (settings?: FusionSettings): FusionReference[] => settings?.mainImages ?? [];
 export const workflowInputs = (settings?: FusionSettings): FusionReference[] => settings?.kind === 'batch' ? batchMainImages(settings) : fusionReferences(settings);

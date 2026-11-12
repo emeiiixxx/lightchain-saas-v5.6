@@ -130,7 +130,7 @@ export function FusionNode({ image, locale, onChange, onAddMain, onReference, on
         <div className="fusion-textarea-footer"><div className="fusion-prompt-actions"><PromptTools key={image.nodeOnly ? 'empty' : 'main'} value={settings.prompt} onChange={updatePrompt} labels={t} /></div><span className="fusion-counter" aria-label={t.count}>{settings.prompt.length}/2000</span><Button variant="secondary" className="fusion-clear" onClick={() => updatePrompt('')}>{t.clear}</Button></div>
       </div>{error && <p className={merge || referenceOnly ? 'sr-only' : 'fusion-error'} id={`${promptId}-error`} role="alert">{t.required}</p>}</div>
       <div className="fusion-field"><span className="fusion-label">{t.settings}</span><div className="fusion-settings">{referenceOnly
-        ? <FusionRatioSelect locale={locale} value={settings.ratio} custom={settings.ratioMode === 'custom'} onChange={onChange} />
+        ? <FusionRatioSelect locale={locale} value={settings.ratio} custom={settings.ratioMode === 'custom'} savedInput={settings.customRatioInput} onChange={onChange} />
         : <SettingSelect label={t.ratio} value={settings.ratio} icon="fusionRatio" options={['auto', '1:1', '3:4', '4:3', '9:16', '16:9'].map(value => ({value, label: value === 'auto' ? t.auto : value}))} onChange={ratio => onChange({ ratio })} />
       }<SettingSelect label={t.resolution} value={settings.resolution} icon="fusionHd" options={['1K', '2K', '4K'].map(value => ({value,label:value}))} onChange={resolution => onChange({ resolution })} /></div></div>
     </div>
