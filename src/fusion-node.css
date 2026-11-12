@@ -117,9 +117,9 @@
 .reference-only-node .fusion-references--sortable { max-height: 168px; }
 .reference-only-node .fusion-reference { position: relative; }
 .reference-only-node .fusion-reference-guide-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .7; pointer-events: none; }
-/* Figma 202:13603: thumbnail actions stay over the media in both themes. */
+/* Figma 202:13587: Ghost IconButton M, 32px target and 20px marker artwork. */
 .reference-only-node .fusion-reference-hover { --text-secondary: #e3e8e8; position: absolute; z-index: 1; inset: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: var(--surface-media-overlay); -webkit-backdrop-filter: blur(var(--background-blur-s)); backdrop-filter: blur(var(--background-blur-s)); opacity: 0; pointer-events: none; transition: opacity 200ms ease-out; }
-.reference-only-node .fusion-reference-hover .fusion-reference-guide { width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 0; border: 0; border-radius: 6px; color: var(--text-secondary); background: transparent; pointer-events: none; }
+.reference-only-node .fusion-reference-hover .fusion-reference-guide { width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 0; border: 0; border-radius: var(--radius-base); color: var(--text-secondary); background: transparent; pointer-events: none; }
 .reference-only-node .fusion-reference-hover .fusion-reference-guide:hover { background: var(--state-hover); }
 .reference-only-node .fusion-reference-wrap:is(:hover, :focus-within) .fusion-reference-hover { opacity: 1; }
 .reference-only-node .fusion-reference-wrap:is(:hover, :focus-within) .fusion-reference-guide { pointer-events: auto; }

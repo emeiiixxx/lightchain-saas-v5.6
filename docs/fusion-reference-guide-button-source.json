@@ -1,0 +1,24 @@
+{
+  "fileKey": "A3oI9FzDPseUH4ybk7mA3H",
+  "nodeId": "202:13587",
+  "designUrl": "https://www.figma.com/design/A3oI9FzDPseUH4ybk7mA3H/Lightchain-SaaS-v5.6.0?node-id=202-13587&m=dev",
+  "button": {
+    "component": "IconButton",
+    "type": "Ghost",
+    "state": "default",
+    "size": "M",
+    "width": 32,
+    "height": 32,
+    "radius": 8,
+    "foreground": "text-secondary"
+  },
+  "icon": {
+    "component": "Icon/MaskAreaTool",
+    "name": "marker",
+    "nodeId": "I202:13587;1579:4124;202:13601;139:1701",
+    "asset": "public/assets/fusion-reference-only/guide.svg",
+    "width": 20,
+    "height": 20,
+    "viewBox": "0 0 20 20"
+  }
+}
