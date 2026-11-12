@@ -65,10 +65,8 @@
 .print-variation-segments > button { flex: 1; min-width: 0; }
 .print-variation-segments > button:disabled { color: var(--text-disabled); background: transparent; opacity: 1; cursor: default; }
 .print-variation-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-.print-variation-reanalyze.lc-button { height: 40px; gap: 4px; padding: 0 16px; border-radius: 8px; font-size: 14px; line-height: 20px; }
+.print-variation-reanalyze.lc-button { height: 40px; gap: 4px; padding: 0 16px; border-radius: 8px; font-size: 14px; line-height: 24px; }
 .print-variation-generate.lc-button { height: 40px; gap: 4px; padding: 0 20px; border-radius: 8px; font-size: 14px; line-height: 20px; }
-.print-variation-panel .lc-button--secondary { background: var(--state-default); }
-.print-variation-panel .lc-button--secondary:hover:not(:disabled) { background: var(--state-hover); }
 .print-variation-panel .lc-button--primary:disabled { opacity: 1; background: var(--brand-primary-disabled); color: var(--text-on-brand-disabled); }
 .print-variation-loading { position: absolute; z-index: 4; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 4px; padding: 12px; border-radius: inherit; background: rgba(0, 0, 0, .2); -webkit-backdrop-filter: blur(30px); backdrop-filter: blur(30px); text-align: center; }
 .print-variation-loading > .lc-loading-spark { margin-bottom: 4px; }

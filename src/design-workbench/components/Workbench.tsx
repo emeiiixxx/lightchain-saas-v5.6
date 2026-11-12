@@ -656,10 +656,10 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
         { label: `${t('强度')}：${t(strength)}` }, { label: t(`${count}张`) },
         ...draft.points.map(point => ({ label: t(point) }))],
       images: [], demoOutputUrls: [
-        '/assets/design-workbench/promo-tasks/print-designed.jpg',
-        '/assets/design-workbench/promo-tasks/print-woodblock.jpg',
-        '/assets/design-workbench/promo-tasks/print-repeat.jpg',
-        '/assets/design-workbench/pattern.png',
+        '/assets/print-variation/botanical-variation-01.png',
+        '/assets/print-variation/botanical-variation-02.png',
+        '/assets/print-variation/botanical-variation-03.png',
+        '/assets/print-variation/botanical-variation-04.png',
       ],
     };
     closeLocalEdit();

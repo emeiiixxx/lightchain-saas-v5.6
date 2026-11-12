@@ -27,6 +27,7 @@ const DESIGN_POINTS = [
   '植物花卉主题', '细腻线描', '花瓣层次', '自然枝叶', '手绘质感', '流畅曲线',
   '疏密对比', '交错布局', '浅色底纹', '柔和配色', '色彩层次', '装饰细节',
 ];
+const MAX_CUSTOM_POINTS = 5;
 const STRENGTHS = [
   { value: 'low', label: '低' },
   { value: 'medium', label: '中' },
@@ -106,9 +107,9 @@ export const PrintVariationPanel = forwardRef<HTMLDivElement, PrintVariationPane
   };
   const confirmCustom = () => {
     const point = customText.trim();
-    if (!point) return;
+    if (!point || customPoints.length >= MAX_CUSTOM_POINTS) return;
     if (!DESIGN_POINTS.includes(point)) {
-      setCustomPoints(current => current.includes(point) ? current : [...current, point]);
+      setCustomPoints(current => current.includes(point) || current.length >= MAX_CUSTOM_POINTS ? current : [...current, point]);
     }
     setSelected(current => current.includes(point) ? current : [...current, point]);
     cancelCustom();
@@ -154,7 +155,7 @@ export const PrintVariationPanel = forwardRef<HTMLDivElement, PrintVariationPane
                 setSelected(current => current.filter(value => value !== point));
               }}><Icon name="close" size={16} /></button>
             </span>)}
-            {customEditing ? <div className="print-variation-custom-editor">
+            {customPoints.length < MAX_CUSTOM_POINTS && (customEditing ? <div className="print-variation-custom-editor">
               <input
                 ref={customInput}
                 value={customText}
@@ -170,7 +171,7 @@ export const PrintVariationPanel = forwardRef<HTMLDivElement, PrintVariationPane
               />
               <Button variant="secondary" className="print-variation-custom-action" onClick={cancelCustom}>{t('取消')}</Button>
               <Button variant="primary" className="print-variation-custom-action" disabled={!customText.trim()} onClick={confirmCustom}>{t('确定')}</Button>
-            </div> : <Button className="print-variation-add-point" icon="suggestion-add" onClick={() => setCustomEditing(true)}>{t('自定义')}</Button>}
+            </div> : <Button className="print-variation-add-point" icon="suggestion-add" onClick={() => setCustomEditing(true)}>{t('自定义')}</Button>)}
           </div>
         </div>
         <footer className="print-variation-footer">
@@ -214,7 +215,7 @@ export const PrintVariationPanel = forwardRef<HTMLDivElement, PrintVariationPane
             </div>
           </div>
           <div className="print-variation-actions">
-            <Button variant="secondary" className="print-variation-reanalyze" onClick={() => setAnalysisRun(run => run + 1)} disabled={unavailable}>
+            <Button variant="secondary" size="m" className="print-variation-reanalyze" onClick={() => setAnalysisRun(run => run + 1)} disabled={unavailable}>
               <Icon name="prompt-cover-replace" size={20} />{t('重新解析')}
             </Button>
             <Button variant="primary" className="print-variation-generate" disabled={unavailable || !selected.length || customEditing} onClick={() => onGenerate({ points: [...selected], mode, strength, count })}>
