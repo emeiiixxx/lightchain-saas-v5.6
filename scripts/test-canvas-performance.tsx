@@ -126,8 +126,10 @@ test('200-node Flow keeps pan renders bounded, culls offscreen content and resto
     await act(async () => { setView({ x: -100000, y: 0, zoom: 1 }); });
     assert.ok(host.querySelector('.react-flow__node[data-id="n100"].selected'), 'selection survives leaving and returning to the viewport');
     await act(async () => { host.querySelector('.react-flow__node[data-id="n100"]')!.dispatchEvent(new dom.window.MouseEvent('mousedown', { bubbles: true, view: dom.window, clientX: 40, clientY: 60, buttons: 1 })); });
-    await act(async () => { dom.window.dispatchEvent(new dom.window.MouseEvent('mousemove', { bubbles: true, view: dom.window, clientX: 90, clientY: 90, buttons: 1 })); });
-    await act(async () => { dom.window.dispatchEvent(new dom.window.MouseEvent('mouseup', { bubbles: true, view: dom.window, clientX: 90, clientY: 90 })); });
+    // Cross the drag threshold first, then move 50px/30px from the drag origin.
+    await act(async () => { dom.window.dispatchEvent(new dom.window.MouseEvent('mousemove', { bubbles: true, view: dom.window, clientX: 44, clientY: 60, buttons: 1 })); });
+    await act(async () => { dom.window.dispatchEvent(new dom.window.MouseEvent('mousemove', { bubbles: true, view: dom.window, clientX: 94, clientY: 90, buttons: 1 })); });
+    await act(async () => { dom.window.dispatchEvent(new dom.window.MouseEvent('mouseup', { bubbles: true, view: dom.window, clientX: 94, clientY: 90 })); });
     assert.deepEqual(moved, { x: 100050, y: 70 }, 'remounted nodes still emit correct world-space drag positions');
     console.log(`200-node structural check: ${host.querySelectorAll('[data-probe]').length} mounted at this viewport; 20 pans caused 0 extra n0 content renders.`);
   } finally { await act(async () => root.unmount()); host.remove(); }

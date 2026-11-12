@@ -99,6 +99,7 @@ test('marquee selection supports Shift removal/addition without dragging or inte
       const a = document.querySelector('[data-canvas-id="a"]');
       pointer(a, 'pointerdown', 120, 120);
       mouse(a, 'mousedown');
+      mouse(window, 'mousemove', false, 124, 120);
       mouse(window, 'mousemove', false, 160, 150);
       mouse(window, 'mouseup', false, 160, 150);
     });

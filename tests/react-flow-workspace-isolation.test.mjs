@@ -91,9 +91,10 @@ test('switching workspaces preserves each Flow canvas selection, drag and marque
       const target = document.querySelector('[data-canvas-id="fusion-1"]');
       pointer(target, 'pointerdown', 320, 120); mouse(target, 'mousedown', 320, 120);
     });
-    await act(async () => mouse(window, 'mousemove', 360, 150));
+    await act(async () => mouse(window, 'mousemove', 324, 120));
+    await act(async () => mouse(window, 'mousemove', 364, 150));
     await act(async () => {
-      pointer(window, 'pointerup', 360, 150); mouse(window, 'mouseup', 360, 150);
+      pointer(window, 'pointerup', 364, 150); mouse(window, 'mouseup', 364, 150);
     });
     assert.deepEqual(state.fusion.points[1], { x: 340, y: 130 }, 'drag remains attached to the fusion store');
     await act(async () => state.fusion.clear());
