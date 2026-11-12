@@ -1,4 +1,4 @@
-import { Children, cloneElement, isValidElement, memo, useCallback, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactElement, type ReactNode } from 'react';
+import { Children, cloneElement, isValidElement, memo, useCallback, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type MouseEventHandler, type ReactElement, type ReactNode } from 'react';
 import { BaseEdge, ConnectionMode, getBezierPath, Handle, Position, ReactFlow, ReactFlowProvider, SelectionMode, useUpdateNodeInternals, type Connection, type ConnectionLineComponentProps, type Edge, type EdgeChange, type EdgeProps, type Node, type NodeChange, type NodeProps } from '@xyflow/react';
 import { boundsOf, FUSION_WIDTH, type CanvasImage, type Viewport } from '../canvas';
 import { canConnectCanvasNodes, canvasConnectionSides, type CanvasConnection, type CanvasConnectionInput, type CanvasConnectionNode, type CanvasConnectionNodes } from '../canvas-connections';
@@ -9,7 +9,7 @@ import type { Locale } from '../i18n';
 import { CanvasConnectionHandle, type AddConnectionMedia } from './CanvasConnectionHandle';
 import './react-flow-canvas.css';
 
-type ContentProps = { children?: ReactNode; style?: CSSProperties; className?: string; 'data-canvas-id'?: string; 'data-fusion-id'?: string; image?: CanvasImage; target?: CanvasImage; active?: boolean; zoom?: number };
+type ContentProps = { children?: ReactNode; style?: CSSProperties; className?: string; onClick?: MouseEventHandler<HTMLElement>; 'data-canvas-id'?: string; 'data-fusion-id'?: string; image?: CanvasImage; target?: CanvasImage; active?: boolean; zoom?: number };
 type ContentNode = Node<{ content: ReactElement<ContentProps>; connectionNode?: CanvasConnectionNode; freeConnections: boolean; connectable: boolean; zoom: number; locale?: Locale; onAddConnectionMedia?: AddConnectionMedia; reconnectHandle?: string | null; reconnectHovered?: boolean }, 'lightchain'>;
 type ConnectionEdge = Edge<{ image: CanvasImage; target: CanvasImage; active: boolean; zoom: number; freeConnections: boolean }, 'lightchain'>;
 type FreeConnectionEdge = Edge<{ zoom: number; active: boolean }, 'lightchain-free'>;
@@ -25,7 +25,12 @@ const LightchainNode = memo(({ id, data }: NodeProps<ContentNode>) => {
   }, [id, data.freeConnections, data.connectionNode?.kind, data.zoom, updateNodeInternals]);
   return <>
     {!data.freeConnections && handles.flatMap(side => ['source', 'target'].map(type => <Handle key={`${type}-${side}`} id={`${type}-${side}`} type={type as 'source' | 'target'} position={side} isConnectable={false} className="lc-flow-handle" />))}
-    {data.content}
+    {cloneElement(data.content, { onClick: event => {
+      data.content.props.onClick?.(event);
+      // Let editor controls handle their click, but do not select the containing
+      // node when React Flow's drag threshold enables click-based selection.
+      if (event.target instanceof Element && event.target.closest(`${controlSelector},.nodrag`)) event.stopPropagation();
+    } })}
     {data.freeConnections && canvasConnectionSides(data.connectionNode).map(side => <CanvasConnectionHandle key={`free-${side}`}
       nodeId={id} side={side} node={data.connectionNode} connectable={data.connectable} locale={data.locale} onAdd={data.onAddConnectionMedia}
       reconnectable={data.reconnectHandle === `free-${side}`} reconnectHovered={data.reconnectHandle === `free-${side}` && data.reconnectHovered} />)}
