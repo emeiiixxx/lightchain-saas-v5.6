@@ -1,7 +1,7 @@
 import { layoutConnectedGroup, type FlowLayoutRect, type FlowLayoutVertex } from './canvas-connected-layout';
 import { videoLayoutOrder } from './video-layout-groups';
 
-export type LocalFlowVertex = FlowLayoutVertex & { x: number; y: number };
+export type LocalFlowVertex = FlowLayoutVertex & { x: number; y: number; positionPinned?: boolean };
 type Position = { x: number; y: number };
 type LayoutState = { owners: Record<string, string>; order: Record<string, number> };
 type Branch = { owner: string; kind: LocalFlowVertex['kind']; sources: string[] };
@@ -16,6 +16,12 @@ export function centerAddedFlowBranches(
   const sourcesOf = (vertex: LocalFlowVertex) => [...new Set(vertex.sources)]
     .filter(id => id !== vertex.id && current.has(id)).sort();
   const ownerOf = (vertex: LocalFlowVertex) => state.owners[vertex.id] ?? vertex.id;
+  // Only explicitly dragged objects are fixed. Other members of the same
+  // group still participate in automatic layout. Arrange clears these pins.
+  for (const vertex of next) {
+    const prior = before.get(vertex.id);
+    if (prior && vertex.positionPinned) current.set(vertex.id, { ...vertex, x: prior.x, y: prior.y });
+  }
   const keyOf = (branch: Branch) => JSON.stringify([branch.owner, branch.kind, branch.sources]);
   const branchOf = (vertex: LocalFlowVertex, sources = sourcesOf(vertex)): Branch => ({
     owner: ownerOf(vertex), kind: vertex.kind, sources,
@@ -28,7 +34,7 @@ export function centerAddedFlowBranches(
     const visited = new Set<string>();
     while (branch.sources.length === 1) {
       const parent = current.get(branch.sources[0]);
-      if (!parent || visited.has(parent.id) || ownerOf(parent) !== branch.owner) break;
+      if (!parent || parent.positionPinned || visited.has(parent.id) || ownerOf(parent) !== branch.owner) break;
       visited.add(parent.id);
       const parentBranch = branchOf(parent);
       if (!parentBranch.sources.length) break;
@@ -52,7 +58,11 @@ export function centerAddedFlowBranches(
       enqueue(branchOf(vertex, sources));
     }
   }
-  if (!pending.size) return new Map();
+  const changedPositions = () => new Map(next.flatMap(vertex => {
+    const point = current.get(vertex.id)!;
+    return point.x === vertex.x && point.y === vertex.y ? [] : [[vertex.id, { x: point.x, y: point.y }] as const];
+  }));
+  if (!pending.size) return changedPositions();
 
   const order = Object.fromEntries(next.map((vertex, index) => [vertex.id, state.order[vertex.id] ?? index]));
   const sequence = new Map(videoLayoutOrder(next, order).map((vertex, index) => [vertex.id, index]));
@@ -74,7 +84,7 @@ export function centerAddedFlowBranches(
   const families = new Map<string, { roots: LocalFlowVertex[]; owner: string; fixed: Set<string> }>();
   for (const branch of pending.values()) {
     const roots = (consumers.get(branch.sources[0]) ?? [])
-      .filter(vertex => keyOf(branchOf(vertex)) === keyOf(branch));
+      .filter(vertex => !vertex.positionPinned && keyOf(branchOf(vertex)) === keyOf(branch));
     if (!roots.length) continue;
     const rootIds = new Set(roots.map(vertex => vertex.id));
     const fixed = ancestorsOf(branch.sources);
@@ -86,7 +96,7 @@ export function centerAddedFlowBranches(
       for (const sibling of consumers.get(source) ?? []) {
         if (checked.has(sibling.id)) continue;
         checked.add(sibling.id);
-        if (sibling.kind !== branch.kind || ownerOf(sibling) !== branch.owner || fixed.has(sibling.id)) continue;
+        if (sibling.positionPinned || sibling.kind !== branch.kind || ownerOf(sibling) !== branch.owner || fixed.has(sibling.id)) continue;
         const upstream = ancestorsOf(sourcesOf(sibling));
         if ([...rootIds].some(id => upstream.has(id))) continue;
         roots.push(sibling); rootIds.add(sibling.id);
@@ -99,14 +109,14 @@ export function centerAddedFlowBranches(
     Math.min(...a.roots.map(vertex => sequence.get(vertex.id)!))
     - Math.min(...b.roots.map(vertex => sequence.get(vertex.id)!)));
   for (const { roots, owner, fixed } of familiesInOrder) {
-    // Inputs and their ancestors stay fixed, including references from other
-    // groups. Descendant traversal also stops at every ownership boundary.
+    // A dragged object is a layout boundary, like a fixed input. Its downstream
+    // additions form their own family anchored at its actual position.
     const scope = new Set<string>();
     const queue = roots.map(vertex => vertex.id);
     for (let index = 0; index < queue.length; index++) {
       const id = queue[index];
       const vertex = current.get(id);
-      if (!vertex || fixed.has(id) || scope.has(id) || ownerOf(vertex) !== owner) continue;
+      if (!vertex || vertex.positionPinned || fixed.has(id) || scope.has(id) || ownerOf(vertex) !== owner) continue;
       scope.add(id);
       for (const child of consumers.get(id) ?? []) queue.push(child.id);
     }
@@ -133,8 +143,10 @@ export function centerAddedFlowBranches(
       return { ...vertex, sources: rootIds.has(id) ? [anchorId] : vertex.sources };
     });
     const externalInputs = new Map([...current].filter(([id]) => !scope.has(id)));
+    const pinnedObstacles = new Map([...current].filter(([, vertex]) => vertex.positionPinned && ownerOf(vertex) === owner));
     const layout = layoutConnectedGroup([anchor, ...vertices], { ...order, [anchorId]: -1 }, {
       origin: bounds, externalInputs,
+      occupied: pinnedObstacles,
       fixedRoots: new Map([[anchorId, bounds]]), avoidCollisions: false,
     });
     const placed = new Map([...layout.positions].filter(([id]) => scope.has(id)));
@@ -142,8 +154,5 @@ export function centerAddedFlowBranches(
     // fixed; full-canvas collision avoidance belongs to Arrange.
     for (const [id, point] of placed) current.set(id, { ...current.get(id)!, ...point });
   }
-  return new Map(next.flatMap(vertex => {
-    const point = current.get(vertex.id)!;
-    return point.x === vertex.x && point.y === vertex.y ? [] : [[vertex.id, { x: point.x, y: point.y }] as const];
-  }));
+  return changedPositions();
 }

@@ -47,7 +47,7 @@ export function pasteVideoCanvasScene(copy: VideoCanvasCopy, dx: number, dy: num
   const names = new Map(copy.images.map(item => [item.id, nextFilename(item)]));
   const media = (id?: string) => id && mediaIds.has(id) ? ids.get(id) : undefined;
   const editor = (id?: string) => id && editorIds.has(id) ? ids.get(id) : undefined;
-  const position = (item: { id: string; x: number; y: number }) => ({ id: ids.get(item.id)!, x: item.x + dx, y: item.y + dy });
+  const position = (item: { id: string; x: number; y: number }) => ({ id: ids.get(item.id)!, x: item.x + dx, y: item.y + dy, positionPinned: undefined });
   const images = copy.images.map(item => ({ ...item, ...position(item), name: names.get(item.id)!,
     video: item.video ? { ...item.video, name: names.get(item.id)! } : undefined,
     generation: undefined, generatedTaskId: undefined, projectCover: undefined, coverOrder: undefined,

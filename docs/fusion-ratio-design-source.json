@@ -1,0 +1,12 @@
+{
+  "fileKey": "A3oI9FzDPseUH4ybk7mA3H",
+  "nodes": {
+    "default": "202:12611",
+    "editing": "202:12857",
+    "confirmed": "202:13027"
+  },
+  "assets": "public/assets/fusion-ratio/",
+  "implementation": "src/components/FusionRatioSelect.tsx",
+  "scope": "one-click fusion only",
+  "validation": "Figma design context and exported assets obtained; no tests, build or browser verification performed"
+}

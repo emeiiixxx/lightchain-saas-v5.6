@@ -31,7 +31,7 @@ export function copyVideoCanvasSelection(items: VideoCanvasMedia[], selected: st
 export function pasteVideoCanvasSelection(items: VideoCanvasMedia[], dx: number, dy: number, existing: VideoCanvasMedia[] = items): VideoCanvasMedia[] {
   return pasteCanvasSelection(items, dx, dy, { existing }).map(item => {
     const media = item as VideoCanvasMedia;
-    return { ...media, ...(media.video ? { video: { ...media.video, name: media.name } } : {}) };
+    return { ...media, positionPinned: undefined, ...(media.video ? { video: { ...media.video, name: media.name } } : {}) };
   });
 }
 

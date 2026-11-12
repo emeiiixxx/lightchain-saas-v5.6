@@ -9,6 +9,7 @@ function verticesOf(items: CanvasImage[]): LocalFlowVertex[] {
     return {
       id: item.id, kind: editor ? 'workflow' : 'media',
       x: item.x, y: item.y, width: item.width, height: item.height,
+      positionPinned: editor ? editor.fusion?.positionPinned : item.positionPinned,
       sources: editor ? workflowSources(items, editor).map(source => source.id)
         : item.sourceImageId ? [item.sourceImageId]
           : item.generatedByEditorId ? [`${item.generatedByEditorId}:fusion`] : [],
@@ -16,10 +17,25 @@ function verticesOf(items: CanvasImage[]): LocalFlowVertex[] {
   });
 }
 
+// Keep image and editor pins independent even in a legacy combined record.
+// Snapshot history retains them along with the object's actual coordinates.
+export function pinFusionPositions(items: CanvasImage[], movedIds: Iterable<string>): CanvasImage[] {
+  const moved = new Set(movedIds);
+  return items.map(item => {
+    const pinImage = !item.nodeOnly && moved.has(item.id);
+    const pinEditor = !!item.fusion && moved.has(`${item.id}:fusion`);
+    if ((!pinImage || item.positionPinned) && (!pinEditor || item.fusion?.positionPinned)) return item;
+    return { ...item, ...(pinImage ? { positionPinned: true } : {}),
+      ...(pinEditor ? { fusion: { ...item.fusion!, positionPinned: true } } : {}) };
+  });
+}
+
 // Apply only during a connected addition. Dragging, settings, history and task
 // completion keep the geometry recorded by their existing snapshot paths.
 export function centerAddedFusionBranches(previous: CanvasImage[], next: CanvasImage[]): CanvasImage[] {
-  const positions = centerAddedFlowBranches(verticesOf(previous), verticesOf(next), canvasLayoutGroups(next, previous));
+  const state = canvasLayoutGroups(next, previous);
+  const before = verticesOf(previous), after = verticesOf(next);
+  const positions = centerAddedFlowBranches(before, after, state);
   if (!positions.size) return next;
   return next.map(item => {
     const image = item.nodeOnly ? undefined : positions.get(item.id);

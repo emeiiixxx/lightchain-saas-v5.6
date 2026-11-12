@@ -17,7 +17,8 @@ export type ConnectedGroupContext = {
   // Local additions can anchor a source without moving it or arranging the
   // surrounding canvas. Full arrangement retains collision avoidance.
   fixedRoots?: ReadonlyMap<string, FlowLayoutRect>;
-  // false ignores external obstacles, never collisions within this layout.
+  // false ignores external inputs as obstacles; explicit occupied rectangles
+  // (manually positioned objects) and collisions within this layout still apply.
   avoidCollisions?: boolean;
 };
 export type ConnectedGroupLayout = { positions: Map<string, Position>; width: number; height: number; bounds?: FlowLayoutRect };
@@ -237,13 +238,16 @@ export function layoutConnectedGroup(input: FlowLayoutVertex[], order: Record<st
     }
     const blocked: Contour[] = [];
     if (context) {
-      const previousBoxes = new Map<string, FlowLayoutRect>(context.avoidCollisions === false ? [] : fixedOccupied);
+      const previousBoxes = new Map<string, FlowLayoutRect>(context.avoidCollisions === false ? context.occupied : fixedOccupied);
       for (const [id, point] of positions) {
         const vertex = byId.get(id)!;
         previousBoxes.set(id, { ...point, width: vertex.width, height: vertex.height });
       }
       for (const [rank, contour] of contours) {
-        const columnMembers = [...points].filter(([id]) => ranks.get(id) === rank);
+        const columnMembers = [...points].filter(([id]) => ranks.get(id) === rank && !context.fixedRoots?.has(id));
+        // The virtual input is an anchor, not a moving object. An obstacle at
+        // that input must not push an otherwise clear downstream branch away.
+        if (!columnMembers.length) continue;
         const left = Math.min(...columnMembers.map(([, point]) => point.x));
         const right = Math.max(...columnMembers.map(([id, point]) => point.x + byId.get(id)!.width));
         for (const [id, previous] of previousBoxes) {

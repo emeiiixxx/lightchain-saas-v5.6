@@ -1,7 +1,9 @@
+import { fusionAspectRatios, isValidFusionCustomRatio } from './fusion-aspect-ratio';
+
 export const generationRatios = ['auto', '1:1', '3:4', '4:3', '9:16', '16:9'] as const;
 export const generationResolutions = ['1K', '2K', '4K'] as const;
 export type RememberedWorkflowKind = 'fusion' | 'batch' | 'merge' | 'directed';
-export type GenerationSettings = { ratio: string; resolution: string };
+export type GenerationSettings = { ratio: string; ratioMode?: 'custom'; resolution: string };
 type StoredSettings = GenerationSettings & { version: 1; savedAt: number };
 type StorageAccess = Pick<Storage, 'getItem' | 'setItem'>;
 type WorkflowSettings = GenerationSettings & { kind?: string };
@@ -24,10 +26,18 @@ function decode(raw: string | null): Partial<GenerationSettings> & { savedAt?: n
     const value = record as Partial<StoredSettings>;
     return {
       ratio: typeof value.ratio === 'string' ? value.ratio : undefined,
+      ratioMode: value.ratioMode === 'custom' ? 'custom' : undefined,
       resolution: typeof value.resolution === 'string' ? value.resolution : undefined,
       savedAt: typeof value.savedAt === 'number' && Number.isFinite(value.savedAt) ? value.savedAt : undefined,
     };
   } catch { return undefined; }
+}
+
+function validRatio(kind: RememberedWorkflowKind, ratio: string | undefined, mode?: 'custom'): boolean {
+  if (ratio === undefined) return false;
+  if (kind === 'fusion' && mode === 'custom') return isValidFusionCustomRatio(ratio);
+  const presets: readonly string[] = kind === 'fusion' ? fusionAspectRatios : generationRatios;
+  return presets.includes(ratio);
 }
 
 // Each type has its own account-scoped key. Reading at creation time also sees
@@ -52,18 +62,24 @@ export function createGenerationSettingsMemory(accountId: string, storage: () =>
           }
         }
       } catch { /* Retain this session's choice while storage is unavailable. */ }
+      const ratioSettings = record?.ratio !== undefined && validRatio(kind, record.ratio, record.ratioMode)
+        ? { ratio: record.ratio, ratioMode: record.ratioMode } : originalDefaults;
       return {
-        ratio: generationRatios.find(value => value === record?.ratio) ?? originalDefaults.ratio,
+        ratio: ratioSettings.ratio,
+        ...(kind === 'fusion' && ratioSettings.ratioMode === 'custom' ? { ratioMode: 'custom' as const } : {}),
         resolution: generationResolutions.find(value => value === record?.resolution) ?? originalDefaults.resolution,
       };
     },
     remember(kind: RememberedWorkflowKind, current: GenerationSettings, patch: Partial<GenerationSettings>): boolean {
       const ratioChanged = patch.ratio !== undefined && patch.ratio !== current.ratio;
+      const modeChanged = kind === 'fusion' && 'ratioMode' in patch && patch.ratioMode !== current.ratioMode;
       const resolutionChanged = patch.resolution !== undefined && patch.resolution !== current.resolution;
-      if (!ratioChanged && !resolutionChanged) return false;
-      if (patch.ratio !== undefined && !generationRatios.some(value => value === patch.ratio)) return false;
+      if (!ratioChanged && !modeChanged && !resolutionChanged) return false;
+      const ratio = patch.ratio ?? current.ratio;
+      const ratioMode = kind === 'fusion' ? ('ratioMode' in patch ? patch.ratioMode : current.ratioMode) : undefined;
+      if ((patch.ratio !== undefined || modeChanged) && !validRatio(kind, ratio, ratioMode)) return false;
       if (patch.resolution !== undefined && !generationResolutions.some(value => value === patch.resolution)) return false;
-      const record: StoredSettings = { version: 1, ratio: patch.ratio ?? current.ratio, resolution: patch.resolution ?? current.resolution, savedAt: Date.now() };
+      const record: StoredSettings = { version: 1, ratio, ...(ratioMode ? { ratioMode } : {}), resolution: patch.resolution ?? current.resolution, savedAt: Date.now() };
       let storedBefore: string | null | undefined;
       try {
         const target = storage();

@@ -12,7 +12,7 @@ import { useRememberProjectCoverUse } from './project-cover-onboarding';
 import { notify, ToastHost } from './components/Toast';
 import { CutoutEditor } from './components/CutoutEditor';
 import { DrawingGuideEditor } from './components/DrawingGuideEditor';
-import { isMultiInputWorkflow, fusionReferences, batchMainImages, workflowInputs, workflowReferenceLimit, workflowWidth, workflowHeight, workflowSources, createMergeEditor, createBatchEditor, isWorkflowDescendant, FUSION_GAP, MAX_FUSION_REFERENCES, MAX_BATCH_MAIN_IMAGES, MAX_DIRECTED_POINTS, type WorkflowKind, type FusionReference } from './canvas';
+import { isReferenceOnlyFusion, normalizeFusionReferences, isMultiInputWorkflow, fusionReferences, batchMainImages, workflowInputs, workflowReferenceLimit, workflowWidth, workflowHeight, workflowSources, createMergeEditor, createBatchEditor, isWorkflowDescendant, FUSION_GAP, MAX_FUSION_REFERENCES, MAX_BATCH_MAIN_IMAGES, MAX_DIRECTED_POINTS, type WorkflowKind, type FusionReference } from './canvas';
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { assets } from './assets';
 import { Button, Dialog, Divider, Icon, type IconName } from './components/ui';
@@ -21,7 +21,7 @@ import { locales, messages, type Locale } from './i18n';
 import { usePresence } from './usePresence';
 import { type SnapGuides } from './canvas-snapping';
 import { AssetPicker } from './components/AssetPicker';
-import type { LibraryImage } from './asset-library';
+import { prepareMainImage, type LibraryImage } from './asset-library';
 import { ResultFeedbackPopover } from './components/ResultFeedbackPopover';
 import { ResultFeedbackToolbar, type ResultFeedback } from './components/ResultFeedbackToolbar';
 import { SelectionToolbar } from './components/SelectionToolbar';
@@ -43,7 +43,7 @@ import { standaloneTaskInputs } from './canvas-task-layout';
 import { createImageResults } from './canvas-image-results';
 import { withCanvasOriginOrder } from './canvas-origin-order';
 import { withCanvasLayoutGroups } from './canvas-layout-groups';
-import { centerAddedFusionBranches } from './fusion-local-centering';
+import { centerAddedFusionBranches, pinFusionPositions } from './fusion-local-centering';
 import { FLOW_BRANCH_GAP } from './canvas-connected-layout';
 import { rememberGenerationSettingsChange } from './generation-settings-memory';
 import { canvasImageTaskResults, resolveImageTaskSlots, type CanvasImageTaskRecord } from './canvas-image-tasks';
@@ -60,6 +60,7 @@ type Tool = 'cutout' | 'fusion' | 'directed' | 'lingerie' | 'flat';
 type Modal = Tool | 'upload' | 'help' | 'support' | 'credits' | 'project' | null;
 type PendingImage = Omit<CanvasImage, 'x' | 'y'>;
 type ImagePickerTarget = { target: string; role?: 'main' };
+type ReferenceGuideTarget = { editorId: string; referenceId: string; image: CanvasImage };
 const pickerImages = (settings?: FusionSettings, role?: 'main') => role === 'main' ? workflowInputs(settings) : fusionReferences(settings);
 const pickerLimit = (settings?: FusionSettings, role?: 'main') => role === 'main' ? MAX_BATCH_MAIN_IMAGES : workflowReferenceLimit(settings);
 const tools: { id: Tool; icon: IconName; nodeId: string }[] = [
@@ -101,11 +102,22 @@ export default function App() {
   const imageTasks = useRef(new Map<string, CanvasImageTaskRecord>());
   const fileNamer = useRef(createCanvasFileNamer()).current;
   const [images, commitImages] = useState<CanvasImage[]>([]);
+  const migratedEditorIds = useRef(new Map<string, string>());
+  function normalizeFusionScene(items: CanvasImage[]) {
+    return normalizeFusionReferences(items, (previousId, editorId) => {
+      migratedEditorIds.current.set(previousId, editorId);
+      for (const task of imageTasks.current.values()) {
+        if (task.editorId === previousId) task.editorId = editorId;
+        task.results = task.results.map(result => result.generatedByEditorId === previousId
+          ? { ...result, generatedByEditorId: editorId } : result);
+      }
+    });
+  }
   useRememberProjectCoverUse(images);
   function setImages(update: CanvasImage[] | ((previous: CanvasImage[]) => CanvasImage[])) {
     commitImages(previous => {
-      const before = withCanvasLayoutGroups(withCanvasOriginOrder(previous));
-      const next = typeof update === 'function' ? update(before) : update;
+      const before = withCanvasLayoutGroups(withCanvasOriginOrder(normalizeFusionScene(previous)));
+      const next = normalizeFusionScene(typeof update === 'function' ? update(before) : update);
       return withProjectCoverOrder(withCanvasLayoutGroups(withCanvasOriginOrder(resolveImageTaskSlots(next, imageTasks.current), before), before), previous);
     });
   }
@@ -152,9 +164,13 @@ export default function App() {
   const shownDirectedTarget = usePresence(directedTarget);
   const [cutoutImage, setCutoutImage] = useState<CanvasImage | null>(null);
   const shownCutout = usePresence(cutoutImage);
-  const [drawingImage, setDrawingImage] = useState<CanvasImage | null>(null);
+  const [drawingImage, setDrawingImage] = useState<ReferenceGuideTarget | null>(null);
+  const guideOpenEpoch = useRef(0);
   const shownDrawing = usePresence(drawingImage);
-  useEffect(() => { if (page !== 'canvas') setDrawingImage(null); }, [page]);
+  useEffect(() => {
+    if (page !== 'canvas') { guideOpenEpoch.current++; setDrawingImage(null); }
+    return () => { guideOpenEpoch.current++; };
+  }, [page]);
   const [previewImage, setPreviewImage] = useState<CanvasImage | null>(null);
   const [view, commitView] = useState<Viewport>(DEFAULT_VIEW);
   const cameraFrame = useRef<number | null>(null);
@@ -216,6 +232,17 @@ export default function App() {
     cameraFrame.current = requestAnimationFrame(frame);
   }, [setView]);
   const imageRef = useRef(images); imageRef.current = images;
+  useEffect(() => {
+    if (!migratedEditorIds.current.size) return;
+    setSelectedIds(ids => {
+      const next = ids.map(id => {
+        if (!id.endsWith(':fusion')) return id;
+        const editorId = migratedEditorIds.current.get(id.slice(0, -7));
+        return editorId && images.some(item => item.id === editorId && item.fusion) ? `${editorId}:fusion` : id;
+      });
+      return next.some((id, index) => id !== ids[index]) ? next : ids;
+    });
+  }, [images]);
   useEffect(() => () => {
     imageTasks.current.forEach(task => { if (task.timer !== null) window.clearTimeout(task.timer); });
     imageTasks.current.clear();
@@ -322,18 +349,23 @@ export default function App() {
   const flowDragging = useRef(false);
   const flowDragRecorded = useRef(false);
   const moveFlowNodes = useCallback((positions: Map<string, { x: number; y: number }>) => {
-    const next = imageRef.current.map(image => {
+    const movedIds: string[] = [];
+    let next: CanvasImage[] = imageRef.current.map(image => {
       const point = positions.get(image.id), editor = positions.get(`${image.id}:fusion`);
       if (!point && !editor) return image;
+      if (!image.nodeOnly && point && (point.x !== image.x || point.y !== image.y)) movedIds.push(image.id);
+      if (image.fusion && editor) {
+        const previous = fusionPosition(image);
+        if (editor.x !== previous.x || editor.y !== previous.y) movedIds.push(`${image.id}:fusion`);
+      }
       return { ...image, ...(point ?? (image.nodeOnly ? editor : undefined)), ...(image.fusion ? { fusion: { ...image.fusion, position: editor ?? fusionPosition(image) } } : {}) };
     });
-    const changed = next.some((image, index) => {
-      const previous = imageRef.current[index];
-      return image.x !== previous.x || image.y !== previous.y || (image.fusion && previous.fusion &&
-        (fusionPosition(image).x !== fusionPosition(previous).x || fusionPosition(image).y !== fusionPosition(previous).y));
-    });
-    if (!changed) return;
-    if (flowDragging.current && !flowDragRecorded.current) { remember(imageRef.current); flowDragRecorded.current = true; }
+    if (!movedIds.length) return;
+    if (flowDragging.current && !flowDragRecorded.current) {
+      remember(imageRef.current);
+      flowDragRecorded.current = true;
+    }
+    next = pinFusionPositions(next, movedIds);
     imageRef.current = next; setImages(next);
   }, [remember]);
   const startFlowDrag = useCallback(() => {
@@ -476,7 +508,21 @@ export default function App() {
     if (!item) return;
     const rect = canvas.current!.getBoundingClientRect();
     const v = viewRef.current;
-    const created: CanvasImage = { ...item, fusion: item.operation === 'fusion' || item.operation === 'lingerie' || item.operation === 'directed' || item.operation === 'flat' ? newFusionSettings(item.operation) : undefined, role: 'main', x: point?.x ?? (rect.width / 2 - v.x) / v.zoom - item.width / 2, y: point?.y ?? (rect.height / 2 - v.y) / v.zoom - item.height / 2 };
+    if (item.operation === 'fusion') {
+      const previous = imageRef.current;
+      const reference: CanvasImage = { ...item, operation: undefined, role: undefined,
+        x: point?.x ?? (rect.width / 2 - v.x) / v.zoom - item.width / 2,
+        y: point?.y ?? (rect.height / 2 - v.y) / v.zoom - item.height / 2 };
+      const next = [...previous, reference];
+      const editor = createFusionEditor(next, reference.id, crypto.randomUUID());
+      if (!editor) return;
+      remember(previous);
+      imageRef.current = centerAddedFusionBranches(previous, [...next, editor]);
+      setImages(imageRef.current); setSelectedIds([reference.id]);
+      revealFusion({ ...reference, fusion: imageRef.current.find(image => image.id === editor.id)!.fusion });
+      return;
+    }
+    const created: CanvasImage = { ...item, fusion: item.operation === 'lingerie' || item.operation === 'directed' || item.operation === 'flat' ? newFusionSettings(item.operation) : undefined, role: 'main', x: point?.x ?? (rect.width / 2 - v.x) / v.zoom - item.width / 2, y: point?.y ?? (rect.height / 2 - v.y) / v.zoom - item.height / 2 };
     const previous = imageRef.current;
     const next = [...previous.filter(n => n.role !== 'main' || n.nodeOnly), created];
     remember(previous);
@@ -665,7 +711,7 @@ export default function App() {
       record.timer = null;
       const current = imageRef.current;
       const remaining = current.filter(image => image.generation?.taskId === id);
-      const editorExists = current.some(image => image.id === editor.id && image.fusion);
+      const editorExists = current.some(image => image.id === record.editorId && image.fusion);
       record.status = editorExists && remaining.length ? 'completed' : 'failed';
       if (record.status === 'completed') record.results = withProjectCoverOrder(record.results, current);
       setImages(items => items);
@@ -677,13 +723,14 @@ export default function App() {
   function generateDemo(editorId: string, referenceId?: string) {
     const current = imageRef.current;
     const editor = current.find(item => item.id === editorId && item.fusion);
-    if (!editor) return;
+    if (!editor?.fusion) return;
     if (workflowSources(current, editor).some(source => source.generation)) return;
     if (editor.fusion?.batchFlat || editor.fusion?.kind === 'batch') { generateBatchResults(editor, referenceId); return; }
     if (editor.fusion?.kind === 'directed' && !editor.fusion.directedPoints?.length) return;
     if ((editor.fusion?.kind ?? 'fusion') === 'fusion' && !editor.fusion?.prompt.trim()) return;
-    if (editor.fusion?.kind === 'merge') {
+    if (isReferenceOnlyFusion(editor.fusion) || editor.fusion?.kind === 'merge') {
       if (!fusionReferences(editor.fusion).length || !editor.fusion.prompt.trim()) return;
+      if (fusionReferences(editor.fusion).length > workflowReferenceLimit(editor.fusion)) { announce(referenceLimitMessage(editor.id)); return; }
     } else if (!workflowSources(current, editor).length) return;
     const position = fusionPosition(editor);
     const sample = workflowExampleResult(editor.fusion?.kind ?? 'fusion');
@@ -691,6 +738,31 @@ export default function App() {
     const y = position.y + (workflowHeight(editor.fusion) - sample.height) / 2;
     const result: CanvasImage = {id: crypto.randomUUID(), ...sample, x, y, generatedByEditorId: editorId};
     startImageTask(editor, [result]);
+  }
+
+  async function openReferenceGuide(editorId: string, reference: FusionReference) {
+    const epoch = ++guideOpenEpoch.current;
+    const owner = imageRef.current.find(item => item.id === editorId && isReferenceOnlyFusion(item.fusion));
+    const input = fusionReferences(owner?.fusion).find(item => item.id === reference.id && item.url === reference.url);
+    if (!owner?.fusion || !input) return;
+    try {
+      const source = imageRef.current.find(item => !item.nodeOnly && item.id === input.sourceImageId && item.url === input.url);
+      const guide = input.drawingGuide?.sourceUrl === input.url ? input.drawingGuide : undefined;
+      const dimensions = guide ?? source ?? await prepareMainImage(input);
+      if (epoch !== guideOpenEpoch.current || currentPage() !== 'canvas') return;
+      const currentOwner = imageRef.current.find(item => item.id === editorId && isReferenceOnlyFusion(item.fusion));
+      const currentInput = fusionReferences(currentOwner?.fusion).find(item => item.id === input.id && item.url === input.url);
+      if (!currentOwner?.fusion || !currentInput) return;
+      setDrawingImage({ editorId, referenceId: input.id, image: {
+        id: input.id, name: source?.name ?? currentInput.name, url: input.url,
+        x: 0, y: 0, width: dimensions.width, height: dimensions.height,
+        fusion: { ...currentOwner.fusion, drawingGuide: currentInput.drawingGuide },
+      } });
+    } catch {
+      if (epoch === guideOpenEpoch.current && currentPage() === 'canvas') {
+        announce(locale === 'en' ? 'Could not load the reference image. Please retry.' : locale === 'ja' ? '参考画像を読み込めませんでした。もう一度お試しください。' : '参考图加载失败，请重试。');
+      }
+    }
   }
 
   function generateBatchResults(editor: CanvasImage, referenceId?: string) {
@@ -701,13 +773,13 @@ export default function App() {
     const sample = workflowExampleResult(batch ? 'batch' : 'flat');
     const position = fusionPosition(editor), x = position.x + workflowWidth(editor.fusion) + FUSION_GAP;
     const results: CanvasImage[] = [];
-    const resultsHeight = references.length * sample.height + (references.length - 1) * 120;
+    const resultsHeight = references.length * sample.height + (references.length - 1) * FLOW_BRANCH_GAP;
     let y = position.y + (workflowHeight(editor.fusion) - resultsHeight) / 2;
     for (const reference of references) {
       const result: CanvasImage = { ...sample, id: crypto.randomUUID(), x, y,
         name: `${reference.name} · ${batch ? t.batchEdit : t.flat} · ${locale === 'en' ? 'Demo' : locale === 'ja' ? 'デモ' : '演示'}`,
         generatedByEditorId: editor.id, generatedFromReferenceId: reference.id };
-      results.push(result); y += sample.height + 120;
+      results.push(result); y += sample.height + FLOW_BRANCH_GAP;
     }
     startImageTask(editor, results, true);
   }
@@ -726,14 +798,14 @@ export default function App() {
         const fusion = { ...item.fusion, ...patch };
         const height = workflowHeight(fusion);
         const heightChange = height - workflowHeight(item.fusion);
-        if (preservePositions) {
-          // Referencing an existing canvas image changes inputs, not placement.
+        if (preservePositions || item.fusion.positionPinned) {
+          // Existing references and manually positioned nodes keep their top-left.
           // Keep the top-left fixed even when another thumbnail row adds height.
           const position = fusionPosition(item);
           return { ...item, ...(item.nodeOnly ? { ...position, height } : {}), fusion: { ...fusion, position } };
         }
         if (heightChange && !patch.position) {
-          // Grow around the existing center, preserving any manual placement.
+          // Unpinned nodes grow around their existing center.
           const previous = fusionPosition(item);
           const position = { ...previous, y: previous.y - heightChange / 2 };
           return { ...item, ...(item.nodeOnly ? { ...position, height } : {}), fusion: { ...fusion, position } };
@@ -832,7 +904,7 @@ export default function App() {
       ? { mainImages: [...existing, ...references] }
       : { references: [...existing, ...references], reference: undefined }) };
     const height = workflowHeight(fusion);
-    const nextPosition = source === 'canvas' ? position : { ...position, y: position.y - (height - workflowHeight(owner.fusion)) / 2 };
+    const nextPosition = source === 'canvas' || owner.fusion.positionPinned ? position : { ...position, y: position.y - (height - workflowHeight(owner.fusion)) / 2 };
     remember(current);
     const next = [...current.map(item => item.id === target
       ? { ...item, ...(item.nodeOnly ? { ...nextPosition, height } : {}), fusion: { ...fusion, position: nextPosition } }
@@ -880,7 +952,7 @@ export default function App() {
   }
   function changeZoom(factor: number, animated = false) { const r = canvas.current!.getBoundingClientRect(); if (animated) animateView(zoomAt(viewRef.current, factor, r.width / 2, r.height / 2)); else setView(v => zoomAt(v, factor, r.width / 2, r.height / 2)); }
 
-  const sceneEvents = useEventHandlers({ toggleCanvasReference, selectReferenceImage, renameImage, updateFusion, openImagePicker, generateDemo, announce });
+  const sceneEvents = useEventHandlers({ toggleCanvasReference, selectReferenceImage, renameImage, updateFusion, openImagePicker, openReferenceGuide, generateDemo, announce });
   // Panning changes the camera, not scene content. Zoom and business changes
   // still update node geometry, labels, selection and connection appearance.
   const sceneContent = useMemo(() => <>
@@ -921,6 +993,9 @@ export default function App() {
         : n.fusion?.kind === 'batch' ? { ...n, fusion: { ...n.fusion, mainImages: batchMainImages(n.fusion).map(main => {
           const current = sources.find(image => image.id === main.sourceImageId);
           return current ? { ...main, name: current.name, url: current.url } : main;
+        }) } } : isReferenceOnlyFusion(n.fusion) ? { ...n, fusion: { ...n.fusion!, references: fusionReferences(n.fusion).map(reference => {
+          const current = sources.find(image => image.id === reference.sourceImageId);
+          return current ? { ...reference, name: current.name, url: current.url } : reference;
         }) } } : n;
       return <div key={`${n.id}:fusion`}>
       {sources.map(input => <ImageConnection key={input.id} zoom={view.zoom} image={input} target={{...fusionPosition(n),id:`${n.id}:fusion`,width:workflowWidth(n.fusion),height:workflowHeight(n.fusion)}} active={selectedIds.includes(input.id) || selectedIds.includes(`${n.id}:fusion`)} />)}
@@ -934,7 +1009,7 @@ export default function App() {
           ? <FlatLayNode image={editorImage} locale={locale} onAddMain={() => setMainTarget(n.id)} onReference={source => sceneEvents.openImagePicker(n.id, source, n.fusion?.batchFlat ? 'main' : undefined)} onChange={patch => sceneEvents.updateFusion(n.id, patch)} onGenerate={() => sceneEvents.generateDemo(n.id)} />
           : n.fusion?.kind === 'directed'
           ? <DirectedFusionNode image={editorImage} locale={locale} onAddMain={() => setMainTarget(n.id)} onChange={patch => sceneEvents.updateFusion(n.id, patch)} onChoosePoint={pointId => setDirectedTarget({ editorId: n.id, pointId })} onGenerate={() => sceneEvents.generateDemo(n.id)} onNotify={sceneEvents.announce} />
-          : <FusionNode image={editorImage} locale={locale} onAddMain={() => setMainTarget(n.id)} onChange={patch => sceneEvents.updateFusion(n.id, patch)} onReference={source => sceneEvents.openImagePicker(n.id, source)} onEditGuide={() => setDrawingImage(editorImage)} onGenerate={() => sceneEvents.generateDemo(n.id)} />}
+          : <FusionNode image={editorImage} locale={locale} onAddMain={() => setMainTarget(n.id)} onChange={patch => sceneEvents.updateFusion(n.id, patch)} onReference={source => sceneEvents.openImagePicker(n.id, source)} onEditGuide={reference => { void sceneEvents.openReferenceGuide(n.id, reference); }} onGenerate={() => sceneEvents.generateDemo(n.id)} />}
       </div>
     </div>;})}
   </>, [images, selectedIds, canvasReference, referenceCandidateIds, foregroundIds, raisedIds, locale, t, view.zoom, sceneEvents]);
@@ -1118,22 +1193,22 @@ export default function App() {
     <ToastHost />
 
 
-    {shownDrawing.value && <DrawingGuideEditor key={`${shownDrawing.value.id}:${shownDrawing.value.url}`} image={shownDrawing.value} locale={locale} phase={shownDrawing.phase} onClose={() => setDrawingImage(null)} onSave={drawingGuide => {
+    {shownDrawing.value && <DrawingGuideEditor key={`${shownDrawing.value.editorId}:${shownDrawing.value.referenceId}:${shownDrawing.value.image.url}`} image={shownDrawing.value.image} locale={locale} phase={shownDrawing.phase} onClose={() => setDrawingImage(null)} onSave={drawingGuide => {
       const opened = shownDrawing.value!;
-      const owner = imageRef.current.find(item => item.id === opened.id && item.fusion);
-      const source = owner ? workflowSources(imageRef.current, owner)[0] : undefined;
-      if (!owner || !source || source.url !== opened.url) {
+      const owner = imageRef.current.find(item => item.id === opened.editorId && isReferenceOnlyFusion(item.fusion));
+      const reference = fusionReferences(owner?.fusion).find(item => item.id === opened.referenceId);
+      if (!owner || !reference || reference.url !== opened.image.url) {
         setDrawingImage(null);
-        announce(locale === 'en' ? 'The main image has changed. Reopen the guide to continue.' : locale === 'ja' ? 'メイン画像が変更されました。ガイドを開き直してください。' : '主图已变更，请重新打开示意编辑。');
+        announce(locale === 'en' ? 'The reference image has changed. Reopen the guide to continue.' : locale === 'ja' ? '参考画像が変更されました。ガイドを開き直してください。' : '参考图已变更，请重新打开示意编辑。');
         return;
       }
-      updateFusion(owner.id, { drawingGuide });
+      updateFusion(owner.id, { references: fusionReferences(owner.fusion).map(item => item.id === reference.id ? { ...item, drawingGuide } : item), reference: undefined }, true);
       setDrawingImage(null);
     }} />}
     {shownCutout.value && <CutoutEditor key={shownCutout.value.id} image={shownCutout.value} phase={shownCutout.phase} onClose={() => setCutoutImage(null)} onApply={url => {
       const source = shownCutout.value!;
       ownedUrls.current.add(url);
-      const output: CanvasImage = {...source, id: crypto.randomUUID(), name: `${source.name}-cutout.png`, sourceImageId: source.id, generatedByEditorId: undefined, generatedTaskId: undefined, generation: undefined, editorSourceId: undefined, url, x: source.x + source.width + 80, role: undefined, fusion: undefined, operation: undefined};
+      const output: CanvasImage = {...source, id: crypto.randomUUID(), positionPinned: undefined, name: `${source.name}-cutout.png`, sourceImageId: source.id, generatedByEditorId: undefined, generatedTaskId: undefined, generation: undefined, editorSourceId: undefined, url, x: source.x + source.width + 80, role: undefined, fusion: undefined, operation: undefined};
       const [result] = fileNamer.assign([output], 'cutout', t.cutout, imageRef.current, 'png');
       remember(imageRef.current); setImages(previous => centerAddedFusionBranches(previous, [...previous, result])); setSelectedIds([result.id]); setCutoutImage(null);
     }} />}

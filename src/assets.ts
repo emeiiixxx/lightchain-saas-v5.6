@@ -4,6 +4,8 @@ export const assets = {
   canvasTaskListChevron: '/assets/canvas-task-list/chevron.svg',
   fusionReferenceInfo: '/assets/fusion-reference-order/info.svg',
   fusionReferenceAdd: '/assets/fusion-reference-order/add.svg',
+  fusionReferenceGuide: '/assets/fusion-reference-only/guide.svg',
+  fusionReferenceClose: '/assets/fusion-reference-only/close.svg',
   batchTip: '/assets/batch-edit/tip.svg',
   batchAdd: '/assets/batch-edit/add.svg',
   batchAddImage: '/assets/batch-edit/add-image.svg',

@@ -7,6 +7,7 @@ export type VideoWorkflow = {
   id: string;
   x: number;
   y: number;
+  positionPinned?: boolean;
   mode: 'frames' | 'references';
   generationMode: 'fast' | 'professional';
   main?: VideoFrameReference;

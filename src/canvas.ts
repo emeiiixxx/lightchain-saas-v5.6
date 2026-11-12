@@ -10,7 +10,7 @@ import type { GeneratedMediaFile } from './canvas-media-filename';
 import type { CanvasLayoutMetadata } from './canvas-layout-groups';
 import { demoGenerationSettingsMemory, rememberedWorkflowKind } from './generation-settings-memory';
 export type Viewport = { x: number; y: number; zoom: number };
-export type FusionReference = { id: string; name: string; url: string; sourceImageId?: string };
+export type FusionReference = { id: string; name: string; url: string; sourceImageId?: string; drawingGuide?: DrawingGuide };
 export const MAX_FUSION_REFERENCES = 9;
 export const MAX_BATCH_MAIN_IMAGES = 20;
 export type WorkflowKind = 'fusion' | 'lingerie' | 'directed' | 'flat' | 'merge' | 'batch';
@@ -18,13 +18,14 @@ export type FlatRegion = 'top' | 'bottom' | 'full';
 export type FlatFace = 'front' | 'back';
 export type DirectedFusionPoint = { id: string; reference: FusionReference; maskPreviewUrl?: string; maskSourceUrl?: string };
 export const MAX_DIRECTED_POINTS = 3;
-export type FusionSettings = { kind?: WorkflowKind; position?: { x: number; y: number }; prompt: string; ratio: string; resolution: string; reference?: FusionReference; references?: FusionReference[]; mainImages?: FusionReference[]; directedPoints?: DirectedFusionPoint[]; flatRegion?: FlatRegion; flatFace?: FlatFace; batchFlat?: boolean; drawingGuide?: DrawingGuide };
+export type FusionSettings = { positionPinned?: boolean; kind?: WorkflowKind; position?: { x: number; y: number }; prompt: string; ratio: string; ratioMode?: 'custom'; resolution: string; reference?: FusionReference; references?: FusionReference[]; mainImages?: FusionReference[]; directedPoints?: DirectedFusionPoint[]; flatRegion?: FlatRegion; flatFace?: FlatFace; batchFlat?: boolean; drawingGuide?: DrawingGuide };
 export const fusionReferences = (settings?: FusionSettings): FusionReference[] => settings?.references ?? (settings?.reference ? [settings.reference] : []);
 export const batchMainImages = (settings?: FusionSettings): FusionReference[] => settings?.mainImages ?? [];
 export const workflowInputs = (settings?: FusionSettings): FusionReference[] => settings?.kind === 'batch' ? batchMainImages(settings) : fusionReferences(settings);
-export const isMultiInputWorkflow = (settings?: FusionSettings) => settings?.kind === 'batch' || settings?.kind === 'merge' || (settings?.kind === 'flat' && settings.batchFlat === true);
+export const isReferenceOnlyFusion = (settings?: FusionSettings) => !!settings && (!settings.kind || settings.kind === 'fusion');
+export const isMultiInputWorkflow = (settings?: FusionSettings) => isReferenceOnlyFusion(settings) || settings?.kind === 'batch' || settings?.kind === 'merge' || (settings?.kind === 'flat' && settings.batchFlat === true);
 export const workflowReferenceLimit = (settings?: FusionSettings) => settings?.batchFlat ? 20 : settings?.kind === 'lingerie' ? 1 : MAX_FUSION_REFERENCES;
-export const defaultFusion = (kind: WorkflowKind = 'fusion'): FusionSettings => ({ kind, prompt: '', ratio: 'auto', resolution: '2K', ...(kind === 'batch' ? { mainImages: [], references: [] } : {}), ...(kind === 'directed' ? { directedPoints: [] } : {}), ...(kind === 'flat' ? { flatRegion: 'top', flatFace: 'front' } : {}) });
+export const defaultFusion = (kind: WorkflowKind = 'fusion'): FusionSettings => ({ kind, prompt: '', ratio: 'auto', resolution: '2K', ...(kind === 'fusion' ? { references: [] } : {}), ...(kind === 'batch' ? { mainImages: [], references: [] } : {}), ...(kind === 'directed' ? { directedPoints: [] } : {}), ...(kind === 'flat' ? { flatRegion: 'top', flatFace: 'front' } : {}) });
 // Read preferences only for new nodes. Loading, copying, restoring and clearing
 // existing nodes must keep the settings that belong to their snapshot.
 export function newFusionSettings(kind: WorkflowKind = 'fusion'): FusionSettings {
@@ -56,13 +57,72 @@ export function workflowHeight(settings?: FusionSettings) {
     return 401 + Math.min(208, rows * 72 - 8);
   }
   if (settings?.kind === 'flat') return 430;
-  if (!settings?.kind || settings.kind === 'fusion') return FUSION_HEIGHT - 64 + Math.min(208, referenceGridRows(settings) * 72 - 8);
+  if (!settings?.kind || settings.kind === 'fusion') return 457 + Math.min(160, referenceGridRows(settings) * 72 - 8);
   if (settings?.kind !== 'directed') return FUSION_HEIGHT + (referenceGridRows(settings) - 1) * 72;
   const count = Math.min(MAX_DIRECTED_POINTS, settings.directedPoints?.length ?? 0);
   return 354 + count * 141 - (count === MAX_DIRECTED_POINTS ? 68 : 0);
 }
-export type CanvasImage = { id: string; name: string; url: string; generatedFile?: GeneratedMediaFile; projectCover?: boolean; coverOrder?: number; x: number; y: number; width: number; height: number; naturalWidth?: number; naturalHeight?: number; role?: 'main'; layoutTaskId?: string; layoutOriginOrder?: number; layoutMeta?: CanvasLayoutMetadata; nodeOnly?: boolean; editorSourceId?: string; generatedByEditorId?: string; generatedFromReferenceId?: string; generatedTaskId?: string; generation?: { taskId: string; status: 'running' | 'failed' }; sourceImageId?: string; fusion?: FusionSettings; operation?: 'cutout' | 'fusion' | 'directed' | 'lingerie' | 'flat' };
+export type CanvasImage = { positionPinned?: boolean; id: string; name: string; url: string; generatedFile?: GeneratedMediaFile; projectCover?: boolean; coverOrder?: number; x: number; y: number; width: number; height: number; naturalWidth?: number; naturalHeight?: number; role?: 'main'; layoutTaskId?: string; layoutOriginOrder?: number; layoutMeta?: CanvasLayoutMetadata; nodeOnly?: boolean; editorSourceId?: string; generatedByEditorId?: string; generatedFromReferenceId?: string; generatedTaskId?: string; generation?: { taskId: string; status: 'running' | 'failed' }; sourceImageId?: string; fusion?: FusionSettings; operation?: 'cutout' | 'fusion' | 'directed' | 'lingerie' | 'flat' };
 export const CANVAS_GRID_SIZE = 32;
+
+// Upgrade only legacy main-image records. Clearing the former main identity
+// makes this idempotent, so removing the first reference never restores it.
+export function normalizeFusionReferences(items: CanvasImage[], onEditorSplit?: (previousId: string, editorId: string) => void): CanvasImage[] {
+  const legacy = items.filter(item => isReferenceOnlyFusion(item.fusion) && (!item.nodeOnly || !!item.editorSourceId));
+  if (!legacy.length) return items;
+  const byId = new Map(items.map(item => [item.id, item]));
+  const ids = new Set(byId.keys());
+  const editorIds = new Map<string, string>();
+  for (const item of legacy) {
+    if (item.nodeOnly) continue;
+    const base = `${item.id}:fusion-editor`;
+    let id = base, suffix = 2;
+    while (ids.has(id)) id = `${base}-${suffix++}`;
+    ids.add(id); editorIds.set(item.id, id);
+    onEditorSplit?.(item.id, id);
+  }
+  const legacyIds = new Set(legacy.map(item => item.id));
+  const normalized = items.flatMap<CanvasImage>(item => {
+    if (!legacyIds.has(item.id)) return [item];
+    const settings = item.fusion!;
+    const candidate = item.nodeOnly ? byId.get(item.editorSourceId!) : item;
+    const source = candidate && !candidate.nodeOnly ? candidate : undefined;
+    let references = fusionReferences(settings).map(reference => {
+      const existingSource = byId.get(reference.id);
+      return !reference.sourceImageId && existingSource && !existingSource.nodeOnly && existingSource.url === reference.url
+        ? { ...reference, sourceImageId: existingSource.id } : reference;
+    });
+    if (source) {
+      const existing = references.find(reference => (reference.sourceImageId ?? reference.id) === source.id);
+      const drawingGuide = settings.drawingGuide?.sourceUrl === source.url ? settings.drawingGuide : existing?.drawingGuide;
+      const first: FusionReference = { ...existing, id: source.id, sourceImageId: source.id,
+        name: source.name, url: source.url, ...(drawingGuide ? { drawingGuide } : {}) };
+      // An older node can contain main + nine references. Keep every image;
+      // the add entry remains unavailable until the count is below the limit.
+      references = [first, ...references.filter(reference => (reference.sourceImageId ?? reference.id) !== source.id)];
+    }
+    const previousHeight = FUSION_HEIGHT - 64 + Math.min(208, referenceGridRows(settings) * 72 - 8);
+    const position = settings.position ?? (item.nodeOnly ? { x: item.x, y: item.y }
+      : { x: item.x + item.width + FUSION_GAP, y: item.y + (item.height - previousHeight) / 2 });
+    const fusion: FusionSettings = { ...settings, references, reference: undefined, drawingGuide: undefined, position };
+    const height = workflowHeight(fusion);
+    if (item.nodeOnly) return [{ ...item, ...position, height, editorSourceId: undefined, fusion }];
+    const editorId = editorIds.get(item.id)!;
+    const image: CanvasImage = { ...item, fusion: undefined, editorSourceId: undefined,
+      role: undefined, operation: undefined, layoutMeta: item.layoutMeta ? { image: item.layoutMeta.image } : undefined };
+    const member = item.layoutMeta?.editor;
+    const editor: CanvasImage = { id: editorId, name: '', url: '', nodeOnly: true,
+      ...position, width: workflowWidth(fusion), height, fusion,
+      layoutMeta: member ? { editor: { ...member, vertexId: `${editorId}:fusion` } } : undefined };
+    return [image, editor];
+  });
+  return normalized.map(item => {
+    const generatedByEditorId = item.generatedByEditorId && editorIds.get(item.generatedByEditorId);
+    const layoutTaskId = item.layoutTaskId && editorIds.get(item.layoutTaskId);
+    return generatedByEditorId || layoutTaskId ? { ...item,
+      ...(generatedByEditorId ? { generatedByEditorId } : {}), ...(layoutTaskId ? { layoutTaskId } : {}) } : item;
+  });
+}
 
 export function workflowSources(items: CanvasImage[], editor: CanvasImage): CanvasImage[] {
   if (isMultiInputWorkflow(editor.fusion)) {
@@ -272,8 +332,8 @@ export function arrangeImages(items: CanvasImage[], startX = 0, viewport = { wid
   const positions = new Map(placements.map(node=>[node.id,{x:node.x+startX,y:node.y}]));
   return items.map(item=>{
     const image = positions.get(item.id), editor = positions.get(`${item.id}:fusion`);
-    return {...item, ...(image ?? (item.nodeOnly ? editor : undefined)),
-      fusion:item.fusion && editor ? {...item.fusion,position:editor} : item.fusion};
+    return {...item, positionPinned: undefined, ...(image ?? (item.nodeOnly ? editor : undefined)),
+      fusion: item.fusion ? { ...item.fusion, positionPinned: undefined, ...(editor ? { position: editor } : {}) } : undefined};
   });
 }
 
@@ -297,14 +357,14 @@ export function deleteCanvasSelection(items: CanvasImage[], selected: string[]):
       return [{ ...item, fusion: { ...item.fusion, ...(item.fusion.kind === 'batch' ? { mainImages: inputs } : { references: inputs }) } }];
     }
     if (item.editorSourceId && ids.has(item.editorSourceId) && item.fusion) {
-      return [{...item, editorSourceId: undefined, name: '', url: '', fusion: {...defaultFusion(item.fusion.kind),
-        ...(rememberedWorkflowKind(item.fusion.kind) ? { ratio: item.fusion.ratio, resolution: item.fusion.resolution } : {}), position: fusionPosition(item)}}];
+      return [{...item, editorSourceId: undefined, name: '', url: '', fusion: {...defaultFusion(item.fusion.kind), positionPinned: item.fusion.positionPinned,
+        ...(rememberedWorkflowKind(item.fusion.kind) ? { ratio: item.fusion.ratio, ratioMode: item.fusion.ratioMode, resolution: item.fusion.resolution } : {}), position: fusionPosition(item)}}];
     }
     if (deleteImage) {
       if (!item.fusion) return [];
       return [{...item, nodeOnly: true, name: '', url: '', role: undefined, sourceImageId: undefined,
-        operation: undefined, fusion: {...defaultFusion(item.fusion.kind),
-          ...(rememberedWorkflowKind(item.fusion.kind) ? { ratio: item.fusion.ratio, resolution: item.fusion.resolution } : {}), position: fusionPosition(item)}}];
+        operation: undefined, fusion: {...defaultFusion(item.fusion.kind), positionPinned: item.fusion.positionPinned,
+          ...(rememberedWorkflowKind(item.fusion.kind) ? { ratio: item.fusion.ratio, ratioMode: item.fusion.ratioMode, resolution: item.fusion.resolution } : {}), position: fusionPosition(item)}}];
     }
     return [deleteNode ? {...item, fusion: undefined} : item];
   });
@@ -338,10 +398,11 @@ export function createFusionEditor(items: CanvasImage[], sourceId: string, id: s
   if (!source) return null;
   const x = source.x + source.width + FUSION_GAP;
   const fusion = newFusionSettings(kind);
+  if (isReferenceOnlyFusion(fusion)) fusion.references = [{ id: source.id, name: source.name, url: source.url, sourceImageId: source.id }];
   const width = workflowWidth(fusion), height = workflowHeight(fusion);
   const y = source.y + (source.height - height) / 2;
   return {id, name: source.name, url: '', x, y, width, height,
-    nodeOnly: true, editorSourceId: source.id, fusion: {...fusion, position: {x,y}}};
+    nodeOnly: true, editorSourceId: isReferenceOnlyFusion(fusion) ? undefined : source.id, fusion: {...fusion, position: {x,y}}};
 }
 
 // Refill the existing editor with a separate media instance. Results, selection

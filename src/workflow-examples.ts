@@ -5,7 +5,7 @@ import { newFusionSettings, FUSION_WIDTH, workflowHeight, type CanvasImage, type
 const examples = {
   fusion: {
     title: '一键融合',
-    main: { name: '乳白色蕾丝家居服套装 · 示例主图', url: '/assets/workflow-examples/fusion-loungewear.png' },
+    main: { name: '乳白色蕾丝家居服套装 · 示例参考图', url: '/assets/workflow-examples/fusion-loungewear.png' },
     reference: null,
     result: { name: '复古卧室家居服大片 · 一键融合演示', url: '/assets/workflow-examples/fusion-loungewear-result.png' },
     prompt: '视觉主旨： 高端时尚社论，一位拥有空灵气质的模特双腿自然叠放坐在复古单人沙发上。 核心焦点： 姜黄色自然短发。模特身着图中服饰。 环境细节： 70年代复古风格卧室，乳白色淡淡的碎花壁纸，复古格纹沙发，旁边有复古木制床头柜和黄铜灯杆的布艺灯罩台灯。 摄影标准： 采用35mm高端电影镜头，光线明亮干净、阴影浅淡自然，主光从模特正面 45° 角打光，辅光弱化阴影，无强烈明暗对比，整体光线均匀通透，画面色彩饱，高宽容度，呈现出极致的细节纹理。没有任何病态感，整体氛围是空灵、温馨、自然随性的艺术瞬间。',
@@ -53,11 +53,13 @@ export async function createWorkflowExample(kind: Exclude<WorkflowKind, 'merge' 
     ...(kind === 'flat' ? { flatRegion: 'full' as const } : {}),
     ...(kind === 'directed' && referenceImage
       ? { directedPoints: [{ id: crypto.randomUUID(), reference: referenceImage, maskPreviewUrl: '/assets/workflow-examples/directed-neckline-mask.png', maskSourceUrl: main.url }] }
-      : { references: referenceImage ? [referenceImage] : [] }),
+      : { references: kind === 'fusion'
+        ? [{ id: main.id, sourceImageId: main.id, name: main.name, url: main.url }, ...(referenceImage ? [referenceImage] : [])]
+        : referenceImage ? [referenceImage] : [] }),
   };
   return [
-    { ...main, x: 0, y: 0, role: 'main' },
-    { id: editorId, name: example.title, url: '', nodeOnly: true, editorSourceId: main.id,
+    { ...main, x: 0, y: 0, role: kind === 'fusion' ? undefined : 'main' },
+    { id: editorId, name: example.title, url: '', nodeOnly: true, editorSourceId: kind === 'fusion' ? undefined : main.id,
       x: 440, y: 0, width: FUSION_WIDTH, height: workflowHeight(fusion), fusion },
     { ...output, role: undefined, x: 800, y: 0, generatedByEditorId: editorId },
   ];

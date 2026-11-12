@@ -8,6 +8,7 @@ export type MaterialWorkflow = {
   id: string;
   x: number;
   y: number;
+  positionPinned?: boolean;
   kind: MaterialWorkflowKind;
   references: VideoReference[];
   back?: VideoReference;

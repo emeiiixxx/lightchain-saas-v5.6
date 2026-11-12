@@ -1,0 +1,20 @@
+/* Fusion ratio menu: Figma 202:12611, 202:12857, 202:13027. */
+.fusion-ratio-popup { width: 240px; padding: 4px; background: var(--surface-floating); box-shadow: var(--shadow-l); }
+.fusion-ratio-popup:popover-open { gap: 4px; }
+.fusion-ratio-custom, .fusion-ratio-option { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; height: 32px; padding: 0 8px; border: 0; border-radius: 8px; background: transparent; color: var(--text-secondary); font-size: 14px; font-weight: 400; line-height: 20px; }
+.fusion-ratio-custom { padding-right: 4px; }
+.fusion-ratio-custom-label { flex-shrink: 0; cursor: pointer; white-space: nowrap; }
+.fusion-ratio-fields { display: flex; flex: 1; min-width: 0; align-items: center; gap: 4px; color: var(--text-primary); font-size: 12px; line-height: 16px; }
+.fusion-ratio-input { display: flex; flex: 1; min-width: 0; align-items: center; gap: 4px; height: 24px; padding: 0 8px; border-radius: 6px; background: var(--state-default); box-shadow: inset 0 0 0 1px transparent; color: var(--text-placeholder); cursor: text; }
+.fusion-ratio-input:focus-within { background: var(--control-fill-focus); box-shadow: inset 0 0 0 1px var(--border-brand); }
+.fusion-ratio-input[data-invalid='true'] { box-shadow: inset 0 0 0 1px var(--status-danger); }
+.fusion-ratio-input input { width: 100%; min-width: 0; height: 100%; padding: 0; border: 0; outline: none; border-radius: 0; background: transparent; color: var(--text-secondary); font: inherit; line-height: 16px; }
+.fusion-ratio-input input::placeholder { color: var(--text-placeholder); }
+.fusion-ratio-confirm { flex-shrink: 0; min-width: 24px; height: 24px; padding: 0 8px; border: 0; border-radius: 6px; background: var(--brand-primary); color: var(--text-on-brand-black); font-size: 12px; font-weight: 500; line-height: 20px; white-space: nowrap; }
+.fusion-ratio-confirm:hover { background: var(--brand-primary-hover); }
+.fusion-ratio-confirm:focus-visible { outline: 1px solid var(--border-brand); outline-offset: 2px; }
+.fusion-ratio-divider { flex: 0 0 1px; height: 1px; background: var(--border-weak); }
+.fusion-ratio-option { width: 100%; text-align: left; }
+.fusion-ratio-option > span:nth-child(2) { flex: 1; }
+.fusion-ratio-option:is(:hover,:focus-visible), .fusion-ratio-option[data-selected='true'], .fusion-ratio-custom[data-selected='true'] { outline: none; background: var(--state-hover); color: var(--text-primary); }
+.fusion-ratio-option .icon, .fusion-ratio-custom > .icon { flex-shrink: 0; }

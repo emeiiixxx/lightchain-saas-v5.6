@@ -106,6 +106,27 @@
 .merge-node .fusion-textarea:focus-within { background: var(--control-fill-focus); border-color: var(--brand-primary); }
 .merge-node .fusion-textarea.has-error { border-color: var(--status-danger); }
 
+/* Figma 6:12568: Fusion has one reference grid, with a 160px content viewport. */
+.reference-only-node { position: relative; border: 0; }
+.reference-only-node::before { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }
+.fusion-position[data-selected='true'] .reference-only-node::before { opacity: 0; }
+.reference-only-node .fusion-header, .reference-only-node .fusion-content { flex-shrink: 0; }
+.reference-only-node .fusion-content { margin-top: 12px; }
+.reference-only-node .fusion-tip { background: linear-gradient(10.8398deg, rgba(58,151,247,.4), rgba(249,109,212,.4)); }
+.reference-only-node .fusion-references--sortable { max-height: 168px; }
+.reference-only-node .fusion-reference { position: relative; }
+.reference-only-node .fusion-reference-guide-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .7; pointer-events: none; }
+/* Figma 202:13603: thumbnail actions stay over the media in both themes. */
+.reference-only-node .fusion-reference-hover { --text-secondary: #e3e8e8; position: absolute; z-index: 1; inset: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: var(--surface-media-overlay); -webkit-backdrop-filter: blur(var(--background-blur-s)); backdrop-filter: blur(var(--background-blur-s)); opacity: 0; pointer-events: none; transition: opacity 200ms ease-out; }
+.reference-only-node .fusion-reference-hover .fusion-reference-guide { width: 24px; min-width: 24px; height: 24px; min-height: 24px; padding: 0; border: 0; border-radius: 6px; color: var(--text-secondary); background: transparent; pointer-events: none; }
+.reference-only-node .fusion-reference-hover .fusion-reference-guide:hover { background: var(--state-hover); }
+.reference-only-node .fusion-reference-wrap:is(:hover, :focus-within) .fusion-reference-hover { opacity: 1; }
+.reference-only-node .fusion-reference-wrap:is(:hover, :focus-within) .fusion-reference-guide { pointer-events: auto; }
+.reference-only-node .fusion-references--sortable .fusion-reference-wrap .fusion-reference-remove { top: -4px; right: -4px; }
+.reference-only-node .fusion-references--sortable[data-reference-sorting='true'] .fusion-reference-hover { opacity: 0; }
+.reference-only-node .fusion-references--sortable[data-reference-sorting='true'] .fusion-reference-guide { pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .reference-only-node .fusion-reference-hover { transition: none; } }
+
 /* Figma 136:18488 / 136:18657: inside stroke and Beta ChoiceChip. */
 .flat-lay-node { position: relative; border: 0; }
 .flat-lay-node::before { content: ''; position: absolute; inset: 0; border: 1px solid var(--border-weak); border-radius: inherit; pointer-events: none; }

@@ -43,7 +43,7 @@ import { canGenerateMaterialWorkflow, createMaterialWorkflow, materialReferenceL
 import { ImageConnection } from './ImageConnection';
 import { canGenerateVideoWorkflow, normalizeVideoWorkflowSettings, createVideoWorkflow, removeVideoWorkflowSources, videoReferenceLimits, videoWorkflowBox, videoWorkflowReferences, videoWorkflowSourceIds, videoWorkflowSize, videoWorkflowTitle, type VideoWorkflow, type VideoReference } from '../video-workflow';
 import { arrangeVideoWorkflowMedia, reconcileVideoWorkflowLayout, type VideoLayoutState } from '../video-workflow-layout';
-import { centerVideoFlowAddition } from '../video-flow-addition-layout';
+import { centerVideoFlowAddition, moveVideoFlowNodes } from '../video-flow-addition-layout';
 import { FLOW_BRANCH_GAP } from '../canvas-connected-layout';
 import { bindCompletedTaskResults, createFashionVideoDemoResult, createMaterialDemoResults, createVideoDemoResult, demoPlaceholderSize } from '../video-workspace-demo';
 import { cropMaterialGrid, gridCropExample } from '../grid-crop';
@@ -235,7 +235,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
         const result = task.results.find(item => item.id === image.id);
         if (!result) return image;
         const size = result.video ? sizeVideoCanvasMedia(result) : image;
-        return { ...result, x: image.x, y: image.y, width: size.width, height: size.height, generatedByEditorId: image.generatedByEditorId };
+        return { ...result, x: image.x, y: image.y, width: size.width, height: size.height, generatedByEditorId: image.generatedByEditorId, positionPinned: image.positionPinned };
       }
       if (task?.status === 'failed' && image.generation.status !== 'failed') return { ...image, generation: { ...image.generation, status: 'failed' as const } };
       return image;
@@ -540,7 +540,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     commit({ ...previous, workflows: previous.workflows.map(node => {
       if (node.id !== id) return node;
       const next = normalizeVideoWorkflowSettings({ ...node, ...patch });
-      if (next.mode !== node.mode) {
+      if (next.mode !== node.mode && !node.positionPinned) {
         const previousSize = videoWorkflowSize(node), nextSize = videoWorkflowSize(next);
         next.x += (previousSize.width - nextSize.width) / 2;
         next.y += (previousSize.height - nextSize.height) / 2;
@@ -606,9 +606,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     commit({ ...previous, materialWorkflows: nodes.map(node => {
       if (node.id !== id) return node;
       const next = { ...node, ...patch };
-      // A conditional back-reference field changes the editor's height while
-      // keeping the centre at the user's chosen canvas position.
-      next.y += (materialWorkflowSize(node).height - materialWorkflowSize(next).height) / 2;
+      // Automatic editors stay centred; manually placed editors keep their top-left.
+      if (!node.positionPinned) next.y += (materialWorkflowSize(node).height - materialWorkflowSize(next).height) / 2;
       return next;
     }) });
   }
@@ -649,7 +648,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const bounds = boundsOf(occupied);
     const added: VideoCanvasMedia[] = [];
     for (const result of results) {
-      const output = { ...result,
+      const output = { ...result, positionPinned: undefined,
         x: editor ? editor.x + editor.width + 80 : bounds ? bounds.x + bounds.width + 240 : 0,
         y: editor ? editor.y + (editor.height - result.height) / 2 : bounds?.y ?? 0 };
       // Standalone template results retain their placement. Connected results
@@ -1083,9 +1082,9 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const previous = current.current;
     const positions = arrangeVideoWorkflowMedia(previous.images, previous.workflows, previous.materialWorkflows, previous.upscaleWorkflows, previous.layout,
       { width: rect.width, height: rect.height, zoom: viewRef.current.zoom });
-    commit({ ...previous, images: previous.images.map(image => ({ ...image, ...positions.get(image.id)! })), workflows: previous.workflows.map(node => ({ ...node, ...positions.get(node.id)! })),
-      materialWorkflows: (previous.materialWorkflows ?? []).map(node => ({ ...node, ...positions.get(node.id)! })),
-      upscaleWorkflows: (previous.upscaleWorkflows ?? []).map(node => ({ ...node, ...positions.get(node.id)! })) });
+    commit({ ...previous, images: previous.images.map(image => ({ ...image, ...positions.get(image.id)!, positionPinned: undefined })), workflows: previous.workflows.map(node => ({ ...node, ...positions.get(node.id)!, positionPinned: undefined })),
+      materialWorkflows: (previous.materialWorkflows ?? []).map(node => ({ ...node, ...positions.get(node.id)!, positionPinned: undefined })),
+      upscaleWorkflows: (previous.upscaleWorkflows ?? []).map(node => ({ ...node, ...positions.get(node.id)!, positionPinned: undefined })) });
     fit();
   }
   async function downloadSelected(format: DownloadFormat) {
@@ -1269,9 +1268,10 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
         <ReactFlowCanvas view={view} selectedIds={canvasReference?.ids ?? snapshot.selected} hand={effectiveMode === 'hand'} spacePanControlled referenceMode={!!canvasReference} snap={snapToGrid}
           onPrepareCopyDrag={prepareFlowCopyDrag}
           onView={setView} onSelection={ids => replace({ ...current.current, selected: ids })}
-          onPositions={positions => replace({ ...current.current, images: current.current.images.map(image => positions.has(image.id) ? { ...image, ...positions.get(image.id)! } : image), workflows: current.current.workflows.map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node),
-            materialWorkflows: (current.current.materialWorkflows ?? []).map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node),
-            upscaleWorkflows: (current.current.upscaleWorkflows ?? []).map(node => positions.has(node.id) ? { ...node, ...positions.get(node.id)! } : node) })}
+          onPositions={positions => {
+            const next = moveVideoFlowNodes(current.current, positions);
+            if (next !== current.current) replace(next);
+          }}
           onDragStart={() => { saveUndo(); setDragging(true); }} onDragEnd={() => { setDragging(false); setGuides(null); }} onGuides={setGuides} onSelecting={setSelecting}>
         {sceneContent}
         </ReactFlowCanvas>
@@ -1380,7 +1380,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     {active && shownCutout.value && <CutoutEditor key={shownCutout.value.id} image={shownCutout.value} phase={shownCutout.phase} onClose={() => setCutout(null)} onApply={url => {
       const source = shownCutout.value!;
       ownedUrls.current.add(url);
-      const [result] = fileNamer.current.assign([{ ...source, id: crypto.randomUUID(), projectCover: undefined, coverOrder: undefined, url, x: source.x + source.width + 80 }], 'cutout', t.cutout, current.current.images, 'png');
+      const [result] = fileNamer.current.assign([{ ...source, id: crypto.randomUUID(), projectCover: undefined, coverOrder: undefined, positionPinned: undefined, url, x: source.x + source.width + 80 }], 'cutout', t.cutout, current.current.images, 'png');
       commit({ ...current.current, images: [...current.current.images, result], selected: [result.id] });
       setCutout(null);
     }} />}

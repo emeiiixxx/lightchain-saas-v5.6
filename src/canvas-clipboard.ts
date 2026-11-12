@@ -1,4 +1,4 @@
-import { batchMainImages, isMultiInputWorkflow, workflowHeight, workflowWidth, fusionPosition, fusionReferences, type CanvasImage } from './canvas';
+import { batchMainImages, isMultiInputWorkflow, isReferenceOnlyFusion, workflowHeight, workflowWidth, fusionPosition, fusionReferences, type CanvasImage } from './canvas';
 import { createCopyFilenameAllocator, type CopyFilenameSource } from './canvas-copy-filename';
 
 type CopyOptions = { preserveSelectedInputs?: boolean; existing?: ReadonlyArray<CopyFilenameSource> };
@@ -8,6 +8,7 @@ type CopyOptions = { preserveSelectedInputs?: boolean; existing?: ReadonlyArray<
 // Keep only edges whose two endpoints are copied; never attach to the originals.
 // Multi-input editor copies start with empty primary inputs, retaining their prompt/settings.
 // Batch shared reference images remain separate from those primary inputs.
+// Fusion references stay embedded; only connections within the copied selection survive.
 export function copyCanvasSelection(items: CanvasImage[], selected: string[], options?: CopyOptions): CanvasImage[] {
   const ids = new Set(selected);
   const imageIds = new Set(items.filter(item => !item.nodeOnly && !item.generation && ids.has(item.id)).map(item => item.id));
@@ -33,12 +34,12 @@ export function copyCanvasSelection(items: CanvasImage[], selected: string[], op
         width: workflowWidth(item.fusion), height: workflowHeight(item.fusion), nodeOnly: true,
         editorSourceId: !isMultiInputWorkflow(item.fusion) && sourceId && imageIds.has(sourceId) ? sourceId : undefined,
         fusion: {
-          kind: item.fusion.kind, position, prompt: item.fusion.prompt, ratio: item.fusion.ratio, resolution: item.fusion.resolution,
+          kind: item.fusion.kind, position, prompt: item.fusion.prompt, ratio: item.fusion.ratio, ratioMode: item.fusion.ratioMode, resolution: item.fusion.resolution,
           batchFlat: item.fusion.batchFlat, flatRegion: item.fusion.flatRegion, flatFace: item.fusion.flatFace,
           drawingGuide: sourceId && imageIds.has(sourceId) ? item.fusion.drawingGuide : undefined,
           mainImages: item.fusion.kind === 'batch' ? options?.preserveSelectedInputs
             ? batchMainImages(item.fusion).filter(reference => imageIds.has(reference.sourceImageId ?? reference.id)).map(reference => ({ ...reference })) : [] : undefined,
-          references: isMultiInputWorkflow(item.fusion) && item.fusion.kind !== 'batch'
+          references: isMultiInputWorkflow(item.fusion) && !isReferenceOnlyFusion(item.fusion) && item.fusion.kind !== 'batch'
             ? options?.preserveSelectedInputs ? fusionReferences(item.fusion).filter(reference => imageIds.has(reference.sourceImageId ?? reference.id)).map(reference => ({ ...reference })) : []
             : fusionReferences(item.fusion).map(reference => ({ ...reference,
             sourceImageId: reference.sourceImageId && imageIds.has(reference.sourceImageId) ? reference.sourceImageId : undefined })),
@@ -65,7 +66,7 @@ export function pasteCanvasSelection(items: CanvasImage[], dx: number, dy: numbe
   return items.map(item => {
     const position = { x: item.x + dx, y: item.y + dy };
     return {
-      ...item, id: newIds.get(item.id)!, name: names.get(item.id) ?? item.name, ...position,
+      ...item, id: newIds.get(item.id)!, name: names.get(item.id) ?? item.name, ...position, positionPinned: undefined,
       projectCover: undefined, coverOrder: undefined,
       generatedTaskId: undefined, generation: undefined,
       editorSourceId: isMultiInputWorkflow(item.fusion) ? undefined : remapImage(item.editorSourceId),
@@ -73,15 +74,15 @@ export function pasteCanvasSelection(items: CanvasImage[], dx: number, dy: numbe
       generatedFromReferenceId: remapImage(item.generatedFromReferenceId),
       generatedByEditorId: item.sourceImageId == null ? remapEditor(item.generatedByEditorId) : undefined,
       fusion: item.fusion ? {
-        ...item.fusion, position, reference: undefined,
+        ...item.fusion, position, positionPinned: undefined, reference: undefined,
         mainImages: item.fusion.kind === 'batch' ? options?.preserveSelectedInputs
           ? batchMainImages(item.fusion).flatMap(reference => {
             const originalId = reference.sourceImageId ?? reference.id;
             const sourceImageId = remapImage(originalId);
             return sourceImageId ? [{ ...reference, name: names.get(originalId) ?? reference.name, id: sourceImageId, sourceImageId }] : [];
           }) : [] : undefined,
-        references: isMultiInputWorkflow(item.fusion) && item.fusion.kind !== 'batch' && !options?.preserveSelectedInputs ? [] : fusionReferences(item.fusion).map(reference => {
-          const originalId = reference.sourceImageId ?? (isMultiInputWorkflow(item.fusion) ? reference.id : undefined);
+        references: isMultiInputWorkflow(item.fusion) && !isReferenceOnlyFusion(item.fusion) && item.fusion.kind !== 'batch' && !options?.preserveSelectedInputs ? [] : fusionReferences(item.fusion).map(reference => {
+          const originalId = reference.sourceImageId ?? (isMultiInputWorkflow(item.fusion) && !isReferenceOnlyFusion(item.fusion) ? reference.id : undefined);
           const sourceImageId = remapImage(originalId);
           return { ...reference, name: originalId ? names.get(originalId) ?? reference.name : reference.name, id: sourceImageId ?? reference.id, sourceImageId };
         }),

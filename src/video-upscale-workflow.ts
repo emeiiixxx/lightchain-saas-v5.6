@@ -9,6 +9,7 @@ export type VideoUpscaleWorkflow = {
   id: string;
   x: number;
   y: number;
+  positionPinned?: boolean;
   video?: UploadedVideo & { sourceImageId?: string };
   resolution: VideoUpscaleResolution;
 };
