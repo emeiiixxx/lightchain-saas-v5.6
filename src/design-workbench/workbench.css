@@ -263,7 +263,9 @@ body:has(.handle-rotate[data-rotating='true']), body:has(.handle-rotate[data-rot
 .element-menu-chevron { flex: none; }
 .element-design-menu { position: absolute; z-index: 40; top: calc(100% + 8px); left: 0; width: 160px; display: flex; flex-direction: column; gap: 4px; padding: 4px; border: 1px solid var(--border-weak); border-radius: var(--radius-l); background: var(--surface-secondary); box-shadow: var(--shadow-l); color: var(--text-secondary); }
 .element-design-menu button { display: flex; width: 100%; height: 32px; min-height: 32px; align-items: center; justify-content: flex-start; gap: 8px; padding: 0 8px; border: 0; border-radius: var(--radius-base); background: transparent; color: var(--text-secondary); font-size: 14px; line-height: 20px; font-weight: 400; white-space: nowrap; text-align: left; }
-.element-design-menu button > span:not(.icon) { flex: 1; }
+.element-design-menu button > span:not(.icon, .element-menu-new, .element-menu-cost) { flex: 1; }
+.element-design-menu--print { gap: 8px; }
+.element-design-menu button > .element-menu-new { display: inline-flex; flex: none; width: max-content; align-items: center; justify-content: center; padding: 2px 8px; border-radius: 999px; background: linear-gradient(100deg, #61fff4, #ccb2ff); color: #202526; font-size: 12px; font-weight: 500; line-height: 16px; }
 .element-design-menu button .icon { flex: none; }
 .element-design-menu button:is(:hover, :focus-visible, [aria-expanded='true']) { background: var(--state-hover); color: var(--text-primary); }
 .element-menu-divider { width: 100%; height: 1px; flex: none; background: var(--border-weak); }
@@ -295,6 +297,7 @@ body:has(.handle-rotate[data-rotating='true']), body:has(.handle-rotate[data-rot
 .conversation-history-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .conversation-history-empty { display: flex; align-items: center; min-height: 32px; margin: 0; padding: 0 8px; color: var(--text-tertiary); font-size: 14px; line-height: 20px; }
 .element-design-menu button > span:not(.icon) { min-width: 0; }
+.element-menu-anchor > .element-design-menu button > span:not(.icon, .element-menu-new, .element-menu-cost) { flex: 1 0 auto; min-width: max-content; }
 .canvas-arrange-control { position: relative; }
 .canvas-arrange-control > .workbench-tool[aria-expanded='true'] { background: var(--state-hover); color: var(--text-primary); }
 .canvas-arrange-control > .canvas-arrange-menu { top: auto; bottom: calc(100% + 8px); left: 50%; right: auto; transform: translateX(-50%); }

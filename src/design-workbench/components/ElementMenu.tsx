@@ -4,7 +4,7 @@ import { usePresence } from '../usePresence';
 import { useHoverDismiss } from '../useHoverDismiss';
 import { useLocale } from '../LocaleContext';
 
-type Entry = { label: string; icon: string } | null;
+type Entry = { label: string; icon: string; isNew?: boolean } | null;
 const asset = (node: string, name: string) => `menu-41-${node}-${name}`;
 const entries: Record<string, Entry[]> = {
   款式: [
@@ -20,6 +20,7 @@ const entries: Record<string, Entry[]> = {
     { label: '款式裂变', icon: asset('2799', 'imgLeftIcon') },
   ],
   印花: [
+    { label: '印花裂变', icon: 'print-variation', isNew: true },
     { label: '印花设计', icon: asset('2583', 'imgLeftIcon') },
     { label: '风格迁移', icon: asset('2583', 'imgIconBusinessPatternMaterial') },
     { label: '四方连续', icon: asset('2583', 'imgIconBusinessPatternMaterial1') },
@@ -72,14 +73,14 @@ export function ElementMenu({ label, icon, open, onToggle, onClose, onAction }: 
     <button ref={trigger} type="button" className="lc-button lc-button--ghost lc-button--s element-menu-trigger" aria-haspopup="menu" aria-expanded={open} aria-controls={`element-menu-${label}`} onClick={() => { if (!open) onToggle(); }} onKeyDown={e => {
       if (e.key === 'ArrowDown') { e.preventDefault(); if (!open) onToggle(); focusFirst('.element-design-menu > button'); }
     }}><Icon name={icon} size={20} />{t(label)}<Icon name="toolbar-2907-chevron-down" size={16} className="element-menu-chevron" /></button>
-    {shown.value && <div id={`element-menu-${label}`} role="menu" aria-label={t(label)} className="element-design-menu" data-phase={shown.phase} inert={shown.phase === 'exit'}>
+    {shown.value && <div id={`element-menu-${label}`} role="menu" aria-label={t(label)} className={`element-design-menu${label === '印花' ? ' element-design-menu--print' : ''}`} data-phase={shown.phase} inert={shown.phase === 'exit'}>
       {entries[label].map((item, i) => !item ? <div className="element-menu-divider" role="separator" key={i} /> : item.label === '转矢量图' ?
         <div className="element-vector-anchor" key={item.label} onPointerEnter={() => { menuHover.cancel(); vectorHover.cancel(); setVectorOpen(true); }} onPointerLeave={vectorHover.schedule}>
           <button ref={vectorTrigger} type="button" role="menuitem" aria-haspopup="menu" aria-expanded={vectorOpen} aria-controls="element-vector-menu" onClick={() => { vectorHover.cancel(); setVectorOpen(true); }} onKeyDown={e => { if (e.key === 'ArrowRight') { e.preventDefault(); setVectorOpen(true); focusFirst('.element-vector-menu > button'); } }}><Icon name={item.icon} size={20} /><span>{t(item.label)}</span><Icon name={chevron} size={16} /></button>
           {vector.value && <div id="element-vector-menu" className="element-design-menu element-vector-menu" role="menu" aria-label={t("转矢量图")} data-phase={vector.phase} inert={vector.phase === 'exit'} onBlur={e => { if (!e.currentTarget.parentElement?.contains(e.relatedTarget as Node)) setVectorOpen(false); }}>
             {[['线稿转矢量', 30], ['图案转矢量', 40]].map(([name, points]) => <button type="button" role="menuitem" key={name} onClick={() => onAction(String(name))}><span>{t(String(name))}</span><span className="element-menu-cost"><Icon name={asset('2716', 'imgIconSystem')} size={16} />{points}</span></button>)}
           </div>}
-        </div> : <Button role="menuitem" key={item.label} onFocus={e => { if (e.currentTarget.matches(':focus-visible')) setVectorOpen(false); }} onPointerEnter={() => { vectorHover.cancel(); setVectorOpen(false); }} onClick={() => onAction(item.label)}><Icon name={item.icon} size={20} /><span>{t(item.label)}</span></Button>)}
+        </div> : <Button role="menuitem" key={item.label} onFocus={e => { if (e.currentTarget.matches(':focus-visible')) setVectorOpen(false); }} onPointerEnter={() => { vectorHover.cancel(); setVectorOpen(false); }} onClick={() => onAction(item.label)}><Icon name={item.icon} size={20} /><span>{t(item.label)}</span>{item.isNew && <span className="element-menu-new">NEW</span>}</Button>)}
     </div>}
   </div>;
 }

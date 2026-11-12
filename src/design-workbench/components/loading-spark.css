@@ -1,0 +1,73 @@
+/* Native Figma Motion: 227:21420, timeline 221:14229, 3000ms closed loop.
+   Tracks from get_motion_context retain their original values and LINEAR easing.
+   The exported secondary SVGs had their t=0 opacity baked in; only that static
+   opacity was removed so these tracks apply once rather than being multiplied. */
+@property --lc-loading-spark-scale-x { syntax: '<number>'; initial-value: 1; inherits: false; }
+@property --lc-loading-spark-scale-y { syntax: '<number>'; initial-value: 1; inherits: false; }
+@property --lc-loading-spark-translate-x { syntax: '<number>'; initial-value: 0; inherits: false; }
+
+.lc-loading-spark { position: relative; display: inline-block; flex: none; width: 56px; height: 56px; }
+.lc-loading-spark__star {
+  position: absolute;
+  --lc-loading-spark-scale-x: 1;
+  --lc-loading-spark-scale-y: 1;
+  --lc-loading-spark-translate-x: 0;
+  transform-origin: 0 0;
+  transform: translate(50%, 50%) translate(calc(var(--lc-loading-spark-translate-x) * 1px), 0) scale(var(--lc-loading-spark-scale-x), var(--lc-loading-spark-scale-y)) translate(-50%, -50%);
+  animation-duration: 3s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.lc-loading-spark__star > img { display: block; max-width: none; }
+.lc-loading-spark__star--primary {
+  left: 16px; top: 16px; width: 24px; height: 24px; opacity: 1;
+  animation-name: lc-loading-spark-primary-scale-x, lc-loading-spark-primary-scale-y, lc-loading-spark-primary-x, lc-loading-spark-primary-opacity;
+}
+.lc-loading-spark__star--secondary-a {
+  left: 42px; top: 22px; width: 12px; height: 12px; opacity: .2;
+  animation-name: lc-loading-spark-secondary-a-scale-x, lc-loading-spark-secondary-a-scale-y, lc-loading-spark-secondary-a-x, lc-loading-spark-secondary-a-opacity;
+}
+.lc-loading-spark__star--secondary-b {
+  left: 2px; top: 22px; width: 12px; height: 12px; opacity: .2;
+  animation-name: lc-loading-spark-secondary-b-scale-x, lc-loading-spark-secondary-b-scale-y, lc-loading-spark-secondary-b-x, lc-loading-spark-secondary-b-opacity;
+}
+
+@keyframes lc-loading-spark-primary-scale-x {
+  0% { --lc-loading-spark-scale-x: 1; } 33.333% { --lc-loading-spark-scale-x: .5; } 66.667% { --lc-loading-spark-scale-x: .5; } 100% { --lc-loading-spark-scale-x: 1; }
+}
+@keyframes lc-loading-spark-primary-scale-y {
+  0% { --lc-loading-spark-scale-y: 1; } 33.333% { --lc-loading-spark-scale-y: .5; } 66.667% { --lc-loading-spark-scale-y: .5; } 100% { --lc-loading-spark-scale-y: 1; }
+}
+@keyframes lc-loading-spark-primary-x {
+  0% { --lc-loading-spark-translate-x: 0; } 33.333% { --lc-loading-spark-translate-x: 20; } 66.667% { --lc-loading-spark-translate-x: -20; } 100% { --lc-loading-spark-translate-x: 0; }
+}
+@keyframes lc-loading-spark-primary-opacity {
+  0% { opacity: 1; } 33.333% { opacity: .2; } 66.667% { opacity: .2; } 100% { opacity: 1; }
+}
+@keyframes lc-loading-spark-secondary-a-scale-x {
+  0% { --lc-loading-spark-scale-x: 1; } 33.333% { --lc-loading-spark-scale-x: 1; } 66.667% { --lc-loading-spark-scale-x: 2; } 100% { --lc-loading-spark-scale-x: 1; }
+}
+@keyframes lc-loading-spark-secondary-a-scale-y {
+  0% { --lc-loading-spark-scale-y: 1; } 33.333% { --lc-loading-spark-scale-y: 1; } 66.667% { --lc-loading-spark-scale-y: 2; } 100% { --lc-loading-spark-scale-y: 1; }
+}
+@keyframes lc-loading-spark-secondary-a-x {
+  0% { --lc-loading-spark-translate-x: 0; } 33.333% { --lc-loading-spark-translate-x: -40; } 66.667% { --lc-loading-spark-translate-x: -20; } 100% { --lc-loading-spark-translate-x: 0; }
+}
+@keyframes lc-loading-spark-secondary-a-opacity {
+  0% { opacity: .2; } 33.333% { opacity: .2; } 66.667% { opacity: 1; } 100% { opacity: .2; }
+}
+@keyframes lc-loading-spark-secondary-b-scale-x {
+  0% { --lc-loading-spark-scale-x: 1; } 33.333% { --lc-loading-spark-scale-x: 2; } 66.667% { --lc-loading-spark-scale-x: 1; } 100% { --lc-loading-spark-scale-x: 1; }
+}
+@keyframes lc-loading-spark-secondary-b-scale-y {
+  0% { --lc-loading-spark-scale-y: 1; } 33.333% { --lc-loading-spark-scale-y: 2; } 66.667% { --lc-loading-spark-scale-y: 1; } 100% { --lc-loading-spark-scale-y: 1; }
+}
+@keyframes lc-loading-spark-secondary-b-x {
+  0% { --lc-loading-spark-translate-x: 0; } 33.333% { --lc-loading-spark-translate-x: 20; } 66.667% { --lc-loading-spark-translate-x: 40; } 100% { --lc-loading-spark-translate-x: 0; }
+}
+@keyframes lc-loading-spark-secondary-b-opacity {
+  0% { opacity: .2; } 33.333% { opacity: 1; } 66.667% { opacity: .2; } 100% { opacity: .2; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lc-loading-spark__star { animation: none; }
+}

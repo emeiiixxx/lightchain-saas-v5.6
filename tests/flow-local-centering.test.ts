@@ -58,6 +58,72 @@ test('a later join sharing an input with its ancestor is not laid out as its sib
   assert(joined.x > result.x + result.width);
 });
 
+test('extending a cross-group result retains its established horizontal placement', () => {
+  const a = v('A', 'media', [], 0, 0, 200);
+  const b = v('B', 'media', [], 800, 0, 200);
+  // Arrange seats the join after the complete source groups, whose later
+  // objects extend beyond the two images actually used by the join.
+  const sourceGroupTail = v('sourceTail', 'media', [], 1600, 0, 200);
+  const join = v('join', 'workflow', [a.id, b.id], 2200, 0, 200);
+  const result = v('result', 'media', [join.id], 2600, 0, 200);
+  const previous = [a, b, sourceGroupTail, join, result];
+  const otherGroups = [a.id, b.id, sourceGroupTail.id];
+  const added = apply(previous, [...previous, v('next', 'workflow', [result.id], 3000, 0, 200)], otherGroups);
+  for (const item of previous) assert.deepEqual(added.get(item.id), item, `${item.id} must not jump towards the source groups`);
+  assert.equal(added.get('next')!.x, result.x + result.width + 80);
+
+  const generated = apply([...added.values()], [...added.values(), v('nextResult', 'media', ['next'], 3400, 0, 200)], otherGroups);
+  for (const item of added.values()) assert.deepEqual(generated.get(item.id), item);
+  assert.equal(generated.get('nextResult')!.x, 3400);
+});
+
+test('local column constraints keep unequal branch widths clear and do not accumulate offsets', () => {
+  const input = v('input', 'media', [], 0, 0, 200);
+  const a = v('A', 'workflow', [input.id], 1200, 0, 100);
+  const ra = { ...v('RA', 'media', [a.id], 1600, 0, 800), width: 480 };
+  const b = v('B', 'workflow', [input.id], 1600, 600, 500);
+  const rb = v('RB', 'media', [b.id], 2000, 600, 100);
+  const previous = [input, a, ra, b, rb];
+  const next = [...previous, v('next', 'workflow', [rb.id], 2400, 600, 200)];
+  const placed = apply(previous, next);
+  const moving = [...placed.values()].filter(item => item.id !== input.id);
+  for (const item of previous) assert(placed.get(item.id)!.x >= item.x, `${item.id} moved left`);
+  for (let i = 0; i < moving.length; i++) for (let j = i + 1; j < moving.length; j++) {
+    const x = moving[i], y = moving[j];
+    assert(x.x + x.width <= y.x || y.x + y.width <= x.x || x.y + x.height <= y.y || y.y + y.height <= x.y,
+      `${x.id} overlaps ${y.id}`);
+  }
+  assert.deepEqual(apply(previous, [...placed.values()]), placed, 'repeating layout must not drift right');
+});
+
+test('a pinned external input only constrains its join and later columns', () => {
+  const input = v('input', 'media', [], 0, 0, 200);
+  const editor = v('editor', 'workflow', [input.id], 400, 0, 200);
+  const result = v('result', 'media', [editor.id], 800, 0, 200);
+  const pinned = { ...v('pinned', 'media', [editor.id], 2400, 800, 200), positionPinned: true };
+  const join = v('join', 'workflow', [result.id, pinned.id], 2800, 400, 200);
+  const previous = [input, editor, result, pinned, join];
+  const placed = apply(previous, [...previous, v('newResult', 'media', [join.id], 3200, 400, 200)]);
+  for (const item of [input, editor, result, pinned]) assert.deepEqual(placed.get(item.id), item);
+  assert.equal(placed.get(join.id)!.x, join.x);
+  assert.equal(placed.get('newResult')!.x, 3200);
+});
+
+test('narrow media retain their right-aligned column across an external-input join', () => {
+  const input = v('input', 'media', [], 0, 0, 200);
+  const editor = v('editor', 'workflow', [input.id], 400, 0, 200);
+  const narrow = { ...v('narrow', 'media', [editor.id], 960, 0, 200), width: 160 };
+  const wide = v('wide', 'media', [editor.id], 800, 400, 200);
+  const pinned = { ...v('pinned', 'media', [editor.id], 2400, 800, 200), positionPinned: true };
+  const join = v('join', 'workflow', [narrow.id, pinned.id], 2800, 400, 200);
+  const previous = [input, editor, narrow, wide, pinned, join];
+  const placed = apply(previous, [...previous, v('newResult', 'media', [join.id], 3200, 400, 200)]);
+  for (const item of previous) assert.equal(placed.get(item.id)!.x, item.x, `${item.id} must retain its column inset`);
+  assert.equal(placed.get(narrow.id)!.x + narrow.width, placed.get(wide.id)!.x + wide.width);
+  assert.deepEqual(placed.get(pinned.id), pinned);
+  assert.deepEqual(apply(previous, [...placed.values()]), placed, 'right alignment must not accumulate an inset');
+});
+
 test('adding an editor for A after an A+B editor works without Arrange on both Flow workspaces', () => {
   const images: CanvasImage[] = ['A', 'B'].map((id, i) => ({
     id, name: id, url: id, width: 320, height: 200, x: 0, y: i * 280,

@@ -17,6 +17,10 @@ export type ConnectedGroupContext = {
   // Local additions can anchor a source without moving it or arranging the
   // surrounding canvas. Full arrangement retains collision avoidance.
   fixedRoots?: ReadonlyMap<string, FlowLayoutRect>;
+  // Local additions retain established horizontal spacing. Apply these bounds
+  // per column, before packing Y contours, so different ranks cannot overlap.
+  // Explicit Arrange omits this constraint and may compact the whole layout.
+  minimumX?: ReadonlyMap<string, number>;
   // false ignores external inputs as obstacles; explicit occupied rectangles
   // (manually positioned objects) and collisions within this layout still apply.
   avoidCollisions?: boolean;
@@ -114,15 +118,26 @@ export function layoutConnectedGroup(input: FlowLayoutVertex[], order: Record<st
     (inputOrder.get(a.id) ?? Infinity) - (inputOrder.get(b.id) ?? Infinity) || compareOrder(a, b));
   const externalAnchors = new Set([...anchors].filter(([, anchor]) => externalInputs.has(anchor.id) && !byId.has(anchor.id)).map(([id]) => id));
   const widths = columns.map(column => Math.max(0, ...column.filter(item => !externalAnchors.has(item.id)).map(item => item.width)));
-  const columnX: number[] = [];
-  let nextColumnX = context?.origin.x ?? 0;
-  columns.forEach((_, index) => {
-    columnX[index] = nextColumnX;
-    if (widths[index]) nextColumnX += widths[index] + EDITOR_GAP;
-  });
   // Cut only at joins. Each remaining tree keeps its complete downstream
   // branches, so a single chain shares one center line even after a join.
   const roots = columns.flat().filter(vertex => parents.get(vertex.id)!.length !== 1 || externalParents.get(vertex.id)!.length > 0);
+  const columnInset = (vertex: FlowLayoutVertex) => roots.length > 1 && vertex.kind === 'media'
+    ? widths[ranks.get(vertex.id)!] - vertex.width : 0;
+  const columnX: number[] = [];
+  let nextColumnX = context?.origin.x ?? 0;
+  columns.forEach((column, index) => {
+    if (context?.minimumX) for (const vertex of column) {
+      const externalRight = Math.max(-Infinity, ...externalParents.get(vertex.id)!.map(id => {
+        const input = externalInputs.get(id)!;
+        return input.x + input.width + EDITOR_GAP;
+      }));
+      nextColumnX = Math.max(nextColumnX,
+        (context.minimumX.get(vertex.id) ?? -Infinity) - columnInset(vertex),
+        externalRight - columnInset(vertex));
+    }
+    columnX[index] = nextColumnX;
+    if (widths[index]) nextColumnX += widths[index] + EDITOR_GAP;
+  });
   const children = new Map<string, string[]>(vertices.map(vertex => [vertex.id, []]));
   // A downstream editor's input order must not reorder the results or branches
   // created by their shared producer.
@@ -189,7 +204,7 @@ export function layoutConnectedGroup(input: FlowLayoutVertex[], order: Record<st
       const vertex = byId.get(id)!;
       const rank = ranks.get(vertex.id)!;
       points.set(vertex.id, {
-        x: columnX[rank] + (roots.length > 1 && vertex.kind === 'media' ? widths[rank] - vertex.width : 0), y,
+        x: columnX[rank] + columnInset(vertex), y,
       });
     }
 

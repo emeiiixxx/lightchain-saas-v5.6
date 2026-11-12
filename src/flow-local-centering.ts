@@ -255,8 +255,13 @@ export function centerAddedFlowBranches(
       return { ...vertex, sources: rootIds.has(id) ? [anchorId] : vertex.sources };
     });
     const externalInputs = new Map([...current].filter(([id]) => !scope.has(id)));
+    // Arrange can place a cross-group branch beyond the complete source groups,
+    // far to the right of its direct inputs. A local addition must not compact
+    // it back onto those inputs. Preserve existing columns, not just the root;
+    // later joins and branches can have established spacing of their own.
+    const minimumX = new Map([...scope].filter(id => before.has(id)).map(id => [id, current.get(id)!.x]));
     const layout = layoutConnectedGroup([anchor, ...vertices], { ...order, [anchorId]: -1 }, {
-      origin: bounds, externalInputs,
+      origin: bounds, externalInputs, minimumX,
       fixedRoots: new Map([[anchorId, bounds]]), avoidCollisions: false,
     });
     const placed = new Map([...layout.positions].filter(([id]) => scope.has(id)));

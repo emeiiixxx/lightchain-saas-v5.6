@@ -25,6 +25,8 @@ import { FullImageViewer, type FullImageViewerImage } from './FullImageViewer';
 import { ImageContextMenu } from './ImageContextMenu';
 import { ShortcutsPanel } from './ShortcutsPanel';
 import { QuickEditComposer, createQuickEditDraft, type QuickEditDraft, type CanvasEditTool } from './QuickEditComposer';
+import { PrintVariationDock } from './PrintVariationDock';
+import type { PrintVariationDraft } from './PrintVariationPanel';
 import { StrokeColorPicker } from './StrokeColorPicker';
 import { CanvasLeftPanel, type LeftPanelTab, type GenerationRecord } from './CanvasLeftPanel';
 import { type CanvasImage, useCanvas } from '../useCanvas';
@@ -386,7 +388,9 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
   const [textEdit, setTextEdit] = useState<CanvasImage | null>(null);
   const shownTextEdit = usePresence(textEdit);
   const [localEdit, setLocalEdit] = useState<string | null>(null);
-  const [localEditTool, setLocalEditTool] = useState<CanvasEditTool>('局部修改');
+  const [localEditTool, setLocalEditTool] = useState<CanvasEditTool | '印花裂变'>('局部修改');
+  const shownPrintVariation = usePresence(localEditTool === '印花裂变' ? localEdit : null);
+  const printVariationSource = board.images.find(image => image.id === shownPrintVariation.value);
   const [pendingToolFocus, setPendingToolFocus] = useState<string[] | null>(null);
 
   useLayoutEffect(() => {
@@ -432,10 +436,10 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       generationTimers.current.clear();
     };
   }, []);
-  const finishDemoBatch = (recordId: string, placeholders: CanvasImage[], results: Omit<CanvasImage, 'x' | 'y'>[]) => {
+  const finishDemoBatch = (recordId: string, placeholders: CanvasImage[], results: Omit<CanvasImage, 'x' | 'y'>[], allowSimulatedFailure = true) => {
     // Existing quick-edit examples retain their retryable failure; Agent tasks
     // complete all reserved slots unless asset preparation actually fails.
-    const simulateFailure = results.length === 4 && placeholders[0]?.generationPlacement !== 'agent';
+    const simulateFailure = allowSimulatedFailure && results.length === 4 && placeholders[0]?.generationPlacement !== 'agent';
     const images: GenerationRecord['images'] = results.map((result, index) => ({
       id: placeholders[index].id, url: result.url,
       height: simulateFailure && index === 2 ? 92 * placeholders[index].height / placeholders[index].width : 92 * result.image.naturalHeight / result.image.naturalWidth,
@@ -579,7 +583,7 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     if (record.images[index]?.status !== 'failed') return;
     void retryResult(record, index).catch(() => onNotify('生成失败，请重试', 'error'));
   };
-  const regenerateRecord = async (record: GenerationRecord) => {
+  const regenerateRecord = async (record: GenerationRecord, fromTool = false) => {
     if (!record.replayable || record.generating || record.pending) return;
     if (record.canvasEntry === 'agent') {
       const settings: DemoOutput = record.agentSettings ?? { count: record.count ?? Math.max(1, record.images.length), ratio: record.ratio, resolution: record.resolution, sourceSize: { width: 2, height: 3 } };
@@ -616,11 +620,12 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       catch { onNotify('图片加载失败，请重试', 'error'); return; }
       if (!generationMounted.current) return;
     }
-    const placeholders = board.beginGeneration(source?.id ?? record.sourceId, count, { name: record.title, taskRecordId: id, sourceSize, sourceIds: record.sourceIds, outputSize: demoOutputSize(settings), outputSizes: fixedOutputs?.map(item => ({ width: item.width, height: item.height })) });
+    const placeholders = board.beginGeneration(source?.id ?? record.sourceId, count, { name: record.title, taskRecordId: id, sourceSize, sourceIds: record.sourceIds, outputSize: demoOutputSize(settings), outputSizes: fixedOutputs?.map(item => ({ width: item.width, height: item.height })), focus: !fromTool });
     if (!placeholders.length) return;
+    if (fromTool) setPendingToolFocus(placeholders.map(item => item.taskResultId!));
     const now = new Date();
     const time = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    setGenerationRecords(previous => [{ ...record, id, sourceId: source?.id ?? record.sourceId, time, generating: true, pending: false, failed: false, count, resultHeight: 92 * placeholders[0].height / placeholders[0].width, images: placeholders.map(item => ({ id: item.id, url: item.url, height: 92 * item.height / item.width, status: 'generating' })), tags: record.tags.map(tag => ({ ...tag })) }, ...previous]);
+    setGenerationRecords(previous => [{ ...record, id, sourceId: source?.id ?? record.sourceId, time, generating: true, pending: false, failed: false, count, resultHeight: 92 * placeholders[0].height / placeholders[0].width, images: placeholders.map((item, index) => ({ id: item.id, url: fixedOutputs?.[index]?.url ?? item.url, height: 92 * item.height / item.width, status: 'generating' })), tags: record.tags.map(tag => ({ ...tag })) }, ...previous]);
     const delay = new Promise<void>(resolve => {
       const timer = setTimeout(() => { generationTimers.current.delete(timer); resolve(); }, 3000);
       generationTimers.current.add(timer);
@@ -630,12 +635,35 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
       const [assets] = await Promise.all([outputRequest, delay]);
       if (!generationMounted.current) return;
       const results = Array.from({ length: count }, (_, index) => assets[index % assets.length]);
-      finishDemoBatch(id, placeholders, results);
+      finishDemoBatch(id, placeholders, results, record.title !== '印花裂变');
     } catch {
       if (!generationMounted.current) return;
       failDemoBatch(id, placeholders);
       onNotify('图片加载失败，请重试', 'error');
     }
+  };
+  const generatePrintVariation = (source: CanvasImage, draft: PrintVariationDraft) => {
+    if (!draft.points.length) return;
+    const count = draft.mode === 'diverge' ? 4 : Math.min(4, Math.max(1, draft.count));
+    const mode = draft.mode === 'extend' ? '设计延伸' : '灵感发散';
+    const strength = { low: '低', medium: '中', high: '高' }[draft.strength];
+    // This demo shares the existing task/placement lifecycle; analysis and outputs
+    // are fixtures until the print-variation service is connected.
+    const record: GenerationRecord = {
+      id: crypto.randomUUID(), title: '印花裂变', time: '', sourceId: source.id,
+      sourceIds: [source.id], count, replayable: true, supportsPrompt: false,
+      tags: [{ label: t('原图'), image: source.url }, { label: t(mode) },
+        { label: `${t('强度')}：${t(strength)}` }, { label: t(`${count}张`) },
+        ...draft.points.map(point => ({ label: t(point) }))],
+      images: [], demoOutputUrls: [
+        '/assets/design-workbench/promo-tasks/print-designed.jpg',
+        '/assets/design-workbench/promo-tasks/print-woodblock.jpg',
+        '/assets/design-workbench/promo-tasks/print-repeat.jpg',
+        '/assets/design-workbench/pattern.png',
+      ],
+    };
+    closeLocalEdit();
+    void regenerateRecord(record, true);
   };
   useEffect(() => {
     if (!recordsRestored || !board.restored) return;
@@ -795,11 +823,11 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     textarea.current?.focus();
   });
   const elementAction = (label: string, entry: string) => {
-    if (label === '款式' && ['局部修改', '印花上身'].includes(entry) && selected) {
+    if (((label === '款式' && ['局部修改', '印花上身'].includes(entry)) || (label === '印花' && entry === '印花裂变')) && selected) {
       onOpenChange(false);
       setMenu(null); setQuickEdit(null);
       if (leftTab === 'layers') setLeftTab('history');
-      setLocalEditTool(entry as CanvasEditTool); board.setInteractionLocked(true); setLocalEdit(selected.id);
+      setLocalEditTool(entry as CanvasEditTool | '印花裂变'); board.setInteractionLocked(true); setLocalEdit(selected.id);
       return;
     }
     unavailable();
@@ -959,9 +987,10 @@ export function Workbench({ board, open, onOpenChange, phase, onUpload, onReplac
     {!localEdit && quickEditVisible.value && board.images.find(item => item.id === quickEditVisible.value) && <QuickEditComposer onNotify={onNotify} key={quickEditVisible.value} draft={inputMemory.drafts[`quick:${quickEditVisible.value}`] ?? createQuickEditDraft()} onDraftChange={update => {
       inputMemory.update(`quick:${quickEditVisible.value}`, update);
     }} uploads={uploads} onUpload={onRememberUpload} board={board} image={board.images.find(item => item.id === quickEditVisible.value)!} phase={quickEditVisible.phase} onClose={() => setQuickEdit(null)} generating={generatingSources.current.has(quickEditVisible.value)} onSubmit={draft => { void generateQuickEdit(draft, quickEditVisible.value!); }} />}
-    {localEdit && selected && <QuickEditComposer onNotify={onNotify} key={`local-${localEditTool}-${localEdit}`} localEdit tool={localEditTool} onAdjustPrint={draft => setPrintPlacement({ source: selected, draft })} draft={inputMemory.drafts[`${localEditTool}:${localEdit}`] ?? createQuickEditDraft()} onDraftChange={update => {
+    {localEdit && selected && localEditTool !== '印花裂变' && <QuickEditComposer onNotify={onNotify} key={`local-${localEditTool}-${localEdit}`} localEdit tool={localEditTool} onAdjustPrint={draft => setPrintPlacement({ source: selected, draft })} draft={inputMemory.drafts[`${localEditTool}:${localEdit}`] ?? createQuickEditDraft()} onDraftChange={update => {
       inputMemory.update(`${localEditTool}:${localEdit}`, update);
     }} uploads={uploads} onUpload={onRememberUpload} board={board} image={selected} phase="enter" onClose={closeLocalEdit} generating={generatingSources.current.has(localEdit)} onSubmit={draft => { void generateQuickEdit(draft, localEdit, true); }} />}
+    {shownPrintVariation.value && printVariationSource && <PrintVariationDock key={`print-variation-${shownPrintVariation.value}`} board={board} source={printVariationSource} phase={shownPrintVariation.phase} onClose={closeLocalEdit} onGenerate={draft => generatePrintVariation(printVariationSource, draft)} />}
     {shownPrintPlacement.value && <PrintPlacementDialog source={shownPrintPlacement.value.source} draft={shownPrintPlacement.value.draft} phase={shownPrintPlacement.phase} onNotify={onNotify} onClose={() => setPrintPlacement(null)} onConfirm={() => {
       if (!printPlacement) return;
       const { source, draft } = printPlacement;

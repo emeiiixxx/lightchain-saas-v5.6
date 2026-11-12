@@ -1,0 +1,98 @@
+/* Print variation: Figma 221:14721, 227:20251, 227:19389, 227:19603,
+ * 227:19657 and 225:18360. Existing workbench semantic tokens are shared. */
+.print-variation-panel {
+  position: absolute;
+  z-index: 70;
+  left: max(16px, calc((100% - 800px) / 2));
+  bottom: 88px;
+  width: min(800px, calc(100% - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--border-weak);
+  border-radius: 32px;
+  background: var(--surface-secondary);
+  box-shadow: var(--shadow-l);
+  pointer-events: auto;
+}
+.print-variation-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px; }
+.print-variation-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; padding: 8px 12px; }
+.print-variation-heading h2 { margin: 0; font-size: 16px; font-weight: 500; line-height: 24px; color: var(--text-primary); }
+.print-variation-heading p { display: flex; align-items: center; gap: 4px; margin: 0; color: var(--status-warning); font-size: 12px; line-height: 16px; }
+.print-variation-body { position: relative; border: 1px solid var(--border-weak); border-radius: 24px; background: var(--surface-default); }
+.print-variation-controls { display: flex; flex-direction: column; gap: 40px; padding: 12px; }
+.print-variation-design-points { display: flex; align-items: flex-start; gap: 10px; }
+.print-variation-source { display: block; flex: none; width: 64px; height: 64px; border-radius: 12px; object-fit: cover; overflow: hidden; }
+.print-variation-points { display: flex; align-content: flex-start; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; flex: 1; }
+.print-variation-chip,
+.print-variation-custom-chip { display: inline-flex; flex: none; align-items: center; gap: 4px; min-height: 24px; padding: 0 8px; border: 1px solid var(--border-weak); border-radius: 6px; background: var(--state-default); color: var(--text-secondary); font-size: 12px; font-weight: 500; line-height: 20px; }
+.print-variation-chip { max-width: 100%; text-align: left; }
+.print-variation-chip:hover,
+.print-variation-custom-chip:hover { background: var(--state-hover); }
+.print-variation-chip[aria-pressed='true'],
+.print-variation-custom-chip.is-selected { border-color: transparent; background: var(--brand-primary); color: var(--text-on-brand-black); }
+.print-variation-chip[aria-pressed='true']:hover,
+.print-variation-custom-chip.is-selected:hover { background: var(--brand-primary-hover); }
+.print-variation-custom-chip { max-width: 100%; padding-right: 4px; }
+.print-variation-custom-chip > button { min-width: 0; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; overflow-wrap: anywhere; }
+.print-variation-custom-chip > .print-variation-remove-point { display: grid; place-items: center; flex: none; width: 16px; height: 16px; }
+.print-variation-add-point.lc-button { height: 24px; padding: 0 8px; border-radius: 6px; color: var(--text-brand); }
+.print-variation-custom-editor { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; max-width: 100%; }
+.print-variation-custom-editor input { width: 240px; max-width: 100%; height: 24px; padding: 0 8px; border: 1px solid var(--border-brand); outline: none; border-radius: 6px; background: var(--control-fill-focus); color: var(--text-primary); font-size: 12px; line-height: 20px; }
+.print-variation-custom-editor input::placeholder { color: var(--text-placeholder); }
+.print-variation-custom-action.lc-button { height: 24px; padding: 0 8px; border-radius: 6px; }
+.print-variation-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; min-height: 40px; }
+.print-variation-options { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.print-variation-option-label { color: var(--text-tertiary); font-size: 12px; line-height: 16px; white-space: nowrap; }
+.print-variation-mode { display: flex; gap: 4px; padding: 4px; border: 1px solid var(--border-weak); border-radius: 8px; background: var(--surface-default); }
+.print-variation-mode > button,
+.print-variation-segments > button { display: flex; align-items: center; justify-content: center; height: 24px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--text-tertiary); font-size: 12px; font-weight: 500; line-height: 20px; white-space: nowrap; }
+.print-variation-mode > button:hover,
+.print-variation-segments > button:hover:not(:disabled) { background: var(--state-hover); }
+.print-variation-mode > button[aria-pressed='true'] { background: var(--brand-primary); color: var(--text-on-brand-black); }
+.print-variation-segments > button[aria-pressed='true'] { background: var(--state-selected); color: var(--text-primary); }
+.print-variation-settings { position: relative; min-width: 0; }
+.print-variation-settings-trigger { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text-secondary); font-size: 12px; line-height: 20px; white-space: nowrap; }
+.print-variation-settings-trigger:hover { background: var(--state-hover); }
+.print-variation-settings-trigger[aria-expanded='true'] { border-color: var(--border-brand); background: var(--control-fill-focus); }
+.print-variation-parameter-icon { width: 16px; height: 16px; --icon-url: url('/assets/print-variation/parameters.svg'); }
+.print-variation-setting-divider { margin: 0 4px; color: var(--text-tertiary); }
+.print-variation-settings-popup { position: absolute; z-index: 3; bottom: calc(100% + 8px); left: 0; display: flex; flex-direction: column; gap: 16px; width: 344px; max-width: calc(100vw - 32px); padding: 12px; border: 1px solid var(--border-weak); border-radius: 16px; background: var(--surface-default); box-shadow: var(--shadow-l); }
+.print-variation-setting-field { display: flex; flex-direction: column; gap: 8px; }
+.print-variation-setting-field > span { color: var(--text-tertiary); font-size: 12px; line-height: 16px; }
+.print-variation-segments { display: flex; gap: 4px; padding: 4px; border-radius: 8px; background: var(--control-fill-hover); }
+.print-variation-segments > button { flex: 1; min-width: 0; }
+.print-variation-segments > button:disabled { color: var(--text-disabled); background: transparent; opacity: 1; cursor: default; }
+.print-variation-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.print-variation-reanalyze.lc-button { height: 40px; gap: 4px; padding: 0 16px; border-radius: 8px; font-size: 14px; line-height: 20px; }
+.print-variation-generate.lc-button { height: 40px; gap: 4px; padding: 0 20px; border-radius: 8px; font-size: 14px; line-height: 20px; }
+.print-variation-panel .lc-button--secondary { background: var(--state-default); }
+.print-variation-panel .lc-button--secondary:hover:not(:disabled) { background: var(--state-hover); }
+.print-variation-panel .lc-button--primary:disabled { opacity: 1; background: var(--brand-primary-disabled); color: var(--text-on-brand-disabled); }
+.print-variation-loading { position: absolute; z-index: 4; inset: 0; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 4px; padding: 12px; border-radius: inherit; background: rgba(0, 0, 0, .2); -webkit-backdrop-filter: blur(30px); backdrop-filter: blur(30px); text-align: center; }
+.print-variation-loading > .lc-loading-spark { margin-bottom: 4px; }
+.print-variation-loading > strong { color: var(--text-secondary); font-size: 14px; font-weight: 500; line-height: 20px; }
+.print-variation-loading > span { color: var(--text-tertiary); font-size: 12px; line-height: 16px; }
+.print-variation-panel[data-phase='enter'],
+.print-variation-loading[data-phase='enter'] { animation: print-variation-fade-in 200ms ease-out backwards; }
+.print-variation-panel[data-phase='exit'],
+.print-variation-loading[data-phase='exit'] { animation: print-variation-fade-out 200ms ease-out both; pointer-events: none; }
+.print-variation-settings-popup[data-phase='enter'] { animation: print-variation-menu-in 200ms ease-out backwards; }
+.print-variation-settings-popup[data-phase='exit'] { animation: print-variation-menu-out 200ms ease-out both; pointer-events: none; }
+@keyframes print-variation-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes print-variation-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes print-variation-menu-in { from { opacity: 0; translate: 0 4px; } to { opacity: 1; translate: 0 0; } }
+@keyframes print-variation-menu-out { from { opacity: 1; translate: 0 0; } to { opacity: 0; translate: 0 4px; } }
+@media (max-width: 680px) {
+  .print-variation-heading { gap: 4px; }
+  .print-variation-heading p { flex-basis: 100%; }
+  .print-variation-options { gap: 8px; flex-wrap: wrap; }
+  .print-variation-settings-popup { left: auto; right: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .print-variation-panel,
+  .print-variation-panel *,
+  .print-variation-panel *::before,
+  .print-variation-panel *::after { animation: none !important; transition: none !important; }
+}

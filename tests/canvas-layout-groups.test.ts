@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { arrangeImages, canvasNodes, deleteCanvasSelection, restoreWorkflowMain, workflowSources, type CanvasImage } from '../src/canvas.ts';
+import { arrangeImages, canvasNodes, createFusionEditor, deleteCanvasSelection, restoreWorkflowMain, workflowSources, type CanvasImage } from '../src/canvas.ts';
+import { centerAddedFusionBranches } from '../src/fusion-local-centering.ts';
 import { canvasLayoutGroups, withCanvasLayoutGroups } from '../src/canvas-layout-groups.ts';
 import { withCanvasOriginOrder } from '../src/canvas-origin-order.ts';
 
@@ -45,6 +46,32 @@ const reviewOrder = (items: CanvasImage[]) => {
 test('arranging keeps an established group ahead of a later group made from an older image', () => {
   const items = reviewCanvas();
   assert.deepEqual(reviewOrder(items), ['node-a', 'node-b', 'node-c', 'x', 'node-d']);
+});
+
+test('adding from the last arranged cross-group result does not pull its group back into its sources', () => {
+  let items = twoGroups();
+  // These source groups have complete downstream chains. The cross-group
+  // editor references their early images, not the rightmost source results.
+  for (const id of ['a', 'b']) {
+    const out = image(`out-${id}`, { generatedByEditorId: id });
+    items = snapshot([...items, out], items);
+    const tail = createFusionEditor(items, out.id, `tail-${id}`)!;
+    items = snapshot([...items, tail, image(`tail-out-${id}`, { generatedByEditorId: tail.id })], items);
+  }
+  items = snapshot([...items, editor('cross', ['a1', 'b1']), image('cross-result', { generatedByEditorId: 'cross' })], items);
+  const arranged = arrangeImages(items);
+  const before = new Map(canvasNodes(arranged).map(item => [item.id, item]));
+  const newEditor = createFusionEditor(arranged, 'cross-result', 'after-cross')!;
+  const after = centerAddedFusionBranches(arranged, [...arranged, newEditor]);
+  const placed = new Map(canvasNodes(after).map(item => [item.id, item]));
+  for (const [id, item] of before) {
+    assert.equal(placed.get(id)!.x, item.x, `${id} must retain its arranged column`);
+    if (!id.startsWith('cross')) assert.equal(placed.get(id)!.y, item.y, `${id} belongs to an unchanged source group`);
+  }
+  const result = placed.get('cross-result')!;
+  assert.equal(placed.get('after-cross:fusion')!.x, result.x + result.width + 80);
+  // Ordinary additions retain spacing; explicit Arrange still repacks it.
+  assert.deepEqual(nodes(after), nodes(arrangeImages(after)));
 });
 
 test('two new nodes referencing the same groups place the newest directly after the last source', () => {
@@ -228,10 +255,11 @@ test('legacy first-consumer hints preserve a live original owner before later re
 });
 
 test('refilling a source-less editor preserves its identity, original group order and existing result links', () => {
+  // Use a main-image workflow; fusion now accepts only a reference list.
   const before = snapshot([
-    image('main', { fusion: { kind: 'fusion', prompt: 'keep', ratio: 'auto', resolution: '2K' } }),
+    image('main', { fusion: { kind: 'lingerie', prompt: 'keep', ratio: 'auto', resolution: '2K' } }),
     image('result', { generatedByEditorId: 'main' }),
-    image('later', { fusion: { kind: 'fusion', prompt: '', ratio: 'auto', resolution: '2K' } }),
+    image('later', { fusion: { kind: 'lingerie', prompt: '', ratio: 'auto', resolution: '2K' } }),
   ]);
   const original = canvasLayoutGroups(before);
   const empty = snapshot(deleteCanvasSelection(before, ['main']), before);
