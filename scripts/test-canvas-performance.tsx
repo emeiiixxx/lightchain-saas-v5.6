@@ -116,9 +116,11 @@ test('200-node Flow keeps pan renders bounded, culls offscreen content and resto
     assert.ok(host.querySelector('[data-probe="n100"]'));
     assert.equal(host.querySelector('[data-probe="n0"]'), null);
     const returnedNode = host.querySelector<HTMLElement>('.react-flow__node[data-id="n100"]')!;
-    // Draggable React Flow nodes select on the drag-start mousedown, not click.
+    // With the 3px drag threshold, a stationary press selects on click.
+    // JSDOM does not synthesize click from mousedown/mouseup like a browser.
     await act(async () => { returnedNode.dispatchEvent(new dom.window.MouseEvent('mousedown', { bubbles: true, view: dom.window, clientX: 40, clientY: 60, buttons: 1 })); });
     await act(async () => { dom.window.dispatchEvent(new dom.window.MouseEvent('mouseup', { bubbles: true, view: dom.window, clientX: 40, clientY: 60 })); });
+    await act(async () => { returnedNode.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true, view: dom.window, clientX: 40, clientY: 60 })); });
     assert.ok(host.querySelector('.react-flow__node[data-id="n100"].selected'), 'returning visible nodes remain selectable');
     await act(async () => { setView({ x: 0, y: 0, zoom: 1 }); });
     await act(async () => { setView({ x: -100000, y: 0, zoom: 1 }); });
