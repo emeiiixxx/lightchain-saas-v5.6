@@ -102,6 +102,19 @@ export default function App() {
   const imageTasks = useRef(new Map<string, CanvasImageTaskRecord>());
   const fileNamer = useRef(createCanvasFileNamer()).current;
   const [images, commitImages] = useState<CanvasImage[]>([]);
+  const [workflowHeights, setWorkflowHeights] = useState<Record<string, number>>({});
+  const measureWorkflowHeight = useCallback((id: string, height: number) => {
+    const key = `${id}:fusion`;
+    setWorkflowHeights(previous => previous[key] === height ? previous : { ...previous, [key]: height });
+  }, []);
+  useEffect(() => {
+    const ids = new Set(images.filter(image => image.fusion?.kind === 'lingerie').map(image => `${image.id}:fusion`));
+    setWorkflowHeights(previous => Object.keys(previous).every(id => ids.has(id)) ? previous
+      : Object.fromEntries(Object.entries(previous).filter(([id]) => ids.has(id))));
+  }, [images]);
+  const renderedWorkflowHeight = useCallback((image: CanvasImage) =>
+    image.fusion?.kind === 'lingerie' ? workflowHeights[`${image.id}:fusion`] ?? workflowHeight(image.fusion)
+      : workflowHeight(image.fusion), [workflowHeights]);
   const migratedEditorIds = useRef(new Map<string, string>());
   function normalizeFusionScene(items: CanvasImage[]) {
     return normalizeFusionReferences(items, (previousId, editorId) => {
@@ -265,13 +278,15 @@ export default function App() {
   const shownMenu = usePresence(menu);
   const shownModal = usePresence(modal);
   const shownPreview = usePresence(previewImage);
+  const navigationNodes = useMemo(() => canvasNodes(images).map(node => workflowHeights[node.id]
+    ? { ...node, height: workflowHeights[node.id] } : node), [images, workflowHeights]);
   const selection = useMemo(() => {
-    const items = canvasNodes(images).filter(n => selectedIds.includes(n.id));
+    const items = navigationNodes.filter(n => selectedIds.includes(n.id));
     const hasWorkflow = images.some(n => n.fusion && selectedIds.includes(`${n.id}:fusion`));
     const hasPlaceholder = images.some(n => n.generation && selectedIds.includes(n.id));
     const bounds = boundsOf(items);
     return bounds && (!hasWorkflow || items.length > 1) ? { bounds, count: items.length, showToolbar: !hasWorkflow && !hasPlaceholder } : null;
-  }, [images, selectedIds]);
+  }, [images, selectedIds, navigationNodes]);
   const shownSelection = usePresence(selection);
   const selectedResult = useMemo(() => selectedIds.length === 1
     ? images.find(image => image.id === selectedIds[0] && !image.nodeOnly && !image.generation && !image.sourceImageId && image.generatedByEditorId) ?? null
@@ -285,7 +300,6 @@ export default function App() {
   const [resultFeedback, setResultFeedback] = useState<Record<string, ResultFeedback | undefined>>({});
   const shownSnapGuide = usePresence(snapGuide);
   const shownDrop = usePresence(dropActive ? 'drop' : null);
-  const navigationNodes = useMemo(() => canvasNodes(images), [images]);
   const nodesOutsideView = images.length > 0 && !navigationNodes.some(image => {
     const left = image.x * view.zoom + view.x;
     const top = image.y * view.zoom + view.y;
@@ -349,8 +363,9 @@ export default function App() {
   const flowDragging = useRef(false);
   const flowDragRecorded = useRef(false);
   const moveFlowNodes = useCallback((positions: Map<string, { x: number; y: number }>) => {
+    if (!flowDragging.current) return;
     const movedIds: string[] = [];
-    let next: CanvasImage[] = imageRef.current.map(image => {
+    const next: CanvasImage[] = imageRef.current.map(image => {
       const point = positions.get(image.id), editor = positions.get(`${image.id}:fusion`);
       if (!point && !editor) return image;
       if (!image.nodeOnly && point && (point.x !== image.x || point.y !== image.y)) movedIds.push(image.id);
@@ -365,13 +380,18 @@ export default function App() {
       remember(imageRef.current);
       flowDragRecorded.current = true;
     }
-    next = pinFusionPositions(next, movedIds);
     imageRef.current = next; setImages(next);
   }, [remember]);
   const startFlowDrag = useCallback(() => {
     flowDragRecorded.current = false; flowDragging.current = true; setDragging(true);
   }, []);
-  const finishFlowDrag = useCallback(() => { flowDragging.current = false; setDragging(false); setSnapGuide(null); }, []);
+  const finishFlowDrag = useCallback((movedIds: string[]) => {
+    if (flowDragging.current && movedIds.length) {
+      const next = pinFusionPositions(imageRef.current, movedIds);
+      imageRef.current = next; setImages(next);
+    }
+    flowDragging.current = false; setDragging(false); setSnapGuide(null);
+  }, []);
   const undo = useCallback(() => { const previous = history.current.pop(); if (previous) { future.current.push({ images: imageRef.current, selectedIds: selectedRef.current }); setImages(previous.images); setSelectedIds(previous.selectedIds); } setCanUndo(history.current.length > 0); setCanRedo(future.current.length > 0); }, []);
   const redo = useCallback(() => { const next = future.current.pop(); if (next) { history.current.push({ images: imageRef.current, selectedIds: selectedRef.current }); setImages(next.images); setSelectedIds(next.selectedIds); } setCanUndo(history.current.length > 0); setCanRedo(future.current.length > 0); }, []);
   const fit = useCallback(() => { const rect = canvas.current?.getBoundingClientRect(); if (rect) setView(fitImages(canvasNodes(imageRef.current), rect.width, rect.height)); }, []);
@@ -666,9 +686,9 @@ export default function App() {
     const current = imageRef.current;
     const result = current.find(image => image.id === resultId && !image.generation);
     const editor = current.find(image => image.id === result?.generatedByEditorId && image.fusion);
-    if (!editor?.fusion || (isMultiInputWorkflow(editor.fusion) ? !workflowInputs(editor.fusion).length : !workflowSources(current, editor).length)) { announce(t.resultEditorUnavailable); return; }
+    if (!editor?.fusion || (!isReferenceOnlyFusion(editor.fusion) && (isMultiInputWorkflow(editor.fusion) ? !workflowInputs(editor.fusion).length : !workflowSources(current, editor).length))) { announce(t.resultEditorUnavailable); return; }
     const settings = editor.fusion;
-    if (((settings.kind ?? 'fusion') === 'fusion' || settings.kind === 'merge' || settings.kind === 'batch') && !settings.prompt.trim() || (settings.kind === 'directed' && !settings.directedPoints?.length)) {
+    if (((settings.kind ?? 'fusion') === 'fusion' || settings.kind === 'merge' || settings.kind === 'batch' || settings.kind === 'lingerie') && !settings.prompt.trim() || (settings.kind === 'directed' && !settings.directedPoints?.length)) {
       announce(t.resultConfigRequired); return;
     }
     generateDemo(editor.id, result?.generatedFromReferenceId);
@@ -727,9 +747,9 @@ export default function App() {
     if (workflowSources(current, editor).some(source => source.generation)) return;
     if (editor.fusion?.batchFlat || editor.fusion?.kind === 'batch') { generateBatchResults(editor, referenceId); return; }
     if (editor.fusion?.kind === 'directed' && !editor.fusion.directedPoints?.length) return;
-    if ((editor.fusion?.kind ?? 'fusion') === 'fusion' && !editor.fusion?.prompt.trim()) return;
+    if (((editor.fusion.kind ?? 'fusion') === 'fusion' || editor.fusion.kind === 'lingerie') && !editor.fusion.prompt.trim()) return;
     if (isReferenceOnlyFusion(editor.fusion) || editor.fusion?.kind === 'merge') {
-      if (!fusionReferences(editor.fusion).length || !editor.fusion.prompt.trim()) return;
+      if ((editor.fusion.kind === 'merge' && !fusionReferences(editor.fusion).length) || !editor.fusion.prompt.trim()) return;
       if (fusionReferences(editor.fusion).length > workflowReferenceLimit(editor.fusion)) { announce(referenceLimitMessage(editor.id)); return; }
     } else if (!workflowSources(current, editor).length) return;
     const position = fusionPosition(editor);
@@ -918,8 +938,11 @@ export default function App() {
   function batchFlatLimitMessage() { return locale === 'en' ? 'Add up to 20 main images.' : locale === 'ja' ? 'メイン画像は最大20枚です。' : '主图最多20张，请减少选择后重试。'; }
   function referenceLimitMessage(target: string, role?: 'main') {
     if (role === 'main') return batchFlatLimitMessage();
-    if (imageRef.current.find(n => n.id === target)?.fusion?.batchFlat) return batchFlatLimitMessage();
-    return imageRef.current.find(n => n.id === target)?.fusion?.kind === 'lingerie' ? t.modelImageLimit : t.referenceLimit;
+    const settings = imageRef.current.find(n => n.id === target)?.fusion;
+    if (settings?.batchFlat) return batchFlatLimitMessage();
+    if (settings?.kind === 'lingerie') return t.modelImageLimit;
+    const limit = workflowReferenceLimit(settings);
+    return locale === 'en' ? `Up to ${limit} reference images. Reduce your selection and try again.` : locale === 'ja' ? `参考画像は${limit}枚までです。選択枚数を減らしてください。` : `参考图最多支持 ${limit} 张，请减少选择数量后重试。`;
   }
   function addReferences(target: string, additions: FusionReference[], source: 'upload' | 'canvas' = 'upload') {
     const owner = imageRef.current.find(n => n.id === target);
@@ -959,7 +982,7 @@ export default function App() {
     {images.filter(result => !result.nodeOnly && !result.sourceImageId && result.generatedByEditorId).map(result => {
       const editor = images.find(item => item.id === result.generatedByEditorId && item.fusion);
       if (!editor) return null;
-      return <ImageConnection zoom={view.zoom} key={`generation:${result.id}`} image={{...editor, ...fusionPosition(editor), id:`${editor.id}:fusion`, width:workflowWidth(editor.fusion), height:workflowHeight(editor.fusion)}} target={result} active={selectedIds.includes(result.id) || selectedIds.includes(`${editor.id}:fusion`) || workflowSources(images, editor).some(source => selectedIds.includes(source.id))} />;
+      return <ImageConnection zoom={view.zoom} key={`generation:${result.id}`} image={{...editor, ...fusionPosition(editor), id:`${editor.id}:fusion`, width:workflowWidth(editor.fusion), height:renderedWorkflowHeight(editor)}} target={result} active={selectedIds.includes(result.id) || selectedIds.includes(`${editor.id}:fusion`) || workflowSources(images, editor).some(source => selectedIds.includes(source.id))} />;
     })}
     {images.filter(result => !result.nodeOnly && result.sourceImageId).map(result => {
       const source = images.find(item => !item.nodeOnly && item.id === result.sourceImageId);
@@ -998,9 +1021,9 @@ export default function App() {
           return current ? { ...reference, name: current.name, url: current.url } : reference;
         }) } } : n;
       return <div key={`${n.id}:fusion`}>
-      {sources.map(input => <ImageConnection key={input.id} zoom={view.zoom} image={input} target={{...fusionPosition(n),id:`${n.id}:fusion`,width:workflowWidth(n.fusion),height:workflowHeight(n.fusion)}} active={selectedIds.includes(input.id) || selectedIds.includes(`${n.id}:fusion`)} />)}
+      {sources.map(input => <ImageConnection key={input.id} zoom={view.zoom} image={input} target={{...fusionPosition(n),id:`${n.id}:fusion`,width:workflowWidth(n.fusion),height:renderedWorkflowHeight(n)}} active={selectedIds.includes(input.id) || selectedIds.includes(`${n.id}:fusion`)} />)}
       <div className="fusion-position" data-workflow-kind={n.fusion?.kind} data-fusion-id={n.id} data-selected={selectedIds.includes(`${n.id}:fusion`)} tabIndex={0} role="group" aria-label={`${n.fusion?.kind === 'batch' ? t.batchEdit : n.fusion?.kind === 'directed' ? t.directed : n.fusion?.kind === 'lingerie' ? t.lingerie : n.fusion?.kind === 'flat' ? t.flat : n.fusion?.kind === 'merge' ? t.mergeImages : t.fusion} · ${canvasMediaDisplayName(n.name)}`}
-        style={{ left: fusionPosition(n).x, top: fusionPosition(n).y, width: workflowWidth(n.fusion), height: workflowHeight(n.fusion), zIndex: foregroundIds.has(`${n.id}:fusion`) ? 3 : raisedIds.has(n.id) ? 2 : undefined } as React.CSSProperties}
+        style={{ left: fusionPosition(n).x, top: fusionPosition(n).y, width: workflowWidth(n.fusion), height: renderedWorkflowHeight(n), zIndex: foregroundIds.has(`${n.id}:fusion`) ? 3 : raisedIds.has(n.id) ? 2 : undefined } as React.CSSProperties}
         onFocus={() => { if (document.documentElement.dataset.focusNavigation === 'keyboard' && !canvasReference && !selectedRef.current.includes(`${n.id}:fusion`)) setSelectedIds([`${n.id}:fusion`]); }}
         >
         {n.fusion?.kind === 'batch'
@@ -1009,10 +1032,10 @@ export default function App() {
           ? <FlatLayNode image={editorImage} locale={locale} onAddMain={() => setMainTarget(n.id)} onReference={source => sceneEvents.openImagePicker(n.id, source, n.fusion?.batchFlat ? 'main' : undefined)} onChange={patch => sceneEvents.updateFusion(n.id, patch)} onGenerate={() => sceneEvents.generateDemo(n.id)} />
           : n.fusion?.kind === 'directed'
           ? <DirectedFusionNode image={editorImage} locale={locale} onAddMain={() => setMainTarget(n.id)} onChange={patch => sceneEvents.updateFusion(n.id, patch)} onChoosePoint={pointId => setDirectedTarget({ editorId: n.id, pointId })} onGenerate={() => sceneEvents.generateDemo(n.id)} onNotify={sceneEvents.announce} />
-          : <FusionNode image={editorImage} locale={locale} onAddMain={() => setMainTarget(n.id)} onChange={patch => sceneEvents.updateFusion(n.id, patch)} onReference={source => sceneEvents.openImagePicker(n.id, source)} onEditGuide={reference => { void sceneEvents.openReferenceGuide(n.id, reference); }} onGenerate={() => sceneEvents.generateDemo(n.id)} />}
+          : <FusionNode image={editorImage} locale={locale} onHeightChange={measureWorkflowHeight} onAddMain={() => setMainTarget(n.id)} onChange={patch => sceneEvents.updateFusion(n.id, patch)} onReference={source => sceneEvents.openImagePicker(n.id, source)} onEditGuide={reference => { void sceneEvents.openReferenceGuide(n.id, reference); }} onGenerate={() => sceneEvents.generateDemo(n.id)} />}
       </div>
     </div>;})}
-  </>, [images, selectedIds, canvasReference, referenceCandidateIds, foregroundIds, raisedIds, locale, t, view.zoom, sceneEvents]);
+  </>, [images, selectedIds, canvasReference, referenceCandidateIds, foregroundIds, raisedIds, locale, t, view.zoom, sceneEvents, renderedWorkflowHeight, measureWorkflowHeight]);
 
   return <PromptLibraryProvider uploads={uploads} onUpload={rememberUpload} locale={locale}><div className="app-shell" data-library="Lightchain SaaS v5.1 libraries Beta" data-node-id="12:3127">
     <header className="topbar flex items-center justify-between gap-2 px-6" data-node-id="12:3148">

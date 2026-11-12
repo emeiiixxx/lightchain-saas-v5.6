@@ -26,7 +26,8 @@
 .fusion-reference-wrap { position: relative; min-width: 0; aspect-ratio: 1; }
 .fusion-reference { display: flex; align-items: center; justify-content: center; width: 100%; aspect-ratio: 1; border: 1px solid var(--border-weak); background: var(--state-default); color: var(--text-secondary); border-radius: 12px; overflow: hidden; }
 .fusion-reference:is(button):hover { background: var(--state-hover); color: var(--text-primary); }
-.fusion-reference img { width: 100%; height: 100%; object-fit: cover; }
+.fusion-reference > .progressive-image { border-radius: 0; }
+.fusion-reference img { width: 100%; height: 100%; object-fit: cover; border-radius: 0; }
 .fusion-reference-wrap .fusion-reference-remove { position: absolute; top: 2px; right: 2px; width: 20px; min-width: 20px; height: 20px; padding: 0; border-radius: 999px; opacity: 0; }
 .fusion-reference-wrap:hover .fusion-reference-remove, .fusion-reference-wrap:focus-within .fusion-reference-remove { opacity: 1; }
 /* Figma 73:18017: 64px tiles and 208px visible content; the extra inset protects the floating remove buttons. */
@@ -118,7 +119,7 @@
 .reference-only-node .fusion-reference-guide-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .7; pointer-events: none; }
 /* Figma 202:13603: thumbnail actions stay over the media in both themes. */
 .reference-only-node .fusion-reference-hover { --text-secondary: #e3e8e8; position: absolute; z-index: 1; inset: 0; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: var(--surface-media-overlay); -webkit-backdrop-filter: blur(var(--background-blur-s)); backdrop-filter: blur(var(--background-blur-s)); opacity: 0; pointer-events: none; transition: opacity 200ms ease-out; }
-.reference-only-node .fusion-reference-hover .fusion-reference-guide { width: 24px; min-width: 24px; height: 24px; min-height: 24px; padding: 0; border: 0; border-radius: 6px; color: var(--text-secondary); background: transparent; pointer-events: none; }
+.reference-only-node .fusion-reference-hover .fusion-reference-guide { width: 32px; min-width: 32px; height: 32px; min-height: 32px; padding: 0; border: 0; border-radius: 6px; color: var(--text-secondary); background: transparent; pointer-events: none; }
 .reference-only-node .fusion-reference-hover .fusion-reference-guide:hover { background: var(--state-hover); }
 .reference-only-node .fusion-reference-wrap:is(:hover, :focus-within) .fusion-reference-hover { opacity: 1; }
 .reference-only-node .fusion-reference-wrap:is(:hover, :focus-within) .fusion-reference-guide { pointer-events: auto; }

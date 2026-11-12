@@ -29,7 +29,10 @@ export function QuickEditComposer({ board, image, phase, onClose, onSubmit, uplo
   draft: QuickEditDraft; onDraftChange: Dispatch<SetStateAction<QuickEditDraft>>;
 }) {
   const { t, locale } = useLocale();
-  const { value, references, ratio, resolution, count } = draft;
+  const { value, references: storedReferences, ratio, resolution, count } = draft;
+  // The editing image is passed separately to generation; keep it out of extra references.
+  const extraReferences = (items: Reference[]) => localEdit ? items : items.filter(item => item.id !== image.id && item.url !== image.url);
+  const references = extraReferences(storedReferences);
   const copy = locale === 'en' ? { hint: 'Tell me what to change, e.g. make the collar a V-neck', draw: 'Draw edit area', reference: 'Reference', source: 'Source image', generate: 'Generate' } : locale === 'ja' ? { hint: '変更内容を入力してください（例：襟をVネックに）', draw: '編集範囲を描画', reference: '参考画像', source: '元画像', generate: '生成' } : { hint: '告诉我你想怎么改，如：把领子变V领', draw: '绘制修改区域', reference: '参考图', source: '原图', generate: '生成' };
   const printApply = localEdit && tool === '印花上身';
   const tryOn = localEdit && tool === 'AI试衣';
@@ -45,7 +48,7 @@ export function QuickEditComposer({ board, image, phase, onClose, onSubmit, uplo
   const canSubmit = tryOn ? references.length === 1 : !!value.trim();
   const [dock, setDock] = useState({ left: 16, width: 800 });
   const setValue = (value: string) => onDraftChange(previous => ({ ...previous, value }));
-  const setReferences: Dispatch<SetStateAction<Reference[]>> = update => onDraftChange(previous => ({ ...previous, references: typeof update === 'function' ? update(previous.references) : update }));
+  const setReferences: Dispatch<SetStateAction<Reference[]>> = update => onDraftChange(previous => ({ ...previous, references: extraReferences(typeof update === 'function' ? update(extraReferences(previous.references)) : update) }));
   const setRatio = (ratio: string) => onDraftChange(previous => ({ ...previous, ratio }));
   const setResolution = (resolution: string) => onDraftChange(previous => ({ ...previous, resolution }));
   const setCount = (count: string) => onDraftChange(previous => ({ ...previous, count }));
@@ -156,7 +159,7 @@ export function QuickEditComposer({ board, image, phase, onClose, onSubmit, uplo
   }, [menu]);
   const submit = () => {
     if (!canSubmit || generating || phase === 'exit') return;
-    onSubmit(draft);
+    onSubmit({ ...draft, references });
   };
   const addFiles = async (files: FileList) => {
     if (reading.current) return;
@@ -205,7 +208,10 @@ export function QuickEditComposer({ board, image, phase, onClose, onSubmit, uplo
         </div>}
       </div> : <Button className="local-edit-upload" aria-label={`${t('添加图片')} · ${referenceLabel}`} aria-haspopup="dialog" onClick={openReferences}><Icon name={inputIcon('add-image', 'quick-edit-imgIcon')} size={24} /><span>{referenceLabel}</span></Button>)}
     </div>}
-    {!localEdit && references.length > 0 && <div className="quick-edit-references">{references.map((ref, index) => <div className="quick-edit-chip" key={ref.id}><img src={ref.url} alt="" /><span title={canvasMediaDisplayName(ref.name)}>{t('图片')}{index + 1}</span><Button aria-label={`${t('移除')} ${canvasMediaDisplayName(ref.name)}`} onClick={() => { setReferences(prev => prev.filter(item => item.id !== ref.id)); setError(''); }}><Icon name="quick-edit-imgIconSystem" size={16} /></Button></div>)}</div>}
+    {!localEdit && <div className="quick-edit-references">
+      <div className="quick-edit-chip" role="group" aria-label={`${copy.source}: ${canvasMediaDisplayName(image.name)}`}><img src={image.url} alt="" /><span title={canvasMediaDisplayName(image.name)}>{t('图片')}1</span></div>
+      {references.map((ref, index) => <div className="quick-edit-chip" key={ref.id}><img src={ref.url} alt="" /><span title={canvasMediaDisplayName(ref.name)}>{t('图片')}{index + 2}</span><Button aria-label={`${t('移除')} ${canvasMediaDisplayName(ref.name)}`} onClick={() => { setReferences(prev => prev.filter(item => item.id !== ref.id)); setError(''); }}><Icon name="quick-edit-imgIconSystem" size={16} /></Button></div>)}
+    </div>}
     {!printApply && <textarea ref={textarea} aria-label={t('设计需求')} placeholder={localEdit ? copy.hint : t('描述你想如何修改这张图片')} value={value} onChange={e => setValue(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); submit(); } }} onPaste={e => { if (e.clipboardData.files.length) { e.preventDefault(); void addFiles(e.clipboardData.files); } }} />}
     {error && <p className="quick-edit-error" role="status">{error}</p>}
     </div>
@@ -235,7 +241,7 @@ export function QuickEditComposer({ board, image, phase, onClose, onSubmit, uplo
     {tryOn && <input ref={modelInput} hidden type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={event => { if (event.target.files?.length) void addFiles(event.target.files); event.target.value = ''; }} />}
   </div>
     {shownPicker.value && createPortal(<div onDragEnter={event => event.stopPropagation()} onDragOver={event => event.stopPropagation()} onDragLeave={event => event.stopPropagation()} onDrop={event => event.stopPropagation()}>
-      <AssetPicker locale={locale} phase={shownPicker.phase} uploads={[...uploads, ...board.images]} onUpload={onUpload} maxCount={pickerCapacity} excludedUrls={references.map(ref => ref.url)} limitMessage={referenceLimitMessage} onConfirm={item => confirmReferences([item])} onConfirmBatch={confirmReferences} onClose={() => setPickerOpen(false)} />
+      <AssetPicker locale={locale} phase={shownPicker.phase} uploads={[...uploads, ...board.images]} onUpload={onUpload} maxCount={pickerCapacity} excludedUrls={[...(!localEdit ? [image.url] : []), ...references.map(ref => ref.url)]} limitMessage={referenceLimitMessage} onConfirm={item => confirmReferences([item])} onConfirmBatch={confirmReferences} onClose={() => setPickerOpen(false)} />
     </div>, document.body)}
     {shownPromptLibrary.value && createPortal(<PromptLibrary phase={shownPromptLibrary.phase} entries={savedPrompts} uploads={uploads} onUpload={onUpload} onStore={storePrompts} onNotify={onNotify} onClose={() => setPromptLibraryOpen(false)} onApply={(content, mode) => {
       onDraftChange(previous => ({ ...previous, value: mode === 'replace' ? content : previous.value ? `${previous.value}${previous.value.endsWith('\n') ? '' : '\n'}${content}` : content }));

@@ -5,7 +5,7 @@ import { FLOW_BRANCH_GAP } from '../src/canvas-connected-layout.ts';
 import { canvasNodes, createFusionEditor, createMergeEditor, type CanvasImage } from '../src/canvas.ts';
 import { centerAddedFusionBranches } from '../src/fusion-local-centering.ts';
 import { createMaterialWorkflow, materialWorkflowSize } from '../src/material-workflow.ts';
-import { centerVideoFlowAddition } from '../src/video-flow-addition-layout.ts';
+import { centerVideoFlowAddition, moveVideoFlowNodes, pinVideoFlowPositions } from '../src/video-flow-addition-layout.ts';
 
 const v = (id: string, kind: LocalFlowVertex['kind'], sources: string[], x: number, y: number, height: number): LocalFlowVertex =>
   ({ id, kind, sources, x, y, width: 320, height });
@@ -86,4 +86,52 @@ test('adding an editor for A after an A+B editor works without Arrange on both F
   const [upper, lower] = video.materialWorkflows;
   assert(lower.y >= upper.y + materialWorkflowSize(upper).height + FLOW_BRANCH_GAP);
   assert.equal((upper.y + lower.y + materialWorkflowSize(lower).height) / 2, 240);
+});
+
+test('a manually moved result does not push its upstream editor away from the input', () => {
+  const input = v('input', 'media', [], 0, 0, 200);
+  const editor = v('editor', 'workflow', [input.id], 400, -50, 300);
+  const pinned = { ...v('pinned', 'media', [editor.id], 800, 0, 200), positionPinned: true };
+  const result = v('result', 'media', [editor.id], 800, 300, 200);
+  const unrelated = v('unrelated', 'workflow', [], 900, 300, 600);
+  const previous = [input, editor, pinned, result, unrelated];
+  const added = [...previous, v('newResult', 'media', [editor.id], 800, 600, 200)];
+  const layout = apply(previous, added, [unrelated.id]);
+  assert.deepEqual(layout.get(input.id), input);
+  assert.deepEqual(layout.get(pinned.id), pinned);
+  assert.deepEqual(layout.get(unrelated.id), unrelated);
+  assert.equal(center(layout.get(editor.id)!), center(input), 'a result collision must not move the upstream anchor');
+  const column = ['pinned', 'result', 'newResult'].map(id => layout.get(id)!).sort((a, b) => a.y - b.y);
+  for (let i = 1; i < column.length; i++) {
+    assert(column[i].y >= column[i - 1].y + column[i - 1].height + FLOW_BRANCH_GAP);
+  }
+  // Repeating the same addition from its already laid-out geometry cannot
+  // accumulate offsets around the fixed result.
+  assert.deepEqual(apply(previous, [...layout.values()], [unrelated.id]), layout);
+});
+
+test('new results center on a fixed editor without moving that editor or its input', () => {
+  const input = v('input', 'media', [], 0, 0, 200);
+  const editor = { ...v('editor', 'workflow', [input.id], 400, 700, 300), positionPinned: true };
+  const first = v('first', 'media', [editor.id], 800, 700, 200);
+  const previous = [input, editor, first];
+  const placed = apply(previous, [...previous, v('second', 'media', [editor.id], 800, 700, 200)]);
+  assert.deepEqual(placed.get(input.id), input);
+  assert.deepEqual(placed.get(editor.id), editor);
+  assert.equal(stackCenter(placed.get(first.id)!, placed.get('second')!), center(editor));
+});
+
+test('video dragging commits only the final displaced objects as manual positions', () => {
+  const image: CanvasImage = { id: 'image', name: 'image', url: 'image', width: 320, height: 200, x: 0, y: 0 };
+  const editor = createMaterialWorkflow(400, 0, 'quick');
+  const initial = { images: [image], workflows: [], materialWorkflows: [editor] };
+  const during = moveVideoFlowNodes(initial, new Map([[image.id, { x: 40, y: 60 }]]));
+  assert.equal(during.images[0].positionPinned, undefined, 'pointer movement alone must not create a permanent pin');
+  const returned = moveVideoFlowNodes(during, new Map([[image.id, { x: 0, y: 0 }]]));
+  const unchanged = pinVideoFlowPositions(returned, []);
+  assert.deepEqual(unchanged.images, initial.images);
+  assert.deepEqual(unchanged.materialWorkflows, initial.materialWorkflows);
+  const released = pinVideoFlowPositions(during, [image.id]);
+  assert.equal(released.images[0].positionPinned, true);
+  assert.deepEqual(released.materialWorkflows[0], editor, 'moving an image must not pin its editor');
 });

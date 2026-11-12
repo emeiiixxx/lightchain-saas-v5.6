@@ -121,7 +121,7 @@ export function FusionRatioSelect({ locale, value, custom, savedInput, onChange 
         if (event.key === 'Escape' && open) { event.stopPropagation(); close(); }
       }}>
       <RatioIcon ratio={custom ? 'custom' : fusionAspectRatios.some(ratio => ratio === value) ? value : 'auto'} size={16} />
-      <span className="lc-setting-select-value">{value === 'auto' ? t.auto : value}</span>
+      <span className="lc-setting-select-value">{custom ? `${t.custom} ${value}` : value === 'auto' ? t.auto : value}</span>
       <Icon name="imgChevron" size={16} className="lc-setting-select-chevron" />
     </button>
     {shown.value && createPortal(<div ref={menu} popover="manual" className="lc-select-popup fusion-ratio-popup nodrag nopan nowheel" data-select-popup data-overlay data-node-id={editing ? '202:12857' : custom ? '202:13027' : '202:12611'} data-phase={shown.phase} inert={shown.phase === 'exit'} role="dialog" id={id} aria-label={t.label}

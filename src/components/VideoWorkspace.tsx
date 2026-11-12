@@ -43,7 +43,7 @@ import { canGenerateMaterialWorkflow, createMaterialWorkflow, materialReferenceL
 import { ImageConnection } from './ImageConnection';
 import { canGenerateVideoWorkflow, normalizeVideoWorkflowSettings, createVideoWorkflow, removeVideoWorkflowSources, videoReferenceLimits, videoWorkflowBox, videoWorkflowReferences, videoWorkflowSourceIds, videoWorkflowSize, videoWorkflowTitle, type VideoWorkflow, type VideoReference } from '../video-workflow';
 import { arrangeVideoWorkflowMedia, reconcileVideoWorkflowLayout, type VideoLayoutState } from '../video-workflow-layout';
-import { centerVideoFlowAddition, moveVideoFlowNodes } from '../video-flow-addition-layout';
+import { centerVideoFlowAddition, moveVideoFlowNodes, pinVideoFlowPositions } from '../video-flow-addition-layout';
 import { FLOW_BRANCH_GAP } from '../canvas-connected-layout';
 import { bindCompletedTaskResults, createFashionVideoDemoResult, createMaterialDemoResults, createVideoDemoResult, demoPlaceholderSize } from '../video-workspace-demo';
 import { cropMaterialGrid, gridCropExample } from '../grid-crop';
@@ -181,6 +181,11 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   const [spaceDown, setSpaceDown] = useState(false);
   const effectiveMode = spaceDown ? 'hand' : mode;
   const [dragging, setDragging] = useState(false);
+  const flowDragActive = useRef(false);
+  const flowDragRecorded = useRef(false);
+  const flowDragStartPositions = useRef(new Map<string, { x: number; y: number }>());
+  const flowDragPositionIds = useRef(new Set<string>());
+  const pendingResultDimensions = useRef(new Map<string, { width: number; height: number }>());
   const [selecting, setSelecting] = useState(false);
   const [snapToGrid, setSnapToGrid] = useState(() => {
     try { return localStorage.getItem('lc-v56-video-grid-snap') !== 'off'; } catch { return true; }
@@ -246,7 +251,21 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     const grouped = { ...normalized, layout: reconcileVideoWorkflowLayout(normalized.images, normalized.workflows, normalized.materialWorkflows, normalized.upscaleWorkflows, normalized.layout) };
     // Only live settlement opts in. Undo/redo still resolves task state without
     // rearranging a historical snapshot or adding another undo entry.
-    const settled = centerCompletedResults ? centerVideoFlowAddition(beforeSettlement, grouped) : grouped;
+    let settled: Snapshot = grouped;
+    if (centerCompletedResults) {
+      if (flowDragActive.current) {
+        // Finish the result in place while the pointer owns the geometry. Keep
+        // only the old dimensions; release must use the latest dragged points.
+        const previousImages = new Map(beforeSettlement.images.map(image => [image.id, image]));
+        for (const image of grouped.images) {
+          const previous = previousImages.get(image.id);
+          if (previous && (previous.width !== image.width || previous.height !== image.height)
+            && !pendingResultDimensions.current.has(image.id)) {
+            pendingResultDimensions.current.set(image.id, { width: previous.width, height: previous.height });
+          }
+        }
+      } else settled = centerVideoFlowAddition(beforeSettlement, grouped);
+    }
     current.current = settled; setSnapshot(settled);
   }, []);
   // Apply the current media sizing rule to an already-open preview as well.
@@ -255,6 +274,50 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     history.current.past = [...history.current.past.slice(-99), current.current];
     history.current.future = [];
   }, []);
+  const startFlowDrag = useCallback(() => {
+    if (flowDragActive.current) return;
+    flowDragActive.current = true; flowDragRecorded.current = false;
+    flowDragStartPositions.current = new Map(sceneItems(current.current).map(item => [item.id, { x: item.x, y: item.y }]));
+    flowDragPositionIds.current.clear();
+    setDragging(true);
+  }, []);
+  const moveFlowNodes = useCallback((positions: Map<string, { x: number; y: number }>) => {
+    if (!flowDragActive.current) return;
+    const next = moveVideoFlowNodes(current.current, positions);
+    if (next === current.current) return;
+    for (const id of positions.keys()) flowDragPositionIds.current.add(id);
+    if (!flowDragRecorded.current) { saveUndo(); flowDragRecorded.current = true; }
+    replace(next);
+  }, [replace, saveUndo]);
+  const finishFlowDrag = useCallback((movedIds?: string[]) => {
+    if (!flowDragActive.current) return;
+    // Blur or workspace changes may end the gesture before React Flow emits
+    // its stop callback. In that case compare against the same drag start.
+    const moved = movedIds ?? sceneItems(current.current).filter(item => {
+      if (!flowDragPositionIds.current.has(item.id)) return false;
+      const start = flowDragStartPositions.current.get(item.id);
+      return start && (Math.abs(item.x - start.x) > 1e-6 || Math.abs(item.y - start.y) > 1e-6);
+    }).map(item => item.id);
+    flowDragActive.current = false; flowDragRecorded.current = false;
+    flowDragStartPositions.current.clear();
+    flowDragPositionIds.current.clear();
+    let next = pinVideoFlowPositions(current.current, moved);
+    if (pendingResultDimensions.current.size) {
+      let resized = false;
+      const previousImages = next.images.map(image => {
+        const size = pendingResultDimensions.current.get(image.id);
+        if (!size || size.width === image.width && size.height === image.height) return image;
+        resized = true;
+        return { ...image, ...size };
+      });
+      pendingResultDimensions.current.clear();
+      // Both scenes have the final coordinates and pins. Only dimensions differ,
+      // so no extra additions or stale positions enter the local layout pass.
+      if (resized) next = centerVideoFlowAddition({ ...next, images: previousImages }, next);
+    }
+    if (next !== current.current) replace(next);
+    setDragging(false); setGuides(null);
+  }, [replace]);
   const commit = useCallback((next: Snapshot) => { saveUndo(); replace(next); }, [replace, saveUndo]);
   const renameImage = (id: string, name: string) => {
     const previous = current.current;
@@ -390,6 +453,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
   }, [tasks, snapshot.images, snapshot.workflows, snapshot.materialWorkflows, snapshot.upscaleWorkflows, replace]);
   useEffect(() => {
     if (active) return;
+    finishFlowDrag();
     stopCamera();
     uploadEpoch.current++; uploadLocked.current = false;
     assetUploadPoint.current = null;
@@ -397,7 +461,7 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
     previewEpoch.current++;
     setReading(false); setModal(null); setPreview(null); setCutout(null); setWorkflowUpload(null); setCanvasReference(null); setVideoPreview(null); setDropActive(false);
     setSpaceDown(false); setDragging(false); setSelecting(false); setGuides(null); setCanvasMenu(null);
-  }, [active, stopCamera]);
+  }, [active, finishFlowDrag, stopCamera]);
   useEffect(() => {
     activeRef.current = active;
     return () => {
@@ -466,10 +530,10 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
       else if (!command && event.key.toLowerCase() === 'v') setMode('select');
       else if (!command && event.key.toLowerCase() === 'h') setMode('hand');
     };
-    const blur = () => { setSpaceDown(false); setDragging(false); setSelecting(false); setGuides(null); };
+    const blur = () => { finishFlowDrag(); setSpaceDown(false); setDragging(false); setSelecting(false); setGuides(null); };
     window.addEventListener('keydown', keydown); window.addEventListener('blur', blur);
     return () => { window.removeEventListener('keydown', keydown); window.removeEventListener('blur', blur); };
-  }, [active, canvasReference, shownModal.value, shownPreview.value, shownCutout.value, shownWorkflowUpload.value, shownVideoPreview.value, canvasMenu, closeCanvasMenu, duplicateSelected, undo, redo, replace, removeSelected, fit]);
+  }, [active, canvasReference, shownModal.value, shownPreview.value, shownCutout.value, shownWorkflowUpload.value, shownVideoPreview.value, canvasMenu, closeCanvasMenu, duplicateSelected, undo, redo, replace, removeSelected, fit, finishFlowDrag]);
 
   useEffect(() => {
     if (!canvasReference) return;
@@ -1268,11 +1332,8 @@ export function VideoWorkspace({ locale, active, onBack }: Props) {
         <ReactFlowCanvas view={view} selectedIds={canvasReference?.ids ?? snapshot.selected} hand={effectiveMode === 'hand'} spacePanControlled referenceMode={!!canvasReference} snap={snapToGrid}
           onPrepareCopyDrag={prepareFlowCopyDrag}
           onView={setView} onSelection={ids => replace({ ...current.current, selected: ids })}
-          onPositions={positions => {
-            const next = moveVideoFlowNodes(current.current, positions);
-            if (next !== current.current) replace(next);
-          }}
-          onDragStart={() => { saveUndo(); setDragging(true); }} onDragEnd={() => { setDragging(false); setGuides(null); }} onGuides={setGuides} onSelecting={setSelecting}>
+          onPositions={moveFlowNodes} onDragStart={startFlowDrag} onDragEnd={finishFlowDrag}
+          onGuides={setGuides} onSelecting={setSelecting}>
         {sceneContent}
         </ReactFlowCanvas>
         {shownSingle.value && !selecting && !canvasReference && <div className="selection-overlay" data-phase={shownSingle.phase} aria-label={t.selectionTools} style={{ left: shownSingle.value.x * view.zoom + view.x, top: shownSingle.value.y * view.zoom + view.y, width: shownSingle.value.width * view.zoom, height: shownSingle.value.height * view.zoom }}>

@@ -1,10 +1,121 @@
-import { layoutConnectedGroup, type FlowLayoutRect, type FlowLayoutVertex } from './canvas-connected-layout';
+import { FLOW_BRANCH_GAP, layoutConnectedGroup, type FlowLayoutRect, type FlowLayoutVertex } from './canvas-connected-layout';
 import { videoLayoutOrder } from './video-layout-groups';
 
 export type LocalFlowVertex = FlowLayoutVertex & { x: number; y: number; positionPinned?: boolean };
 type Position = { x: number; y: number };
 type LayoutState = { owners: Record<string, string>; order: Record<string, number> };
 type Branch = { owner: string; kind: LocalFlowVertex['kind']; sources: string[] };
+
+// Pins are obstacles for the object they actually touch, not for the envelope
+// of its entire upstream tree. Otherwise one moved result can push the editor
+// and every earlier step away from the real (unmoved) input.
+function avoidPinnedObjects(
+  current: Map<string, LocalFlowVertex>, automatic: Set<string>, sequence: Map<string, number>,
+  ownerOf: (vertex: LocalFlowVertex) => string,
+) {
+  const baseline = new Map([...current].map(([id, vertex]) => [id, { ...vertex }]));
+  const sourcesOf = (vertex: LocalFlowVertex) => [...new Set(vertex.sources)].filter(id => current.has(id) && id !== vertex.id).sort();
+  const sameSources = (a: LocalFlowVertex, b: LocalFlowVertex) =>
+    a.kind === b.kind && JSON.stringify(sourcesOf(a)) === JSON.stringify(sourcesOf(b));
+  const horizontalOverlap = (a: FlowLayoutRect, b: FlowLayoutRect) => a.x < b.x + b.width && a.x + a.width > b.x;
+  const tooClose = (a: FlowLayoutRect, b: FlowLayoutRect) => horizontalOverlap(a, b)
+    && a.y < b.y + b.height + FLOW_BRANCH_GAP && a.y + a.height + FLOW_BRANCH_GAP > b.y;
+  const centerOfInputs = (ids: string[], items: Map<string, LocalFlowVertex>) =>
+    (Math.min(...ids.map(id => items.get(id)!.y)) + Math.max(...ids.map(id => {
+      const item = items.get(id)!; return item.y + item.height;
+    }))) / 2;
+  const ordered = [...automatic].sort((a, b) => (sequence.get(a) ?? 0) - (sequence.get(b) ?? 0) || a.localeCompare(b));
+  const children = new Map<string, string[]>();
+  for (const id of automatic) {
+    const vertex = current.get(id)!;
+    const sources = sourcesOf(vertex);
+    for (const source of sources) {
+      const list = children.get(source) ?? [];
+      list.push(id); children.set(source, list);
+    }
+  }
+  const downstream = (roots: string[], owner: string) => {
+    const ids = new Set<string>(), queue = [...roots];
+    for (let i = 0; i < queue.length; i++) {
+      const id = queue[i], vertex = current.get(id);
+      if (!vertex || !automatic.has(id) || vertex.positionPinned || ownerOf(vertex) !== owner || ids.has(id)) continue;
+      ids.add(id);
+      // A join travels with a branch only when all its inputs travel together.
+      // Otherwise it is centered once, after its separate inputs settle.
+      for (const child of children.get(id) ?? []) {
+        if (sourcesOf(current.get(child)!).every(source => ids.has(source))) queue.push(child);
+      }
+    }
+    return ids;
+  };
+  const inheritedJoinShift = new Map<string, number>();
+  const translate = (ids: Set<string>, dy: number) => {
+    if (!dy) return;
+    for (const id of ids) {
+      const vertex = current.get(id)!;
+      const sources = sourcesOf(vertex);
+      if (sources.length > 1 && sources.every(source => ids.has(source))) {
+        inheritedJoinShift.set(id, (inheritedJoinShift.get(id) ?? 0) + dy);
+      }
+      current.set(id, { ...vertex, y: vertex.y + dy });
+    }
+  };
+  for (const id of ordered) {
+    let vertex = current.get(id)!;
+    const owner = ownerOf(vertex);
+    const pins = [...current.values()].filter(item => item.positionPinned && ownerOf(item) === owner);
+    if (!pins.length) continue;
+    const sources = sourcesOf(vertex);
+    const ownBranch = downstream([id], owner);
+    if (sources.length > 1) {
+      const delta = centerOfInputs(sources, current) - centerOfInputs(sources, baseline) - (inheritedJoinShift.get(id) ?? 0);
+      if (delta) { translate(ownBranch, delta); vertex = current.get(id)!; }
+    }
+    const others = [...current.values()].filter(item => ownerOf(item) === owner && !ownBranch.has(item.id));
+    const collided = sources.length > 1
+      ? [...ownBranch].some(branchId => others.some(item => tooClose(current.get(branchId)!, item)))
+      : pins.some(item => tooClose(vertex, item));
+    if (!collided) continue;
+
+    // Keep later automatic siblings in order if the blocked item needs room.
+    // Pinned siblings and all upstream objects are always excluded.
+    const rootBaseline = baseline.get(id)!;
+    const siblings = ordered.filter(otherId => {
+      const other = baseline.get(otherId)!;
+      return ownerOf(other) === owner && sameSources(rootBaseline, other) && other.y >= rootBaseline.y;
+    });
+    const moving = downstream(siblings, owner);
+    const obstacles = [...current.values()].filter(item => ownerOf(item) === owner && !moving.has(item.id));
+    let minimum = -Infinity;
+    for (const item of obstacles) {
+      const initial = baseline.get(item.id)!;
+      if (automatic.has(item.id) && sameSources(rootBaseline, initial) && initial.y < rootBaseline.y) {
+        minimum = Math.max(minimum, item.y + item.height + FLOW_BRANCH_GAP - vertex.y);
+      }
+    }
+    const blocked: { start: number; end: number }[] = [];
+    for (const movingId of moving) {
+      const item = current.get(movingId)!;
+      for (const obstacle of obstacles) if (horizontalOverlap(item, obstacle)) blocked.push({
+        start: obstacle.y - FLOW_BRANCH_GAP - item.y - item.height,
+        end: obstacle.y + obstacle.height + FLOW_BRANCH_GAP - item.y,
+      });
+    }
+    // Merge forbidden translations once, then choose the closest clear gap.
+    // Strict endpoints allow exactly FLOW_BRANCH_GAP of separation.
+    const merged: typeof blocked = [];
+    for (const interval of blocked.sort((a, b) => a.start - b.start)) {
+      const last = merged[merged.length - 1];
+      if (last && interval.start < last.end) last.end = Math.max(last.end, interval.end);
+      else merged.push({ ...interval });
+    }
+    const preferred = Math.max(0, minimum);
+    const interval = merged.find(item => preferred > item.start && preferred < item.end);
+    const dy = !interval ? preferred : interval.start >= minimum && Math.abs(interval.start) < Math.abs(interval.end)
+      ? interval.start : interval.end;
+    translate(moving, dy);
+  }
+}
 
 // Explicit connected additions only: retain the input positions and ownership,
 // then arrange the affected sibling branches using the same centers as Arrange.
@@ -108,6 +219,7 @@ export function centerAddedFlowBranches(
   const familiesInOrder = [...families.values()].sort((a, b) =>
     Math.min(...a.roots.map(vertex => sequence.get(vertex.id)!))
     - Math.min(...b.roots.map(vertex => sequence.get(vertex.id)!)));
+  const automatic = new Set<string>();
   for (const { roots, owner, fixed } of familiesInOrder) {
     // A dragged object is a layout boundary, like a fixed input. Its downstream
     // additions form their own family anchored at its actual position.
@@ -143,16 +255,18 @@ export function centerAddedFlowBranches(
       return { ...vertex, sources: rootIds.has(id) ? [anchorId] : vertex.sources };
     });
     const externalInputs = new Map([...current].filter(([id]) => !scope.has(id)));
-    const pinnedObstacles = new Map([...current].filter(([, vertex]) => vertex.positionPinned && ownerOf(vertex) === owner));
     const layout = layoutConnectedGroup([anchor, ...vertices], { ...order, [anchorId]: -1 }, {
       origin: bounds, externalInputs,
-      occupied: pinnedObstacles,
       fixedRoots: new Map([[anchorId, bounds]]), avoidCollisions: false,
     });
     const placed = new Map([...layout.positions].filter(([id]) => scope.has(id)));
     // Internal branches are spaced before centering. Unrelated groups remain
     // fixed; full-canvas collision avoidance belongs to Arrange.
-    for (const [id, point] of placed) current.set(id, { ...current.get(id)!, ...point });
+    for (const [id, point] of placed) {
+      automatic.add(id);
+      current.set(id, { ...current.get(id)!, ...point });
+    }
   }
+  avoidPinnedObjects(current, automatic, sequence, ownerOf);
   return changedPositions();
 }

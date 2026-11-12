@@ -1,7 +1,7 @@
 import { canvasMediaDisplayName } from '../canvas-media-filename';
 import { ProgressiveImage } from './ProgressiveImage';
 import { PromptTools } from './PromptTools';
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { assets } from '../assets';
 import { fusionReferences, isReferenceOnlyFusion, workflowReferenceLimit, workflowHeight, type CanvasImage, type FusionReference, type FusionSettings } from '../canvas';
 import { ReferenceSourceMenu } from './ReferenceSourceMenu';
@@ -15,9 +15,9 @@ import type { VideoWorkflow } from '../video-workflow';
 import { notify } from './Toast';
 
 const copy = {
-  'zh-CN': { title: '一键融合', tip: '可通过指令和参考图一键融合', main: '主图', mask: '添加示意', reference: '参考图', add: '添加参考图', canvas: '从画布中选择', replace: '替换参考图', remove: '移除参考图', prompt: '融合指令', placeholder: '请输入融合指令', expand: '展开编辑', save: '保存指令', library: '提示词库', count: '字数', clear: '清空', settings: '生成设置', ratio: '图片比例', auto: '自动', resolution: '分辨率', generate: '开始 AI 生成', required: '请输入融合指令', saved: '指令已保存', empty: '暂无保存的指令', close: '关闭', done: '完成' },
-  en: { title: 'Instant fusion', tip: 'Fuse with a prompt and reference image', main: 'Main image', mask: 'Edit mask', reference: 'Reference image', add: 'Add reference', canvas: 'Choose from canvas', replace: 'Replace reference', remove: 'Remove reference', prompt: 'Fusion prompt', placeholder: 'Enter a fusion prompt', expand: 'Expand editor', save: 'Save prompt', library: 'Prompt library', count: 'Characters', clear: 'Clear', settings: 'Generation settings', ratio: 'Aspect ratio', auto: 'Auto', resolution: 'Resolution', generate: 'Start AI generation', required: 'Enter a fusion prompt', saved: 'Prompt saved', empty: 'No saved prompts', close: 'Close', done: 'Done' },
-  ja: { title: 'ワンクリック融合', tip: '指示と参考画像でワンクリック融合', main: 'メイン画像', mask: 'マスク編集', reference: '参考画像', add: '参考画像を追加', canvas: 'キャンバスから選択', replace: '参考画像を変更', remove: '参考画像を削除', prompt: '融合の指示', placeholder: '融合の指示を入力', expand: '拡大編集', save: '指示を保存', library: 'プロンプト集', count: '文字数', clear: 'クリア', settings: '生成設定', ratio: '画像比率', auto: '自動', resolution: '解像度', generate: 'AI 生成を開始', required: '融合の指示を入力してください', saved: '指示を保存しました', empty: '保存した指示はありません', close: '閉じる', done: '完了' },
+  'zh-CN': { title: '一键融合', tip: '支持文生图、图生图', main: '主图', mask: '添加示意', reference: '参考图', add: '添加参考图', canvas: '从画布中选择', replace: '替换参考图', remove: '移除参考图', prompt: '融合指令', placeholder: '请输入融合指令', expand: '展开编辑', save: '保存指令', library: '提示词库', count: '字数', clear: '清空', settings: '生成设置', ratio: '图片比例', auto: '自动', resolution: '分辨率', generate: '开始 AI 生成', required: '请输入融合指令', saved: '指令已保存', empty: '暂无保存的指令', close: '关闭', done: '完成' },
+  en: { title: 'Instant fusion', tip: 'Generate from text or reference images', main: 'Main image', mask: 'Edit mask', reference: 'Reference image', add: 'Add reference', canvas: 'Choose from canvas', replace: 'Replace reference', remove: 'Remove reference', prompt: 'Fusion prompt', placeholder: 'Enter a fusion prompt', expand: 'Expand editor', save: 'Save prompt', library: 'Prompt library', count: 'Characters', clear: 'Clear', settings: 'Generation settings', ratio: 'Aspect ratio', auto: 'Auto', resolution: 'Resolution', generate: 'Start AI generation', required: 'Enter a fusion prompt', saved: 'Prompt saved', empty: 'No saved prompts', close: 'Close', done: 'Done' },
+  ja: { title: 'ワンクリック融合', tip: 'テキストや参考画像から画像を生成', main: 'メイン画像', mask: 'マスク編集', reference: '参考画像', add: '参考画像を追加', canvas: 'キャンバスから選択', replace: '参考画像を変更', remove: '参考画像を削除', prompt: '融合の指示', placeholder: '融合の指示を入力', expand: '拡大編集', save: '指示を保存', library: 'プロンプト集', count: '文字数', clear: 'クリア', settings: '生成設定', ratio: '画像比率', auto: '自動', resolution: '解像度', generate: 'AI 生成を開始', required: '融合の指示を入力してください', saved: '指示を保存しました', empty: '保存した指示はありません', close: '閉じる', done: '完了' },
 };
 
 
@@ -39,8 +39,8 @@ const referenceCopy = {
   ja: { help: '参考画像の並び順について', hint: 'ドラッグで順序を変更できます', added: (limit: number) => `最大${limit}枚、追加済み` },
 };
 
-type Props = { image: CanvasImage; locale: Locale; onChange: (patch: Partial<FusionSettings>) => void; onAddMain: () => void; onReference: (source: 'upload' | 'canvas') => void; onEditGuide: (reference: FusionReference) => void; onGenerate: () => void };
-export function FusionNode({ image, locale, onChange, onAddMain, onReference, onEditGuide, onGenerate }: Props) {
+type Props = { image: CanvasImage; locale: Locale; onChange: (patch: Partial<FusionSettings>) => void; onAddMain: () => void; onReference: (source: 'upload' | 'canvas') => void; onEditGuide: (reference: FusionReference) => void; onGenerate: () => void; onHeightChange?: (id: string, height: number) => void };
+export function FusionNode({ image, locale, onChange, onAddMain, onReference, onEditGuide, onGenerate, onHeightChange }: Props) {
   const settings = image.fusion!;
   const lingerie = settings.kind === 'lingerie';
   const merge = settings.kind === 'merge';
@@ -73,6 +73,19 @@ export function FusionNode({ image, locale, onChange, onAddMain, onReference, on
   const root = useRef<HTMLElement>(null);
   const [error, setError] = useState(false);
   const promptId = useId();
+  useLayoutEffect(() => {
+    const element = root.current;
+    if (!lingerie || !element || !onHeightChange || element.closest('.lc-flow-copy-preview')) return;
+    // Validation is local UI state. Measure the shell without canvas zoom;
+    // never persist this height or trigger automatic node arrangement.
+    const measure = () => {
+      if (element.offsetHeight > 0) onHeightChange(image.id, element.offsetHeight);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [image.id, lingerie, onHeightChange]);
   useEffect(() => {
     const blur = (event: PointerEvent) => {
       const active = document.activeElement;
@@ -140,8 +153,9 @@ export function FusionNode({ image, locale, onChange, onAddMain, onReference, on
           notify(locale === 'zh-CN' ? `参考图最多${referenceLimit}张，请移除多余图片后生成。` : locale === 'ja' ? `参考画像は最大${referenceLimit}枚です。余分な画像を削除してください。` : `Use up to ${referenceLimit} references. Remove extra images to generate.`, 'error');
           return;
         }
-        if (merge || referenceOnly ? !references.length : image.nodeOnly) { if (merge || referenceOnly) onReference('upload'); else onAddMain(); return; }
-        if (!lingerie && !settings.prompt.trim()) { setError(true); prompt.current?.focus(); } else onGenerate();
+        if (merge && !references.length) { onReference('upload'); return; }
+        if (!merge && !referenceOnly && image.nodeOnly) { onAddMain(); return; }
+        if (!settings.prompt.trim()) { setError(true); prompt.current?.focus(); } else onGenerate();
       }} />
     </footer>
   </section>;

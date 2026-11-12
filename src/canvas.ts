@@ -12,6 +12,7 @@ import { demoGenerationSettingsMemory, rememberedWorkflowKind } from './generati
 export type Viewport = { x: number; y: number; zoom: number };
 export type FusionReference = { id: string; name: string; url: string; sourceImageId?: string; drawingGuide?: DrawingGuide };
 export const MAX_FUSION_REFERENCES = 9;
+export const MAX_REFERENCE_ONLY_FUSION_REFERENCES = 10;
 export const MAX_BATCH_MAIN_IMAGES = 20;
 export type WorkflowKind = 'fusion' | 'lingerie' | 'directed' | 'flat' | 'merge' | 'batch';
 export type FlatRegion = 'top' | 'bottom' | 'full';
@@ -24,7 +25,7 @@ export const batchMainImages = (settings?: FusionSettings): FusionReference[] =>
 export const workflowInputs = (settings?: FusionSettings): FusionReference[] => settings?.kind === 'batch' ? batchMainImages(settings) : fusionReferences(settings);
 export const isReferenceOnlyFusion = (settings?: FusionSettings) => !!settings && (!settings.kind || settings.kind === 'fusion');
 export const isMultiInputWorkflow = (settings?: FusionSettings) => isReferenceOnlyFusion(settings) || settings?.kind === 'batch' || settings?.kind === 'merge' || (settings?.kind === 'flat' && settings.batchFlat === true);
-export const workflowReferenceLimit = (settings?: FusionSettings) => settings?.batchFlat ? 20 : settings?.kind === 'lingerie' ? 1 : MAX_FUSION_REFERENCES;
+export const workflowReferenceLimit = (settings?: FusionSettings) => isReferenceOnlyFusion(settings) ? MAX_REFERENCE_ONLY_FUSION_REFERENCES : settings?.batchFlat ? 20 : settings?.kind === 'lingerie' ? 1 : MAX_FUSION_REFERENCES;
 export const defaultFusion = (kind: WorkflowKind = 'fusion'): FusionSettings => ({ kind, prompt: '', ratio: 'auto', resolution: '2K', ...(kind === 'fusion' ? { references: [] } : {}), ...(kind === 'batch' ? { mainImages: [], references: [] } : {}), ...(kind === 'directed' ? { directedPoints: [] } : {}), ...(kind === 'flat' ? { flatRegion: 'top', flatFace: 'front' } : {}) });
 // Read preferences only for new nodes. Loading, copying, restoring and clearing
 // existing nodes must keep the settings that belong to their snapshot.

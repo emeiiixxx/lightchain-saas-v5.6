@@ -363,7 +363,7 @@ html:not([lang='zh-CN']) .upload-hover-copy { max-width: 640px; padding: 0 16px;
 html:not([lang='zh-CN']) .shortcuts-panel { width: 400px; }
 @media (max-width: 1300px) { .shortcuts-panel { max-height: min(720px, calc(100dvh - 184px)); } }
 
-/* Quick edit TextArea, Figma 2:2933. Initial prompt and references are empty. */
+/* Quick edit TextArea, Figma 2:2933. The source image stays in the reference row. */
 .quick-edit-composer { position: absolute; z-index: 70; border-radius: 24px; box-shadow: var(--shadow-l); pointer-events: auto; }
 .quick-edit-composer textarea { height: 64px; min-height: 64px; max-height: 180px; color: var(--text-secondary); }
 .quick-edit-footer, .quick-edit-actions, .quick-edit-submit { display: flex; align-items: center; gap: 8px; }

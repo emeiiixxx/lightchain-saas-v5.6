@@ -98,7 +98,9 @@ type Props = {
   spacePanControlled?: boolean;
   onView: (view: Viewport) => void; onSelection: (ids: string[]) => void;
   onPositions: (positions: Map<string, { x: number; y: number }>) => void;
-  onSelecting: (active: boolean) => void; onDragStart: () => void; onDragEnd: () => void; onGuides: (guides: SnapGuides | null) => void;
+  onSelecting: (active: boolean) => void; onDragStart: () => void;
+  // Only the completed gesture decides which objects become position-pinned.
+  onDragEnd: (movedIds: string[]) => void; onGuides: (guides: SnapGuides | null) => void;
   onPrepareCopyDrag?: (ids: string[]) => { ids: string[]; commit: (offset: { x: number; y: number }) => void } | null;
   connections?: CanvasConnection[]; selectedConnectionIds?: string[];
   connectionNodes?: CanvasConnectionNodes;
@@ -138,7 +140,8 @@ function ReactFlowCanvasInstance(props: Props) {
     connectionSelectionRef.current = ids;
     latest.current.onConnectionSelection?.(ids);
   }, []);
-  const drag = useRef<{ anchor: string; start: Map<string, {x: number; y: number}>; snap: DragSnapContext } | null>(null);
+  const drag = useRef<{ anchor: string; start: Map<string, {x: number; y: number}>;
+    current: Map<string, {x: number; y: number}>; snap: DragSnapContext } | null>(null);
   const bypass = useRef(false);
   const copyGesture = useRef<{ pointer: number; x: number; y: number; zoom: number; root: HTMLDivElement; nodes: ContentNode[];
     offset: { x: number; y: number }; moved: boolean; commit: (offset: { x: number; y: number }) => void } | null>(null);
@@ -281,27 +284,61 @@ function ReactFlowCanvasInstance(props: Props) {
         setSelection([...ids]);
       }
     }
+    // React Flow also emits position changes outside pointer drags. Those must
+    // not turn selection, measurement or controlled updates into manual moves.
+    const g = drag.current;
+    if (!g) return;
     const positions = new Map<string, {x: number; y: number}>();
-    for (const change of changes) if (change.type === 'position' && change.position) positions.set(change.id, change.position);
-    const g = drag.current, anchor = g && positions.get(g.anchor), start = g && g.start.get(g.anchor);
-    if (g && anchor && start) {
-      const delta = magneticDragDelta(g.snap, (anchor.x - start.x) * p.view.zoom, (anchor.y - start.y) * p.view.zoom, p.view.zoom, p.snap && !bypass.current);
+    for (const change of changes) if (change.type === 'position' && change.position && g.start.has(change.id)) positions.set(change.id, change.position);
+    const anchor = positions.get(g.anchor), start = g.start.get(g.anchor);
+    if (anchor && start) {
+      const dx = (anchor.x - start.x) * p.view.zoom, dy = (anchor.y - start.y) * p.view.zoom;
+      // Returning to the starting position must not introduce a snap offset.
+      const atStart = Math.abs(dx) < 1e-6 && Math.abs(dy) < 1e-6;
+      const delta = magneticDragDelta(g.snap, atStart ? 0 : dx, atStart ? 0 : dy, p.view.zoom, p.snap && !bypass.current && !atStart);
       p.onGuides(delta.guides);
       for (const [id, initial] of g.start) positions.set(id, { x: initial.x + delta.x, y: initial.y + delta.y });
     }
-    if (positions.size) p.onPositions(positions);
+    if (positions.size) {
+      for (const [id, position] of positions) g.current.set(id, position);
+      p.onPositions(positions);
+    }
   }, [setSelection]);
   const beginDrag = useCallback((event: MouseEvent | TouchEvent | React.MouseEvent, node: ContentNode, selected?: ContentNode[]) => {
+    // Selection drags invoke both the node and selection start callbacks.
+    if (drag.current) return;
     bypass.current = event.altKey;
     const all = graphRef.current.nodes.map(n => ({ id: n.id, ...n.position, width: n.width ?? FUSION_WIDTH, height: n.height ?? 400 })) as CanvasImage[];
     const moving = new Set((selected?.length ? selected : [node]).map(n => n.id)); moving.add(node.id);
     const anchor = all.find(n => n.id === node.id)!;
     const bounds = boundsOf(all.filter(n => moving.has(n.id)))!;
-    drag.current = { anchor: node.id, start: new Map(all.filter(n => moving.has(n.id)).map(n => [n.id, { x: n.x, y: n.y }])), snap: { anchor, bounds, targets: all.filter(n => !moving.has(n.id)), locks: {} } };
+    const start = new Map(all.filter(n => moving.has(n.id)).map(n => [n.id, { x: n.x, y: n.y }]));
+    drag.current = { anchor: node.id, start, current: new Map(start), snap: { anchor, bounds, targets: all.filter(n => !moving.has(n.id)), locks: {} } };
     updateCopyHint();
     latest.current.onDragStart();
   }, [updateCopyHint]);
-  const endDrag = useCallback(() => { drag.current = null; latest.current.onGuides(null); latest.current.onDragEnd(); updateCopyHint(); }, [updateCopyHint]);
+  const endDrag = useCallback(() => {
+    const g = drag.current;
+    if (!g) return;
+    const movedIds = [...g.start].filter(([id, initial]) => {
+      const current = g.current.get(id)!;
+      return Math.abs(current.x - initial.x) > 1e-6 || Math.abs(current.y - initial.y) > 1e-6;
+    }).map(([id]) => id);
+    drag.current = null; latest.current.onGuides(null); latest.current.onDragEnd(movedIds); updateCopyHint();
+  }, [updateCopyHint]);
+  useLayoutEffect(() => {
+    const hidden = () => { if (document.hidden) endDrag(); };
+    window.addEventListener('blur', endDrag);
+    window.addEventListener('pointercancel', endDrag);
+    document.addEventListener('visibilitychange', hidden);
+    return () => {
+      window.removeEventListener('blur', endDrag);
+      window.removeEventListener('pointercancel', endDrag);
+      document.removeEventListener('visibilitychange', hidden);
+      endDrag();
+    };
+  }, [endDrag]);
+  useLayoutEffect(() => { if (props.hand || props.referenceMode) endDrag(); }, [props.hand, props.referenceMode, endDrag]);
   const onViewport = useCallback((v: Viewport) => {
     const current = latest.current.view;
     // Controlled viewport updates also emit this event. Only user/store changes
@@ -437,7 +474,7 @@ function ReactFlowCanvasInstance(props: Props) {
       onSelectionStart={() => latest.current.onSelecting(true)} onSelectionEnd={() => latest.current.onSelecting(false)}
       onNodeDragStart={beginDrag} onNodeDragStop={endDrag}
       onSelectionDragStart={(e, nodes) => { if (nodes[0]) beginDrag(e, nodes[0], nodes); }} onSelectionDragStop={endDrag}
-      nodeDragThreshold={0}
+      nodeDragThreshold={3} nodeClickDistance={3}
       nodesDraggable={!props.hand && !props.referenceMode} elementsSelectable={!props.hand && !props.referenceMode}
       // Blank-space dragging already enables marquee selection. Binding Shift
       // to it too makes Pane capture node clicks before additive selection.
