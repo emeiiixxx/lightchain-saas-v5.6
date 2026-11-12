@@ -982,7 +982,7 @@ export default function App() {
     {images.filter(result => !result.nodeOnly && !result.sourceImageId && result.generatedByEditorId).map(result => {
       const editor = images.find(item => item.id === result.generatedByEditorId && item.fusion);
       if (!editor) return null;
-      return <ImageConnection zoom={view.zoom} key={`generation:${result.id}`} image={{...editor, ...fusionPosition(editor), id:`${editor.id}:fusion`, width:workflowWidth(editor.fusion), height:renderedWorkflowHeight(editor)}} target={result} active={selectedIds.includes(result.id) || selectedIds.includes(`${editor.id}:fusion`) || workflowSources(images, editor).some(source => selectedIds.includes(source.id))} />;
+      return <ImageConnection routing="forward" zoom={view.zoom} key={`generation:${result.id}`} image={{...editor, ...fusionPosition(editor), id:`${editor.id}:fusion`, width:workflowWidth(editor.fusion), height:renderedWorkflowHeight(editor)}} target={result} active={selectedIds.includes(result.id) || selectedIds.includes(`${editor.id}:fusion`) || workflowSources(images, editor).some(source => selectedIds.includes(source.id))} />;
     })}
     {images.filter(result => !result.nodeOnly && result.sourceImageId).map(result => {
       const source = images.find(item => !item.nodeOnly && item.id === result.sourceImageId);

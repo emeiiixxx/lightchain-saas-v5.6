@@ -5,6 +5,8 @@ type Props = {
   target: Pick<CanvasImage, 'id' | 'x' | 'y' | 'width' | 'height'>;
   active: boolean;
   zoom: number;
+  /** Keep output ports fixed when a generated result is moved past its editor. */
+  routing?: 'forward';
 };
 
 // Declarative edge consumed by ReactFlowCanvas when building its graph.

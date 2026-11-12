@@ -9,9 +9,9 @@ import type { Locale } from '../i18n';
 import { CanvasConnectionHandle, type AddConnectionMedia } from './CanvasConnectionHandle';
 import './react-flow-canvas.css';
 
-type ContentProps = { children?: ReactNode; style?: CSSProperties; className?: string; onClick?: MouseEventHandler<HTMLElement>; 'data-canvas-id'?: string; 'data-fusion-id'?: string; image?: CanvasImage; target?: CanvasImage; active?: boolean; zoom?: number };
+type ContentProps = { children?: ReactNode; style?: CSSProperties; className?: string; onClick?: MouseEventHandler<HTMLElement>; 'data-canvas-id'?: string; 'data-fusion-id'?: string; image?: CanvasImage; target?: CanvasImage; active?: boolean; zoom?: number; routing?: 'forward' };
 type ContentNode = Node<{ content: ReactElement<ContentProps>; connectionNode?: CanvasConnectionNode; freeConnections: boolean; connectable: boolean; zoom: number; locale?: Locale; onAddConnectionMedia?: AddConnectionMedia; reconnectHandle?: string | null; reconnectHovered?: boolean }, 'lightchain'>;
-type ConnectionEdge = Edge<{ image: CanvasImage; target: CanvasImage; active: boolean; zoom: number; freeConnections: boolean }, 'lightchain'>;
+type ConnectionEdge = Edge<{ image: CanvasImage; target: CanvasImage; active: boolean; zoom: number; freeConnections: boolean; right: boolean }, 'lightchain'>;
 type FreeConnectionEdge = Edge<{ zoom: number; active: boolean }, 'lightchain-free'>;
 type CanvasEdge = ConnectionEdge | FreeConnectionEdge;
 const handles = [Position.Left, Position.Right];
@@ -61,14 +61,13 @@ function ConnectionStroke({ path, active, zoom, ports, interactive = false }: {
 const LightchainEdge = memo((props: EdgeProps<ConnectionEdge>) => {
   const { data } = props;
   if (!data) return null;
-  const { image, target, active, zoom } = data;
-  const right = target.x + target.width / 2 >= image.x + image.width / 2;
+  const { image, target, active, zoom, right } = data;
   const direction = right ? 1 : -1, gap = (active ? 4 : 2) / zoom;
   const sx = image.x + (right ? image.width : 0) + gap * direction, sy = image.y + image.height / 2;
   const tx = target.x + (right ? 0 : target.width) - gap * direction, ty = target.y + target.height / 2;
   const handle = Math.max(48, Math.abs(tx - sx) * .45);
-  // The video workspace always binds material output on the right to editor
-  // input on the left. Fusion retains its position-dependent business lines.
+  // Explicit ports control free-connection mode. Automatic lines use the
+  // same direction as their declared handles, including fixed output ports.
   const d = data.freeConnections ? getBezierPath(props)[0]
     : `M ${sx} ${sy} C ${sx + handle * direction} ${sy}, ${tx - handle * direction} ${ty}, ${tx} ${ty}`;
   // React Flow scales an HTML viewport around the SVG. Compensate explicitly
@@ -218,12 +217,12 @@ function ReactFlowCanvasInstance(props: Props) {
       if (!isValidElement<ContentProps>(child)) return;
       const p = child.props;
       if (child.type === ImageConnection && p.image && p.target) {
-        const right = p.target.x + p.target.width / 2 >= p.image.x + p.image.width / 2;
+        const right = p.routing === 'forward' || p.target.x + p.target.width / 2 >= p.image.x + p.image.width / 2;
         edges.push({ id: `${p.image.id}->${p.target.id}`, source: p.image.id, target: p.target.id, type: 'lightchain',
           sourceHandle: freeConnections ? 'free-right' : `source-${right ? 'right' : 'left'}`,
           targetHandle: freeConnections ? 'free-left' : `target-${right ? 'left' : 'right'}`,
           selectable: false, focusable: false, reconnectable: false, zIndex: p.active ? 4 : -1,
-          data: { image: p.image, target: p.target, active: !!p.active, zoom: props.view.zoom, freeConnections } });
+          data: { image: p.image, target: p.target, active: !!p.active, zoom: props.view.zoom, freeConnections, right } });
       } else if (p['data-canvas-id'] || p['data-fusion-id']) {
         const id = p['data-canvas-id'] ?? `${p['data-fusion-id']}:fusion`;
         const style = p.style ?? {};
