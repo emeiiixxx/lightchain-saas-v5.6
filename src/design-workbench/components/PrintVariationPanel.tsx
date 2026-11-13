@@ -176,16 +176,18 @@ export const PrintVariationPanel = forwardRef<HTMLDivElement, PrintVariationPane
         </div>
         <footer className="print-variation-footer">
           <div className="print-variation-options">
-            <span className="print-variation-option-label">{t('裂变模式')}</span>
-            <div className="print-variation-mode" role="group" aria-label={t('裂变模式')}>
-              <button type="button" aria-pressed={mode === 'extend'} onClick={() => setMode('extend')}>{t('设计延伸')}</button>
-              <button type="button" aria-pressed={mode === 'diverge'} onClick={() => {
-                setMode('diverge');
-                setCount(4);
-              }}>{t('灵感发散')}</button>
+            <div className="print-variation-mode-field">
+              <span className="print-variation-option-label">{t('裂变模式')}</span>
+              <div className="print-variation-mode" role="group" aria-label={t('裂变模式')}>
+                <button type="button" aria-pressed={mode === 'extend'} onClick={() => setMode('extend')}>{t('设计延伸')}</button>
+                <button type="button" aria-pressed={mode === 'diverge'} onClick={() => {
+                  setMode('diverge');
+                  setCount(4);
+                }}>{t('灵感发散')}</button>
+              </div>
             </div>
-            <Divider vertical />
             <div ref={settingsRef} className="print-variation-settings">
+              <Divider vertical />
               <button
                 type="button"
                 className="print-variation-settings-trigger"

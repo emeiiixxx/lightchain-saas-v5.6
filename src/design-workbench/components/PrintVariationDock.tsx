@@ -13,7 +13,7 @@ export function PrintVariationDock({ board, source, phase, onClose, onGenerate }
   const panel = useRef<HTMLDivElement>(null);
   const focusCompleted = useRef(false);
   const { left, right } = board.editingViewport(true);
-  const width = Math.min(800, Math.max(0, right - left));
+  const availableWidth = Math.max(0, right - left);
 
   useLayoutEffect(() => {
     if (phase === 'exit') return;
@@ -23,9 +23,9 @@ export function PrintVariationDock({ board, source, phase, onClose, onGenerate }
       onComplete: () => { focusCompleted.current = true; },
     });
     // Tag editing must not move the camera; only entry and viewport resizing do.
-  }, [source.id, phase, width, board.size.height, board.focusImage]);
+  }, [source.id, phase, availableWidth, board.size.height, board.focusImage]);
 
   return <PrintVariationPanel ref={panel} source={source} phase={phase}
-    style={{ left: (left + right - width) / 2, width, maxHeight: Math.max(0, board.size.height - 104) }}
+    style={{ left: (left + right) / 2, minWidth: Math.min(800, availableWidth), maxWidth: availableWidth, maxHeight: Math.max(0, board.size.height - 104) }}
     onClose={onClose} onGenerate={onGenerate} />;
 }

@@ -3,9 +3,12 @@
 .print-variation-panel {
   position: absolute;
   z-index: 70;
-  left: max(16px, calc((100% - 800px) / 2));
+  left: 50%;
+  translate: -50% 0;
   bottom: 88px;
-  width: min(800px, calc(100% - 32px));
+  width: max-content;
+  min-width: min(800px, calc(100% - 32px));
+  max-width: calc(100% - 32px);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -17,8 +20,11 @@
   pointer-events: auto;
 }
 .print-variation-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px; }
+/* Let the footer set the panel width; the heading and tags wrap within it. */
+.print-variation-header,
+.print-variation-design-points { contain: inline-size; }
 .print-variation-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; padding: 8px 12px; }
-.print-variation-heading h2 { margin: 0; font-size: 16px; font-weight: 500; line-height: 24px; color: var(--text-primary); }
+.print-variation-heading h2 { flex: none; margin: 0; font-size: 16px; font-weight: 500; line-height: 24px; color: var(--text-primary); }
 .print-variation-heading p { display: flex; align-items: center; gap: 4px; margin: 0; color: var(--status-warning); font-size: 12px; line-height: 16px; }
 .print-variation-body { position: relative; border: 1px solid var(--border-weak); border-radius: 24px; background: var(--surface-default); }
 .print-variation-controls { display: flex; flex-direction: column; gap: 40px; padding: 12px; }
@@ -43,7 +49,8 @@
 .print-variation-custom-editor input::placeholder { color: var(--text-placeholder); }
 .print-variation-custom-action.lc-button { height: 24px; padding: 0 8px; border-radius: 6px; }
 .print-variation-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; min-height: 40px; }
-.print-variation-options { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.print-variation-options { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 16px; min-width: 0; }
+.print-variation-mode-field { display: flex; align-items: center; gap: 16px; }
 .print-variation-option-label { color: var(--text-tertiary); font-size: 12px; line-height: 16px; white-space: nowrap; }
 .print-variation-mode { display: flex; gap: 4px; padding: 4px; border: 1px solid var(--border-weak); border-radius: 8px; background: var(--surface-default); }
 .print-variation-mode > button,
@@ -52,7 +59,7 @@
 .print-variation-segments > button:hover:not(:disabled) { background: var(--state-hover); }
 .print-variation-mode > button[aria-pressed='true'] { background: var(--brand-primary); color: var(--text-on-brand-black); }
 .print-variation-segments > button[aria-pressed='true'] { background: var(--state-selected); color: var(--text-primary); }
-.print-variation-settings { position: relative; min-width: 0; }
+.print-variation-settings { position: relative; display: flex; align-items: center; gap: 16px; min-width: 0; }
 .print-variation-settings-trigger { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text-secondary); font-size: 12px; line-height: 20px; white-space: nowrap; }
 .print-variation-settings-trigger:hover { background: var(--state-hover); }
 .print-variation-settings-trigger[aria-expanded='true'] { border-color: var(--border-brand); background: var(--control-fill-focus); }
@@ -64,7 +71,7 @@
 .print-variation-segments { display: flex; gap: 4px; padding: 4px; border-radius: 8px; background: var(--control-fill-hover); }
 .print-variation-segments > button { flex: 1; min-width: 0; }
 .print-variation-segments > button:disabled { color: var(--text-disabled); background: transparent; opacity: 1; cursor: default; }
-.print-variation-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.print-variation-actions { display: flex; flex: none; align-items: center; gap: 8px; margin-left: auto; white-space: nowrap; }
 .print-variation-reanalyze.lc-button { height: 40px; gap: 4px; padding: 0 16px; border-radius: 8px; font-size: 14px; line-height: 24px; }
 .print-variation-generate.lc-button { height: 40px; gap: 4px; padding: 0 20px; border-radius: 8px; font-size: 14px; line-height: 20px; }
 .print-variation-panel .lc-button--primary:disabled { opacity: 1; background: var(--brand-primary-disabled); color: var(--text-on-brand-disabled); }
@@ -85,7 +92,9 @@
 @media (max-width: 680px) {
   .print-variation-heading { gap: 4px; }
   .print-variation-heading p { flex-basis: 100%; }
-  .print-variation-options { gap: 8px; flex-wrap: wrap; }
+  .print-variation-options,
+  .print-variation-mode-field,
+  .print-variation-settings { gap: 8px; }
   .print-variation-settings-popup { left: auto; right: 0; }
 }
 @media (prefers-reduced-motion: reduce) {

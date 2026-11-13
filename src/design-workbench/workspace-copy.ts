@@ -1,7 +1,7 @@
 // Workspace copy: Simplified Chinese key, English, Japanese.
 export const workspaceCopy: Record<string, readonly [string, string]> = {
 '印花裂变': ['Print variations', 'プリントバリエーション'],
-'请选择需要保留的设计点，支持多选，必填': ['Select design features to retain. Multiple selections allowed; required.', '残したいデザインの特徴を選択してください（複数選択可・必須）。'],
+'请选择需要保留的设计点，支持多选，必填': ['Select one or more design features to keep.', '残したいデザインの特徴を選択してください（複数選択可・必須）。'],
 '设计点': ['Design features', 'デザインの特徴'],
 '植物花卉主题': ['Botanical theme', '植物・花のテーマ'],
 '细腻线描': ['Fine linework', '繊細な線描'],
@@ -17,9 +17,9 @@ export const workspaceCopy: Record<string, readonly [string, string]> = {
 '装饰细节': ['Decorative details', '装飾のディテール'],
 '删除设计点': ['Remove design feature', 'デザインの特徴を削除'],
 '自定义设计点': ['Custom design feature', '独自のデザインの特徴'],
-'裂变模式': ['Variation mode', '展開モード'],
-'设计延伸': ['Design extension', 'デザインを発展'],
-'灵感发散': ['Creative exploration', '発想を広げる'],
+'裂变模式': ['Mode', '展開モード'],
+'设计延伸': ['Extend design', 'デザインを発展'],
+'灵感发散': ['Explore ideas', '発想を広げる'],
 '强度': ['Strength', '強度'],
 '裂变强度': ['Variation strength', '変化の強度'],
 '低': ['Low', '低'],
