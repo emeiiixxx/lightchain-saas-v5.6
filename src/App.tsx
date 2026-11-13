@@ -12,7 +12,7 @@ import { useRememberProjectCoverUse } from './project-cover-onboarding';
 import { notify, ToastHost } from './components/Toast';
 import { CutoutEditor } from './components/CutoutEditor';
 import { DrawingGuideEditor } from './components/DrawingGuideEditor';
-import { isReferenceOnlyFusion, normalizeFusionReferences, isMultiInputWorkflow, fusionReferences, batchMainImages, workflowInputs, workflowReferenceLimit, workflowWidth, workflowHeight, workflowSources, createMergeEditor, createBatchEditor, isWorkflowDescendant, FUSION_GAP, MAX_FUSION_REFERENCES, MAX_BATCH_MAIN_IMAGES, MAX_DIRECTED_POINTS, type WorkflowKind, type FusionReference } from './canvas';
+import { isReferenceOnlyFusion, normalizeFusionReferences, isMultiInputWorkflow, fusionReferences, batchMainImages, workflowInputs, workflowReferenceLimit, workflowWidth, workflowHeight, workflowSources, createMergeEditor, createBatchEditor, workflowDescendantIds, FUSION_GAP, MAX_FUSION_REFERENCES, MAX_BATCH_MAIN_IMAGES, MAX_DIRECTED_POINTS, type WorkflowKind, type FusionReference } from './canvas';
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { assets } from './assets';
 import { Button, Dialog, Divider, Icon, type IconName } from './components/ui';
@@ -901,7 +901,11 @@ export default function App() {
     });
     if (!incoming.length) return;
     if (existing.length + incoming.length > MAX_BATCH_MAIN_IMAGES) { announce(batchFlatLimitMessage()); return; }
-    if (incoming.some(item => isWorkflowDescendant(current, target, item.id))) { reportMergeCycle(); return; }
+    // Canvas candidates already include the cycle check against this snapshot.
+    if (source === 'upload') {
+      const descendants = workflowDescendantIds(current, target);
+      if (incoming.some(item => descendants.has(item.id))) { reportMergeCycle(); return; }
+    }
     const occupied = canvasNodes(current);
     const position = fusionPosition(owner);
     const created: CanvasImage[] = [];
@@ -945,18 +949,23 @@ export default function App() {
     return locale === 'en' ? `Up to ${limit} reference images. Reduce your selection and try again.` : locale === 'ja' ? `参考画像は${limit}枚までです。選択枚数を減らしてください。` : `参考图最多支持 ${limit} 张，请减少选择数量后重试。`;
   }
   function addReferences(target: string, additions: FusionReference[], source: 'upload' | 'canvas' = 'upload') {
-    const owner = imageRef.current.find(n => n.id === target);
+    const current = imageRef.current;
+    const owner = current.find(n => n.id === target);
     if (!owner?.fusion) return;
     if (source === 'canvas') {
-      const allowed = new Set(fusionCanvasReferenceCandidates(imageRef.current, { target }).map(image => image.id));
+      const allowed = new Set(fusionCanvasReferenceCandidates(current, { target }).map(image => image.id));
       if (additions.some(reference => !allowed.has(reference.id))) return;
     }
-    additions = additions.filter(reference => !imageRef.current.some(image => image.id === reference.id && image.generation));
+    additions = additions.filter(reference => !current.some(image => image.id === reference.id && image.generation));
     if (!additions.length) return;
     const merge = isMultiInputWorkflow(owner.fusion) && owner.fusion.kind !== 'batch';
-    if (merge && additions.some(item => isWorkflowDescendant(imageRef.current, target, item.id))) { reportMergeCycle(); return; }
+    // Canvas candidates already include the cycle check against this snapshot.
+    if (source === 'upload' && merge) {
+      const descendants = workflowDescendantIds(current, target);
+      if (additions.some(item => descendants.has(item.id))) { reportMergeCycle(); return; }
+    }
     const incoming = additions.map(item => ({ id: item.id, name: item.name, url: item.url,
-      sourceImageId: merge && imageRef.current.some(image => !image.nodeOnly && image.id === item.id && image.url === item.url) ? item.id : undefined }));
+      sourceImageId: merge && current.some(image => !image.nodeOnly && image.id === item.id && image.url === item.url) ? item.id : undefined }));
     const references = [...new Map([...fusionReferences(owner.fusion), ...incoming].map(item => [merge ? item.id : item.url, item])).values()];
     if (references.length > workflowReferenceLimit(owner.fusion)) { announce(referenceLimitMessage(target)); return; }
     updateFusion(target, { references, reference: undefined }, source === 'canvas');
@@ -969,7 +978,6 @@ export default function App() {
     if (!candidate || !referenceCandidateIds.has(id)) return;
     const picked = canvasReference.ids.includes(id);
     if (!picked && canvasReferenceCount >= pickerLimit(settings, canvasReference.role)) { announce(referenceLimitMessage(canvasReference.target, canvasReference.role)); return; }
-    if (!picked && merge && isWorkflowDescendant(images, canvasReference.target, id)) { reportMergeCycle(); return; }
     if (!merge && !picked && canvasReference.ids.some(other => images.find(n => n.id === other)?.url === candidate.url)) return;
     setCanvasReference({ ...canvasReference, ids: picked ? canvasReference.ids.filter(n => n !== id) : [...canvasReference.ids, id] });
   }

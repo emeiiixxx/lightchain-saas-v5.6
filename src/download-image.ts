@@ -12,27 +12,22 @@ export class ImageExportError extends Error {
 }
 
 export async function encodeImage(image: HTMLImageElement, format: DownloadFormat): Promise<Blob> {
-  try {
-    if (!image.naturalWidth || !image.naturalHeight) throw new ImageExportError('failed');
-    const output = document.createElement('canvas');
-    output.width = image.naturalWidth;
-    output.height = image.naturalHeight;
-    const ctx = output.getContext('2d');
-    if (!ctx) throw new ImageExportError('failed');
-    if (format === 'JPG') {
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, output.width, output.height);
-    }
-    ctx.drawImage(image, 0, 0);
-    const mime = format === 'JPG' ? 'image/jpeg' : `image/${format.toLowerCase()}`;
-    const blob = await new Promise<Blob | null>(resolve => output.toBlob(resolve, mime, .95));
-    if (!blob) throw new ImageExportError('failed');
-    if (blob.type !== mime) throw new ImageExportError('unsupported');
-    return blob;
-  } catch (error) {
-    if (error instanceof ImageExportError) throw error;
-    throw new ImageExportError('failed');
+  if (!image.naturalWidth || !image.naturalHeight) throw new ImageExportError('failed');
+  const output = document.createElement('canvas');
+  output.width = image.naturalWidth;
+  output.height = image.naturalHeight;
+  const ctx = output.getContext('2d');
+  if (!ctx) throw new ImageExportError('failed');
+  if (format === 'JPG') {
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, output.width, output.height);
   }
+  ctx.drawImage(image, 0, 0);
+  const mime = format === 'JPG' ? 'image/jpeg' : `image/${format.toLowerCase()}`;
+  const blob = await new Promise<Blob | null>(resolve => output.toBlob(resolve, mime, .95));
+  if (!blob) throw new ImageExportError('failed');
+  if (blob.type !== mime) throw new ImageExportError('unsupported');
+  return blob;
 }
 
 export async function exportImage(image: HTMLImageElement, name: string, format: DownloadFormat): Promise<void> {

@@ -158,10 +158,6 @@ export function workflowDescendantIds(items: CanvasImage[], editorId: string): S
   return reached;
 }
 
-export function isWorkflowDescendant(items: CanvasImage[], editorId: string, imageId: string): boolean {
-  return workflowDescendantIds(items, editorId).has(imageId);
-}
-
 export const DEFAULT_VIEW: Viewport = { x: 0, y: 0, zoom: 1 };
 export function zoomAt(view: Viewport, factor: number, x: number, y: number): Viewport {
   const zoom = Math.min(4, Math.max(0.03, view.zoom * factor));
