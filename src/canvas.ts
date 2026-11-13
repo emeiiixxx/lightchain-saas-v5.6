@@ -143,7 +143,7 @@ export function workflowSources(items: CanvasImage[], editor: CanvasImage): Canv
 }
 
 // An editor cannot consume its own downstream output, including indirect outputs.
-export function isWorkflowDescendant(items: CanvasImage[], editorId: string, imageId: string): boolean {
+export function workflowDescendantIds(items: CanvasImage[], editorId: string): Set<string> {
   const reached = new Set([`${editorId}:fusion`]);
   let changed = true;
   while (changed) {
@@ -155,7 +155,11 @@ export function isWorkflowDescendant(items: CanvasImage[], editorId: string, ima
       if (item.fusion && !reached.has(nodeId) && workflowSources(items, item).some(input => reached.has(input.id))) { reached.add(nodeId); changed = true; }
     }
   }
-  return reached.has(imageId);
+  return reached;
+}
+
+export function isWorkflowDescendant(items: CanvasImage[], editorId: string, imageId: string): boolean {
+  return workflowDescendantIds(items, editorId).has(imageId);
 }
 
 export const DEFAULT_VIEW: Viewport = { x: 0, y: 0, zoom: 1 };

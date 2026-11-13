@@ -1,4 +1,4 @@
-import { batchMainImages, fusionReferences, isMultiInputWorkflow, workflowInputs, workflowSources, type CanvasImage } from './canvas';
+import { batchMainImages, fusionReferences, isMultiInputWorkflow, workflowDescendantIds, workflowInputs, workflowSources, type CanvasImage } from './canvas';
 
 export type FusionCanvasReferenceTarget = { target: string; role?: 'main' };
 
@@ -21,6 +21,11 @@ export function fusionCanvasReferenceCandidates(items: CanvasImage[], target: Fu
 
   // Retain the existing per-field duplicate rule for ordinary reference lists.
   const linkedInputs = target.role === 'main' || (isMultiInputWorkflow(settings) && settings.kind !== 'batch');
+  // Match the submission cycle guard before rendering availability. Collect
+  // downstream IDs once for the whole picker, not once per candidate image.
+  if (linkedInputs) {
+    for (const id of workflowDescendantIds(items, owner.id)) excluded.add(id);
+  }
   const currentReferences = target.role === 'main' ? workflowInputs(settings) : fusionReferences(settings);
   const existingUrls = new Set(linkedInputs ? [] : currentReferences.map(reference => reference.url));
   return items.filter(image => !image.nodeOnly && !image.generation && !excluded.has(image.id) && !existingUrls.has(image.url));

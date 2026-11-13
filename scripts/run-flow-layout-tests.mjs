@@ -7,6 +7,7 @@ const suites = [
   'tests/flow-local-centering.test.ts',
   'tests/canvas-layout-groups.test.ts',
   'tests/video-layout-groups.test.ts',
+  'tests/fusion-canvas-references.test.ts',
 ];
 // Keep the bundle beside node_modules for external package resolution.
 const outfile = `.flow-layout-${randomUUID()}.mjs`;

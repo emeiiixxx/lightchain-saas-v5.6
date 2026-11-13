@@ -1,6 +1,6 @@
 # Lightchain SaaS v5.6 · 独立 Demo
 
-基于 v5.5 当前工作副本建立，包含 Flow 画布与视频工作台，沿用 v5.1 Beta 组件、深浅主题和中英日文。
+基于 v5.5 工作副本建立，包含融合画布、视频工作台及设计生产工作台，沿用 v5.1 Beta 组件、深浅主题和中英日文。
 
 ## 来源
 
@@ -12,7 +12,7 @@
 
 ## 本地运行
 
-本次同时复制了本地依赖。首次重新安装依赖时执行 `npm ci`。
+首次安装依赖时执行 `npm ci`。
 
 ```sh
 npm run dev -- --port 5176
@@ -20,6 +20,7 @@ npm run dev -- --port 5176
 
 - Flow 画布：`http://127.0.0.1:5176/#/canvas`
 - 视频工作台：`http://127.0.0.1:5176/#/video-workspace`
+- 设计生产工作台：`http://127.0.0.1:5176/#/design-workspace`
 
 以上为启动后的地址；复制操作不会自动启动服务。生产构建命令为 `npm run build`。
 
@@ -34,8 +35,16 @@ npm run dev -- --port 5176
 - 独立仓库：[lightchain-saas-v5.6](https://github.com/emeiiixxx/lightchain-saas-v5.6)
 - Flow 画布：[打开 Demo](https://emeiiixxx.github.io/lightchain-saas-v5.6/#/canvas)
 - 视频工作台：[打开 Demo](https://emeiiixxx.github.io/lightchain-saas-v5.6/#/video-workspace)
+- 设计生产工作台：[打开 Demo](https://emeiiixxx.github.io/lightchain-saas-v5.6/#/design-workspace)
 
-推送 `main` 后，由 GitHub Actions 执行 `npm ci` 和 `node scripts/build-pages.mjs`，部署到独立路径 `/lightchain-saas-v5.6/`。每次更新以对应提交的 Pages 工作流部署成功为准。
+推送 `main` 后，由 GitHub Actions 检查资源别名、画布性能、布局／选图、选择及工作台状态隔离，再执行 Pages 构建与部署。每次更新以对应提交的 Pages 工作流部署成功为准。
+
+## 开发参考
+
+- `src/main.tsx`：融合／视频工作台入口；`src/design-workbench/main.tsx`：设计生产工作台入口。
+- 生成、解析及部分任务使用固定素材和模拟计时；不能将演示结果当作真实服务实现。
+- 资源别名兼容已保存画布中的旧地址，不按文件重复或静态搜索无引用直接删除；用 `node scripts/sync-asset-aliases.mjs --check` 核对映射。
+- 本轮仓库检查及维护风险见 [2026-11-13 检查记录](docs/repository-audit-2026-11-13.md)。
 
 ## 文档与来源
 
@@ -45,4 +54,4 @@ npm run dev -- --port 5176
 - `artifacts/`：继承的历史视觉记录，不代表本次复制后的验证结果。
 - `src/`、`public/`：应用源码与运行时素材。
 
-发布构建由 GitHub Actions 执行；未进行本地测试或浏览器交互验收。
+验证范围以具体检查记录和对应提交的 CI 结果为准；构建通过不等于浏览器交互验收。
